@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentry-copilot"
+version = "0.1.0"
+description = "Replay-first, read-only assistant framework for Arknights Sentry Protocol."
+readme = "README.md"
+requires-python = ">=3.12"
+license = {file = "LICENSE"}
+dependencies = [
+  "numpy>=1.26",
+  "opencv-python>=4.10",
+  "pydantic>=2.7,<3",
+  "PyYAML>=6,<7",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.11",
+  "pytest>=8.2",
+  "ruff>=0.6",
+]
+
+[project.scripts]
+sentry-copilot = "sentry_copilot.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+sentry_copilot = ["py.typed"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src/sentry_copilot"]
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["cv2", "yaml"]
+ignore_missing_imports = true

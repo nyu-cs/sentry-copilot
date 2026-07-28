@@ -1,0 +1,107 @@
+{
+  "schema_version": "0.1-draft",
+  "source": {
+    "filename": "打boss.mp4",
+    "duration_seconds": 78.129956,
+    "width": 1276,
+    "height": 718,
+    "average_fps": 23.0,
+    "locale": "zh_CN",
+    "mode": "solo",
+    "notes": "Initial manual annotation from visual inspection. Boundaries are approximate and should be refined frame-by-frame before use as a benchmark."
+  },
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 7.7,
+      "scene": "FINAL_BOSS_PREPARATION",
+      "confidence": "high",
+      "visible_fields": ["round", "phase", "currency", "alliance_layers", "map", "deployed_operators", "shop"]
+    },
+    {
+      "start": 7.7,
+      "end": 9.4,
+      "scene": "READY_CONFIRMATION_MODAL",
+      "confidence": "high",
+      "visible_fields": ["confirmation_text"]
+    },
+    {
+      "start": 9.4,
+      "end": 13.3,
+      "scene": "FINAL_BOSS_BATTLE_TRANSITION",
+      "confidence": "high",
+      "visible_fields": ["round", "countdown", "map"]
+    },
+    {
+      "start": 13.3,
+      "end": 20.8,
+      "scene": "FINAL_BOSS_COMBAT",
+      "confidence": "high",
+      "visible_fields": ["boss", "boss_counter", "countdown", "alliance_layers", "combat_state"]
+    },
+    {
+      "start": 20.8,
+      "end": 23.5,
+      "scene": "OPERATION_END_OVERLAY",
+      "confidence": "high",
+      "visible_fields": ["operation_end"]
+    },
+    {
+      "start": 23.5,
+      "end": 26.5,
+      "scene": "SECRET_CORE_TRIGGER_REVEAL",
+      "confidence": "high",
+      "visible_fields": ["secret_core_triggered"]
+    },
+    {
+      "start": 26.5,
+      "end": 30.7,
+      "scene": "SECRET_BOSS_ENTRY",
+      "confidence": "medium",
+      "visible_fields": ["map", "secret_boss_silhouette", "secret_boss_model", "intermediate_reward_or_status_panel"]
+    },
+    {
+      "start": 30.7,
+      "end": 64.9,
+      "scene": "SECRET_BOSS_PREPARATION",
+      "confidence": "high",
+      "visible_fields": ["phase", "currency", "alliance_layers", "secret_boss", "deployed_operators", "shop", "tooltips"]
+    },
+    {
+      "start": 64.9,
+      "end": 66.4,
+      "scene": "READY_CONFIRMATION_MODAL",
+      "confidence": "high",
+      "visible_fields": ["confirmation_text"]
+    },
+    {
+      "start": 66.4,
+      "end": 69.5,
+      "scene": "SECRET_BOSS_BATTLE_TRANSITION",
+      "confidence": "high",
+      "visible_fields": ["round_unknown", "countdown", "map"]
+    },
+    {
+      "start": 69.5,
+      "end": 74.0,
+      "scene": "SECRET_BOSS_COMBAT",
+      "confidence": "high",
+      "visible_fields": ["secret_boss", "countdown", "alliance_layers", "combat_state"]
+    },
+    {
+      "start": 74.0,
+      "end": 76.9,
+      "scene": "OPERATION_END_OVERLAY",
+      "confidence": "high",
+      "visible_fields": ["operation_end"]
+    },
+    {
+      "start": 76.9,
+      "end": 78.13,
+      "scene": "SECRET_CORE_RESULT",
+      "confidence": "medium",
+      "visible_fields": ["final_result"]
+    }
+  ],
+  "recommended_split": "Keep the entire video in one data split. Do not distribute adjacent frames across train and test sets."
+}

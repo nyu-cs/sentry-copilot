@@ -1,0 +1,58 @@
+schema_version: 1
+map_id: demo.synthetic_training_map
+ruleset_ids: [demo.v1]
+names:
+  zh_CN: 合成训练地图
+  ja_JP: 合成訓練マップ
+  en: Synthetic Training Map
+notes: Synthetic placeholder geometry only; not a real game map.
+routes:
+  - route_id: demo.enemy.main_lane
+    label: Main enemy route
+    actor_type: enemy
+    actor_ids: [enemy.generic_placeholder]
+    priority: 20
+    verification: owner_verified
+    conditions:
+      stage_types: [regular]
+      waves: [7]
+    steps:
+      - type: move
+        points:
+          - {x: 0.04, y: 0.72}
+          - {x: 0.28, y: 0.72}
+          - {x: 0.44, y: 0.50}
+          - {x: 0.72, y: 0.50}
+          - {x: 0.94, y: 0.28}
+
+  - route_id: demo.boss.phantom_like.phase_1
+    label: Phantom-like boss example route
+    actor_type: boss
+    actor_ids: [boss.phantom_placeholder]
+    priority: 50
+    verification: placeholder
+    notes: Synthetic placeholder showing phase, wait, and teleport support.
+    conditions:
+      stage_types: [final_boss]
+      boss_phases: [phase_1]
+    steps:
+      - type: move
+        points:
+          - {x: 0.08, y: 0.18}
+          - {x: 0.32, y: 0.18}
+          - {x: 0.42, y: 0.34}
+      - type: wait
+        at: {x: 0.42, y: 0.34}
+        label: phase checkpoint
+      - type: phase_change
+        at: {x: 0.42, y: 0.34}
+        phase_id: phase_2
+      - type: teleport
+        from_point: {x: 0.42, y: 0.34}
+        to_point: {x: 0.70, y: 0.70}
+        label: synthetic jump
+      - type: move
+        points:
+          - {x: 0.70, y: 0.70}
+          - {x: 0.88, y: 0.70}
+          - {x: 0.95, y: 0.52}
