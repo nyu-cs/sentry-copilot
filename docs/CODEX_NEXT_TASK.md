@@ -1,29 +1,14 @@
-# 下一条 Codex 任务
+# 下一条 Codex 任务门禁
 
-在仓库根目录把下面内容交给 Codex：
+M0.1a“策略选择阶段快照与局内策略查询”完成后先检查 diff 和测试结果。
 
-```text
-Read AGENTS.md, PLANS.md, docs/architecture.md, docs/player-inspection.md,
-docs/route-system.md and docs/data-contracts.md.
+未经明确批准，不要继续 M0.1b 或路线 M1。
 
-Implement milestone M1 only.
+计划中的 M0.1b 只包含：
 
-Requirements:
-1. Add a replay-overlay CLI command that accepts either a video or an image folder.
-2. Accept a map YAML, a route query JSON, and a calibration JSON with four battlefield corners.
-3. For each requested timestamp/frame, resolve matching routes, export an overlay PNG, and append
-   a typed JSONL observation containing frame index, timestamp, map confidence, calibration
-   confidence, matched route IDs, and failure reason when applicable.
-4. Do not implement automatic clicks, shop recognition, deployment, or real map recognition.
-5. Preserve the rule that personalized avatars are not strategies.
-6. Use generated synthetic images in tests. Do not add game assets.
-7. Run pytest, ruff, and mypy; fix failures before finishing.
-```
+- 将左上角策略面板流程重新定义为 fallback；
+- 为未知 runtime slot 设计关联候选；
+- 通过唯一策略、四位 player tag 或用户确认消歧；
+- 保证 fallback 不能创建新的策略选择参与者。
 
-验收结果：
-
-- 新的 `replay-overlay` 命令。
-- 校准与查询 JSON 示例。
-- JSONL 输出契约。
-- 合成数据集成测试。
-- README 更新。
+M0.1b 仍不包含 OCR、OpenCV、桌面 UI 或自动点击。

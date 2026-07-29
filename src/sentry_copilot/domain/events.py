@@ -3,13 +3,14 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field
 
 from .enums import EvidenceKind, Phase, StageType
+from .strategy_selection import StrategySelectionParticipant, StrategySelectionSnapshot
 
 
 class EventBase(BaseModel):
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    timestamp: AwareDatetime = Field(default_factory=lambda: datetime.now(UTC))
     evidence: EvidenceKind = EvidenceKind.OBSERVED
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
 
@@ -46,10 +47,36 @@ class StageObserved(EventBase):
     display_round: str | None = None
 
 
+class StrategySelectionSnapshotObserved(EventBase):
+    type: Literal["strategy_selection_snapshot_observed"] = (
+        "strategy_selection_snapshot_observed"
+    )
+    snapshot: StrategySelectionSnapshot
+
+
+class StrategySelectionSnapshotFrozen(EventBase):
+    type: Literal["strategy_selection_snapshot_frozen"] = "strategy_selection_snapshot_frozen"
+    session_id: str
+    ruleset_id: str
+
+
+class StrategySelectionSnapshotCorrected(EventBase):
+    type: Literal["strategy_selection_snapshot_corrected"] = (
+        "strategy_selection_snapshot_corrected"
+    )
+    evidence: Literal[EvidenceKind.MANUAL] = EvidenceKind.MANUAL
+    session_id: str
+    ruleset_id: str
+    replacements: list[StrategySelectionParticipant] = Field(min_length=1, max_length=4)
+
+
 SessionEvent = (
     PlayerAvatarObserved
     | PlayerHealthObserved
     | PlayerStrategyObserved
     | MapObserved
     | StageObserved
+    | StrategySelectionSnapshotObserved
+    | StrategySelectionSnapshotFrozen
+    | StrategySelectionSnapshotCorrected
 )

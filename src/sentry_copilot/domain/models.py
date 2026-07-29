@@ -5,12 +5,15 @@ from datetime import UTC, datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from .enums import GameMode, Phase, PlayerStatus, Server, StageType
+from .strategy_selection import StrategySelectionSnapshot
 
 
 class PlayerState(BaseModel):
     """State for one player slot.
 
     `avatar_visual_key` is an opaque visual fingerprint. It is never a strategy identifier.
+    The strategy fields are a legacy runtime-slot cache. New strategy-selection features use
+    `SessionState.strategy_selection` as their authoritative state.
     """
 
     model_config = ConfigDict(validate_assignment=True)
@@ -43,6 +46,7 @@ class SessionState(BaseModel):
     current_map_id: str | None = None
     stage: StageState = Field(default_factory=StageState)
     players: list[PlayerState] = Field(default_factory=list)
+    strategy_selection: StrategySelectionSnapshot | None = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     def player(self, slot: int) -> PlayerState:
