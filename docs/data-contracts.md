@@ -218,6 +218,92 @@ Snapshot models are frozen. Python stores participants and snapshot evidence as 
 continues to use arrays. `captured_at` and all strategy-selection event timestamps must include a
 timezone. Reducer updates rebuild and validate a new snapshot instead of mutating the existing one.
 
+## Prebattle evidence ledger
+
+M0.2b.1 adds normalized `SessionId`, `SessionParticipantId`, and `EvidenceId` types. A prebattle
+event is accepted only when its session matches `SessionState` and its participant already exists
+in that session's strategy-selection snapshot.
+
+Raw candidate and ready evidence share:
+
+```json
+{
+  "evidence_id": "evidence.synthetic.ready.001",
+  "session_id": "session.synthetic",
+  "session_player_id": "session-player-1",
+  "timestamp": "2026-08-01T10:00:00Z",
+  "provenance": "observed",
+  "confidence": 0.96,
+  "source_detail": "synthetic test observation",
+  "frame_reference": "private/replay.synthetic/frame-002.png",
+  "roi": {
+    "x": 0.1,
+    "y": 0.2,
+    "width": 0.2,
+    "height": 0.2
+  },
+  "observed_visual_cue": "synthetic ready check visible",
+  "observed_text": null
+}
+```
+
+At least one raw frame reference, normalized ROI, visual cue, or observed text is required.
+Candidate evidence has no `strategy_id`: normalized identity is a later interpretation, not a raw
+fact. All timestamps are timezone-aware.
+
+`PrebattleEvidenceLedger.entries` is an immutable tuple. Evidence IDs are unique within a session.
+Applying the exact same ID and value again is a no-op; applying the same ID with different content
+is an error. Separate IDs are preserved even when their frame observations are otherwise equal.
+
+A false-positive correction is a separate manual ledger entry:
+
+```json
+{
+  "type": "prebattle_ready_false_positive_corrected",
+  "kind": "ready_false_positive_correction",
+  "evidence_id": "evidence.synthetic.correction.001",
+  "session_id": "session.synthetic",
+  "session_player_id": "session-player-1",
+  "timestamp": "2026-08-01T10:00:10Z",
+  "provenance": "manual",
+  "confidence": 1.0,
+  "invalidated_ready_evidence_ids": ["evidence.synthetic.ready.001"],
+  "reason": "synthetic manual review found no ready check"
+}
+```
+
+Targets must exist, be ready-check evidence, and belong to the same participant. The original
+observation is never removed. This is correction of the assistant interpretation, not an in-game
+unready action.
+
+## Ready-confirmed commitment
+
+`StrategyCommitmentState` is the immutable materialization of effective ready evidence:
+
+```json
+{
+  "session_id": "session.synthetic",
+  "commitments": [
+    {
+      "session_player_id": "session-player-1",
+      "confirmed_at": "2026-08-01T10:00:00Z",
+      "ready_evidence_ids": [
+        "evidence.synthetic.ready.001",
+        "evidence.synthetic.ready.002"
+      ]
+    }
+  ]
+}
+```
+
+The earliest effective ready evidence supplies `confirmed_at`. Repeated ready evidence adds its ID
+but does not create another commitment or move that time. If manual correction excludes every
+effective ready observation, the current assistant materialization removes the commitment while
+the append-only game observation history remains intact.
+
+M0.2b.1 exposes only `observing` and `ready_confirmed_strategy_unknown`. It does not interpret a
+candidate as a strategy, establish concrete occupancy, consult a catalog, or implement release.
+
 ## Future runtime participation transition
 
 This is a reserved contract, not an M0.1a recognizer or capture loop:

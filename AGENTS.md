@@ -49,6 +49,14 @@ The repository must remain useful and testable while the game mode is unavailabl
 20. Ruleset revision selection and correction are explicit command-service operations. The
     generic reducer accepts only catalog-validated facts and must never load YAML, access the file
     system, infer a revision, or silently switch contexts.
+21. A raw prebattle strategy candidate is evidence, not a normalized `strategy_id` and not
+    occupancy. Every prebattle evidence item has a stable ID; replaying the same ID is idempotent.
+22. A visible ready check is the per-player evidence for an irreversible in-game selection.
+    Repeated ready evidence does not create another commitment or move its first confirmation time.
+    There is no game-domain unready or release transition.
+23. False-positive ready recognition is a correctable assistant interpretation. Manual correction
+    preserves the original observation and excludes it from the effective evidence set; it never
+    claims that the player cancelled ready in the game.
 
 ## Module boundaries
 
@@ -60,6 +68,9 @@ The repository must remain useful and testable while the game mode is unavailabl
 - `services/ruleset_context_service.py`: validates explicit context commands against catalogs
   before dispatching accepted facts to the reducer.
 - `domain/strategy_selection.py`: owns the reducer-managed strategy snapshot for up to four players.
+- `domain/prebattle.py`: owns typed, immutable, evidence-ID-addressed raw prebattle history.
+- `domain/strategy_commitment.py`: derives current ready-confirmed commitments from effective
+  ready evidence without assigning a concrete strategy.
 - `player/`: owns user-guided fallback inspection workflows.
 - `routes/`: owns map/route schemas, selection, projection, and rendering.
 - `services/`: orchestrates modules without embedding recognition heuristics.

@@ -19,9 +19,17 @@ from .events import (
     StrategySelectionSnapshotFrozen,
     StrategySelectionSnapshotObserved,
 )
-from .identifiers import LocaleId, RulesetId
+from .identifiers import LocaleId, RulesetId, SessionId, SessionParticipantId
 from .models import SessionState
+from .prebattle import (
+    PrebattleEvidenceEntry,
+    PrebattleEvidenceLedger,
+    ReadyCheckObserved,
+    ReadyFalsePositiveCorrected,
+    StrategyCandidateObserved,
+)
 from .rulesets import RevisionSelectionRecord, SessionRulesetContext
+from .strategy_commitment import derive_strategy_commitments
 from .strategy_selection import (
     EvidenceRecord,
     ParticipantField,
@@ -67,6 +75,15 @@ EvidenceEvent = (
 def reduce_session(state: SessionState, event: SessionEvent) -> SessionState:
     """Apply one event while enforcing domain invariants."""
 
+    if isinstance(
+        event,
+        (
+            StrategyCandidateObserved,
+            ReadyCheckObserved,
+            ReadyFalsePositiveCorrected,
+        ),
+    ):
+        return _apply_prebattle_evidence(state, event)
     if isinstance(event, SessionRulesetContextSelected):
         return _apply_ruleset_context_selection(state, event)
     if isinstance(event, SessionRulesetRevisionCorrected):
@@ -132,6 +149,94 @@ def reduce_session(state: SessionState, event: SessionEvent) -> SessionState:
 
     next_state.updated_at = event.timestamp.astimezone(UTC)
     return next_state
+
+
+def _apply_prebattle_evidence(
+    state: SessionState,
+    event: PrebattleEvidenceEntry,
+) -> SessionState:
+    _require_prebattle_participant(
+        state,
+        session_id=event.session_id,
+        session_player_id=event.session_player_id,
+    )
+    current_ledger = state.prebattle_evidence or PrebattleEvidenceLedger(
+        session_id=state.session_id
+    )
+    existing = current_ledger.get(event.evidence_id)
+    if existing is not None:
+        if existing == event:
+            return state
+        raise InvalidObservationError(
+            "prebattle evidence ID already refers to different evidence"
+        )
+
+    if isinstance(event, ReadyFalsePositiveCorrected):
+        _require_ready_correction_targets(current_ledger, event)
+
+    try:
+        ledger = PrebattleEvidenceLedger(
+            session_id=state.session_id,
+            entries=(*current_ledger.entries, event),
+        )
+        commitments = derive_strategy_commitments(ledger)
+        payload = state.model_dump()
+        payload.update(
+            {
+                "prebattle_evidence": ledger,
+                "strategy_commitments": commitments,
+                "updated_at": event.timestamp.astimezone(UTC),
+            }
+        )
+        return SessionState.model_validate(payload)
+    except ValidationError as exc:
+        raise InvalidObservationError(
+            "prebattle evidence violates session invariants"
+        ) from exc
+
+
+def _require_prebattle_participant(
+    state: SessionState,
+    *,
+    session_id: SessionId,
+    session_player_id: SessionParticipantId,
+) -> None:
+    if session_id != state.session_id:
+        raise InvalidObservationError(
+            "prebattle evidence session_id does not match SessionState"
+        )
+    snapshot = state.strategy_selection
+    if snapshot is None:
+        raise InvalidObservationError(
+            "prebattle evidence requires a strategy selection participant snapshot"
+        )
+    if snapshot.session_id != session_id:
+        raise InvalidObservationError(
+            "prebattle evidence does not belong to the snapshot session"
+        )
+    if not any(
+        participant.session_player_id == session_player_id
+        for participant in snapshot.participants
+    ):
+        raise InvalidObservationError(
+            "prebattle evidence participant does not belong to the current session"
+        )
+
+
+def _require_ready_correction_targets(
+    ledger: PrebattleEvidenceLedger,
+    correction: ReadyFalsePositiveCorrected,
+) -> None:
+    for evidence_id in correction.invalidated_ready_evidence_ids:
+        target = ledger.get(evidence_id)
+        if not isinstance(target, ReadyCheckObserved):
+            raise InvalidObservationError(
+                "ready false-positive correction target is not ready evidence"
+            )
+        if target.session_player_id != correction.session_player_id:
+            raise InvalidObservationError(
+                "ready false-positive correction cannot cross participants"
+            )
 
 
 def _require_snapshot_context(state: SessionState, session_id: str, ruleset_id: str) -> None:

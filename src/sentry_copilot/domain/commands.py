@@ -16,6 +16,7 @@ from .identifiers import (
     LocaleId,
     RulesetId,
     RulesetRevisionId,
+    SessionId,
 )
 from .rulesets import RevisionSelectionMethod
 
@@ -25,7 +26,7 @@ class RulesetContextCommand(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    session_id: str = Field(min_length=1)
+    session_id: SessionId
     ruleset_id: RulesetId
     ruleset_revision_id: RulesetRevisionId
     locale_id: LocaleId

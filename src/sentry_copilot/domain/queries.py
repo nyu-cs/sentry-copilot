@@ -1,14 +1,20 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import AwareDatetime, BaseModel, ConfigDict
 
+from .identifiers import EvidenceId, SessionId, SessionParticipantId
 from .models import SessionState
+from .prebattle import PrebattleEvidenceLedger
 from .rulesets import RulesetDependencyStamp, SessionRulesetContext
+from .strategy_commitment import (
+    ParticipantCommitmentLevel,
+    ReadyConfirmedCommitment,
+)
 from .strategy_selection import SelectionOutcome, SnapshotCompleteness
 
 
 class TeamStrategyParticipantContext(BaseModel):
-    session_player_id: str
+    session_player_id: SessionParticipantId
     selection_row: int
     player_tag: str | None
     display_name: str | None
@@ -17,7 +23,7 @@ class TeamStrategyParticipantContext(BaseModel):
 
 
 class TeamStrategyContext(BaseModel):
-    session_id: str
+    session_id: SessionId
     ruleset_id: str
     frozen: bool
     completeness_level: SnapshotCompleteness
@@ -30,6 +36,101 @@ class TeamStrategyContext(BaseModel):
             for participant in self.participants
             if participant.strategy_id is not None
         ]
+
+
+class ParticipantCommitmentContext(BaseModel):
+    """Read-only current ready interpretation for one prebattle participant."""
+
+    model_config = ConfigDict(frozen=True)
+
+    session_player_id: SessionParticipantId
+    selection_row: int
+    level: ParticipantCommitmentLevel
+    confirmed_at: AwareDatetime | None = None
+    ready_evidence_ids: tuple[EvidenceId, ...] = ()
+
+
+class PrebattleCommitmentContext(BaseModel):
+    """Current ready commitments; no concrete strategy occupancy is included."""
+
+    model_config = ConfigDict(frozen=True)
+
+    session_id: SessionId
+    participants: tuple[ParticipantCommitmentContext, ...]
+
+
+def get_prebattle_evidence_ledger(
+    state: SessionState,
+) -> PrebattleEvidenceLedger | None:
+    """Return the immutable append-only prebattle evidence history."""
+
+    return state.prebattle_evidence
+
+
+def get_ready_confirmed_commitment(
+    state: SessionState,
+    session_player_id: SessionParticipantId,
+) -> ReadyConfirmedCommitment | None:
+    """Return one current commitment interpretation, if effective ready evidence exists."""
+
+    if state.strategy_commitments is None:
+        return None
+    return state.strategy_commitments.for_participant(session_player_id)
+
+
+def build_prebattle_commitment_context(
+    state: SessionState,
+) -> PrebattleCommitmentContext | None:
+    """Build a stable participant view without inferring any concrete strategy ID."""
+
+    snapshot = state.strategy_selection
+    if snapshot is None:
+        return None
+    commitments = state.strategy_commitments
+    return PrebattleCommitmentContext(
+        session_id=state.session_id,
+        participants=tuple(
+            ParticipantCommitmentContext(
+                session_player_id=participant.session_player_id,
+                selection_row=participant.selection_row,
+                level=(
+                    ParticipantCommitmentLevel.READY_CONFIRMED_STRATEGY_UNKNOWN
+                    if (
+                        commitments is not None
+                        and commitments.for_participant(participant.session_player_id)
+                        is not None
+                    )
+                    else ParticipantCommitmentLevel.OBSERVING
+                ),
+                confirmed_at=_commitment_confirmed_at(
+                    commitments.for_participant(participant.session_player_id)
+                    if commitments is not None
+                    else None
+                ),
+                ready_evidence_ids=_commitment_evidence_ids(
+                    commitments.for_participant(participant.session_player_id)
+                    if commitments is not None
+                    else None
+                ),
+            )
+            for participant in sorted(
+                snapshot.participants,
+                key=lambda item: item.selection_row,
+            )
+        ),
+    )
+
+
+def _commitment_confirmed_at(
+    commitment: ReadyConfirmedCommitment | None,
+) -> AwareDatetime | None:
+    return commitment.confirmed_at if commitment is not None else None
+
+
+def _commitment_evidence_ids(
+    commitment: ReadyConfirmedCommitment | None,
+) -> tuple[EvidenceId, ...]:
+    return commitment.ready_evidence_ids if commitment is not None else ()
 
 
 def get_session_ruleset_context(

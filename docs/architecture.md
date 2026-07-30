@@ -26,6 +26,12 @@ Recognizers do not edit `SessionState`. The reducer enforces:
 
 - avatar observations never change strategy;
 - strategy-selection observations merge field by field into one reducer-owned snapshot;
+- raw prebattle candidate and ready observations append to an evidence-ID-addressed ledger;
+- applying an identical evidence ID is idempotent, while an ID collision with different evidence
+  is rejected;
+- only currently effective ready evidence materializes a ready-confirmed commitment;
+- false-positive correction preserves the original ready observation and changes only the
+  assistant's effective interpretation;
 - `selection_row` never implies a runtime player slot;
 - expected participant count is explicit and never inferred from recognized rows;
 - M0.1a snapshot completeness requires unique entered-player strategy values, without treating
@@ -44,6 +50,36 @@ conflicting values are rejected.
 The context owns a monotonic generation. Future revision-dependent derived values must carry a
 dependency stamp containing ruleset, revision, locale, catalog version, and generation. M0.2a.1
 defines the stamp but does not create future occupancy, assignment, annotation, or coverage state.
+
+## Prebattle evidence and ready commitment
+
+M0.2b.1 separates three concepts:
+
+```text
+raw candidate / ready observation
+        ↓ append-only, stable evidence ID
+PrebattleEvidenceLedger
+        ↓ exclude manually corrected false positives
+StrategyCommitmentState
+        ↓ read-only projection
+OBSERVING or READY_CONFIRMED_STRATEGY_UNKNOWN
+```
+
+Raw candidate records contain frame references, normalized ROI, observed visual cues, observed
+text, confidence, time, and provenance. They deliberately contain no normalized strategy ID.
+Catalog-dependent interpretation and concrete occupancy are deferred to M0.2b.2.
+
+The first effective ready observation determines `confirmed_at`; later ready observations add
+evidence without moving it or creating another commitment. There is no game-domain unready or
+release transition. A manual false-positive correction is an assistant-record operation: it
+preserves the original observation, records the correction under its own stable ID, and excludes
+the targeted ready evidence when deriving current commitments. If no effective ready evidence
+remains, the assistant materialization no longer contains that commitment.
+
+Every prebattle event carries normalized session and participant IDs. The reducer rejects
+cross-session events and participants absent from the session's strategy-selection snapshot.
+Ledger and commitment aggregates are frozen; the reducer constructs and validates a complete new
+`SessionState`, so a failed correction cannot partially change the input.
 
 ## Strategy catalog subsystem
 

@@ -15,6 +15,12 @@
   当前仓库只含明确标记的 synthetic catalog 与 synthetic SVG；它们不构成真实版本验收。
 - ruleset revision 只能通过显式手动选择、明确 replay metadata 或显式 correction 更新；
   每次成功更新递增 generation 并保存历史，mismatch 不会触发静默切换。
+- 策略候选原始观察与正式 ready commitment 已分层：候选只保存画面、ROI、可见线索或
+  文字等证据，不伪装成规范化 `strategy_id`；玩家准备勾的首次有效证据建立
+  `READY_CONFIRMED_STRATEGY_UNKNOWN`。
+- 每项 prebattle evidence 使用稳定 ID。重复应用同一 ID 幂等，不同 ID 的相同画面
+  观察仍分别保存。视觉 false positive 可通过保留原观察的人工 correction 排除，
+  但这不表示玩家在游戏内取消准备或释放策略。
 - 单人或多人实际参战人数由 `expected_participant_count` 明确记录，不能按已识别行数猜测。
 - 策略快照保存历史选择；局内退出、断线或淘汰不会删除玩家或改变快照完整度。
 - `#XXXX` 以四位字符串保存并且只在本局唯一；策略选择行不等于局内左侧槽位。
@@ -69,6 +75,8 @@ Video / Image Folder / Live Window (later)
 策略选择界面观察最多四行玩家信息
 → 为每行建立 session-local participant
 → 按字段保存编号、名字、头像、策略、ready 与证据
+→ 将原始候选和准备勾写入独立、ID 幂等的 prebattle evidence ledger
+→ 首次有效准备勾建立 ready-confirmed、具体策略未知的 commitment
 → 明确记录实际参战人数，不按识别出的行数推断
 → reducer 合并为当前 StrategySelectionSnapshot
 → 离开选择阶段时冻结
@@ -89,6 +97,11 @@ catalog 的规范化解释。M0.2a 保留字段及其 evidence，但 revision-aw
 据此建立 occupancy、runtime assignment 或 catalog-dependent confirmation；正式迁移
 留给 M0.2b。
 
+M0.2b.1 的 commitment 尚不包含 concrete strategy occupancy。重复准备勾只追加证据，
+不会创建第二个 commitment 或后移 `confirmed_at`。若人工确认某个准备勾属于识别
+false positive，原 observation 仍留在 ledger 中，仅从当前有效证据集合排除；其他仍
+有效的准备勾证据继续维持 commitment。
+
 ## 路径功能
 
 ```text
@@ -106,7 +119,7 @@ catalog 的规范化解释。M0.2a 保留字段及其 evidence，但 revision-aw
 ```text
 src/sentry_copilot/
   catalogs/    revision-aware catalog 加载、精确查询和共享校验
-  domain/      对局状态、ruleset context、最多四人策略快照、字段证据和归并规则
+  domain/      对局状态、ruleset context、prebattle evidence、ready commitment 与快照
   player/      引导式 fallback 策略检查
   routes/      地图路线模型、筛选、投影和渲染
   vision/      地图识别与校准接口

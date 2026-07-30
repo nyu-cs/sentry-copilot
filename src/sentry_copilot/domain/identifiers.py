@@ -23,6 +23,18 @@ CatalogVersion = Annotated[
     str,
     StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
 ]
+SessionId = Annotated[
+    str,
+    StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
+]
+SessionParticipantId = Annotated[
+    str,
+    StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
+]
+EvidenceId = Annotated[
+    str,
+    StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
+]
 
 
 class LocaleId(StrEnum):

@@ -16,6 +16,7 @@ from pydantic import (
 )
 
 from .evidence import EvidenceRecord as EvidenceRecord
+from .identifiers import SessionId, SessionParticipantId
 
 PlayerTag = Annotated[str, StringConstraints(strict=True, pattern=r"^\d{4}$")]
 
@@ -85,7 +86,7 @@ class StrategySelectionParticipant(BaseModel):
 
     model_config = ConfigDict(frozen=True, validate_default=True)
 
-    session_player_id: str
+    session_player_id: SessionParticipantId
     selection_row: int = Field(ge=1, le=4)
     player_tag: PlayerTag | None = None
     display_name: str | None = None
@@ -162,7 +163,7 @@ class StrategySelectionSnapshot(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    session_id: str
+    session_id: SessionId
     ruleset_id: str
     expected_participant_count: int | None = Field(default=None, ge=1, le=4)
     captured_at: AwareDatetime

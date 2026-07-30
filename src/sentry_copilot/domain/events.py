@@ -18,6 +18,12 @@ from .identifiers import (
     LocaleId,
     RulesetId,
     RulesetRevisionId,
+    SessionId,
+)
+from .prebattle import (
+    ReadyCheckObserved,
+    ReadyFalsePositiveCorrected,
+    StrategyCandidateObserved,
 )
 from .rulesets import RevisionSelectionMethod
 from .strategy_selection import StrategySelectionParticipant, StrategySelectionSnapshot
@@ -70,7 +76,7 @@ class StrategySelectionSnapshotObserved(EventBase):
 
 class StrategySelectionSnapshotFrozen(EventBase):
     type: Literal["strategy_selection_snapshot_frozen"] = "strategy_selection_snapshot_frozen"
-    session_id: str
+    session_id: SessionId
     ruleset_id: str
 
 
@@ -79,7 +85,7 @@ class StrategySelectionSnapshotCorrected(EventBase):
         "strategy_selection_snapshot_corrected"
     )
     evidence: Literal[EvidenceKind.MANUAL] = EvidenceKind.MANUAL
-    session_id: str
+    session_id: SessionId
     ruleset_id: str
     replacements: list[StrategySelectionParticipant] = Field(min_length=1, max_length=4)
 
@@ -89,7 +95,7 @@ class AcceptedRulesetContextEvent(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    session_id: str = Field(min_length=1)
+    session_id: SessionId
     ruleset_id: RulesetId
     ruleset_revision_id: RulesetRevisionId
     locale_id: LocaleId
@@ -146,6 +152,9 @@ SessionEvent = (
     | StrategySelectionSnapshotObserved
     | StrategySelectionSnapshotFrozen
     | StrategySelectionSnapshotCorrected
+    | StrategyCandidateObserved
+    | ReadyCheckObserved
+    | ReadyFalsePositiveCorrected
     | SessionRulesetContextSelected
     | SessionRulesetRevisionCorrected
 )

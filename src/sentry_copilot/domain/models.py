@@ -7,8 +7,13 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .enums import GameMode, Phase, PlayerStatus, Server, StageType
-from .identifiers import LocaleId, RulesetId, RulesetRevisionId
+from .identifiers import LocaleId, RulesetId, RulesetRevisionId, SessionId
+from .prebattle import PrebattleEvidenceLedger
 from .rulesets import RulesetDependencyStamp, SessionRulesetContext
+from .strategy_commitment import (
+    StrategyCommitmentState,
+    derive_strategy_commitments,
+)
 from .strategy_selection import StrategySelectionSnapshot
 
 
@@ -42,7 +47,7 @@ class StageState(BaseModel):
 class SessionState(BaseModel):
     model_config = ConfigDict(validate_assignment=True, validate_default=True)
 
-    session_id: str
+    session_id: SessionId
     server: Server = Server.CN
     locale: str = "zh_CN"
     ruleset_id: RulesetId = "unknown"
@@ -52,6 +57,8 @@ class SessionState(BaseModel):
     stage: StageState = Field(default_factory=StageState)
     players: list[PlayerState] = Field(default_factory=list)
     strategy_selection: StrategySelectionSnapshot | None = None
+    prebattle_evidence: PrebattleEvidenceLedger | None = None
+    strategy_commitments: StrategyCommitmentState | None = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @model_validator(mode="before")
@@ -91,7 +98,53 @@ class SessionState(BaseModel):
             raise ValueError(
                 "strategy selection ruleset_id does not match the session ruleset context"
             )
+        if (
+            self.strategy_selection is not None
+            and self.strategy_selection.session_id != self.session_id
+        ):
+            raise ValueError(
+                "strategy selection session_id does not match SessionState"
+            )
+        self._validate_prebattle_state()
         return self
+
+    def _validate_prebattle_state(self) -> None:
+        if self.prebattle_evidence is None:
+            if self.strategy_commitments is not None:
+                raise ValueError(
+                    "strategy commitments require a prebattle evidence ledger"
+                )
+            return
+        if self.prebattle_evidence.session_id != self.session_id:
+            raise ValueError("prebattle evidence session_id does not match SessionState")
+        if self.strategy_commitments is None:
+            raise ValueError(
+                "prebattle evidence requires a materialized strategy commitment state"
+            )
+        if self.strategy_commitments.session_id != self.session_id:
+            raise ValueError(
+                "strategy commitment session_id does not match SessionState"
+            )
+        if self.strategy_selection is None:
+            raise ValueError(
+                "prebattle evidence requires a strategy selection participant snapshot"
+            )
+        participant_ids = {
+            participant.session_player_id
+            for participant in self.strategy_selection.participants
+        }
+        evidence_participant_ids = {
+            entry.session_player_id for entry in self.prebattle_evidence.entries
+        }
+        if not evidence_participant_ids.issubset(participant_ids):
+            raise ValueError(
+                "prebattle evidence participants must belong to the current session"
+            )
+        derived = derive_strategy_commitments(self.prebattle_evidence)
+        if self.strategy_commitments != derived:
+            raise ValueError(
+                "strategy commitments must match currently effective ready evidence"
+            )
 
     @property
     def effective_ruleset_id(self) -> RulesetId:

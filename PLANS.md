@@ -56,9 +56,26 @@
 
 ## M0.2b — Confirmed strategy occupancy and prebattle migration
 
-- [ ] Separate observed strategy candidates from ready-confirmed selection.
-- [ ] Preserve ready-confirmed strategy-unknown as a valid state.
+### M0.2b.1 — Prebattle evidence and ready-confirmed commitment
+
+- [x] Add typed raw candidate and ready-check observations without normalized strategy identity.
+- [x] Address every prebattle evidence item by stable ID and make event replay idempotent.
+- [x] Preserve ready-confirmed strategy-unknown as a valid state.
+- [x] Keep the first effective ready time stable while repeated ready observations add evidence.
+- [x] Correct false-positive ready interpretations without deleting original evidence or adding an
+  in-game unready/release transition.
+- [x] Validate session and participant ownership for every new prebattle event.
+
+### M0.2b.2 — Concrete strategy identification and occupancy conflicts
+
+- [ ] Add basis-aware concrete strategy identification with conditional dependency stamps.
+- [ ] Distinguish duplicate occupancy, participant-identification, and catalog-compatibility
+  conflicts.
 - [ ] Enforce permanent unique occupancy across entered and post-selection-exited players.
+
+### M0.2b.3 — Legacy snapshot migration and revision invalidation
+
+- [ ] Migrate legacy snapshot evidence explicitly and idempotently.
 - [ ] Reposition snapshot completeness as prebattle data quality only.
 
 ## M0.2c — Runtime roster and slot assignment
