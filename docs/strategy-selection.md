@@ -3,9 +3,10 @@
 ## Purpose
 
 The strategy-selection screen is the primary collection point for up to four in-session strategies.
-The reducer-owned current snapshot is authoritative. Evidence may eventually come from the
-selection screen, a fallback strategy panel, or explicit user correction, but all accepted values
-merge into the same `StrategySelectionSnapshot`.
+The reducer-owned current snapshot is an immutable prebattle materialized view and historical
+query source. Evidence may eventually come from the selection screen, a fallback strategy panel,
+or explicit user correction, but accepted M0.1a values merge into the same
+`StrategySelectionSnapshot`. It is not the future runtime-slot strategy-label authority.
 
 M0.1a is complete when the unique strategies of the actual one-to-four participants who entered
 battle can be stored and queried. It does not require complete player identity or runtime-slot
@@ -80,9 +81,11 @@ of four remain partial. `expected_participant_count` is the final number that en
 the number initially shown or currently alive.
 
 `left_unready`, `exited_before_strategy`, and `exited_after_strategy` do not enter the final count
-or default `TeamStrategyContext`. They remain in the raw snapshot. Temporary strategies on
-selection-stage exits do not participate in final-team strategy uniqueness and may duplicate an
-entered participant's strategy.
+or default `TeamStrategyContext`. They remain in the raw snapshot. The current M0.1a compatibility
+model may contain duplicate strategy values on these historical records, but those values must be
+treated as legacy prebattle interpretation rather than confirmed occupancy. M0.2b will apply the
+approved permanent-occupancy rule after separating candidates, ready confirmation, and normalized
+strategy identity.
 
 ## Freeze and correction
 
@@ -133,8 +136,15 @@ features, not part of M0.1a.
 updated from the new snapshot and is not read by `build_team_strategy_context`. Removal is deferred
 until runtime association is implemented and reviewed separately.
 
-## Deferred to M0.1b or later
+`StrategySelectionParticipant.strategy_id` is also a legacy boundary for revision-aware work. It
+may already be a normalized catalog interpretation rather than revision-independent raw evidence.
+M0.2a preserves the value and evidence but does not use it to build occupancy, assignment, or
+catalog-dependent confirmation. That split belongs to M0.2b.
 
+## Deferred to M0.2b or later
+
+- ready-confirmed permanent strategy occupancy;
+- raw strategy observation versus normalized catalog interpretation;
 - fallback panel observation models;
 - runtime-slot association;
 - matching by unique strategy or player tag;

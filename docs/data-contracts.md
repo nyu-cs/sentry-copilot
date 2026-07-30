@@ -20,6 +20,52 @@ New team strategy queries read `SessionState.strategy_selection`, not this field
 `PlayerState.status` is also a legacy observation/cache enum. Its `LEFT` and `DISCONNECTED` values
 must not become separate business outcomes in the future runtime model.
 
+## Session ruleset context
+
+New revision-aware code reads one immutable `SessionRulesetContext`:
+
+```json
+{
+  "ruleset_id": "sentry_protocol.covenant_latter",
+  "ruleset_revision_id": "sentry_protocol.covenant_latter.pre_update",
+  "locale_id": "zh_CN",
+  "catalog_version": "catalog.synthetic.v1",
+  "selection_method": "manual",
+  "selected_at": "2026-01-01T00:00:00Z",
+  "selection_evidence": [],
+  "revision_history": [],
+  "context_generation": 1
+}
+```
+
+The normalized ruleset corresponds to the confirmed Chinese display name
+`卫戍协议：盟约 下半`. Display names are not IDs. The name's `下半` is distinct from the
+pre-update and post-update catalog revisions.
+
+An unknown revision uses `null` for revision and catalog version, `unknown` selection method, and
+generation zero. A selected revision requires a catalog version, a non-unknown selection method,
+and a positive generation. All selection and replacement times must include a timezone.
+
+`SessionState.ruleset_id` and `SessionState.locale` remain compatibility mirrors. Construction
+fills omitted mirrors from context and rejects explicitly conflicting mirrors. Without a context,
+legacy M0.1a construction remains valid. Snapshot `ruleset_id` must match the effective context but
+does not become a second authority.
+
+Future revision-dependent values use this stamp:
+
+```json
+{
+  "ruleset_id": "sentry_protocol.covenant_latter",
+  "ruleset_revision_id": "sentry_protocol.covenant_latter.pre_update",
+  "locale_id": "zh_CN",
+  "catalog_version": "catalog.synthetic.v1",
+  "context_generation": 1
+}
+```
+
+M0.2a.1 defines only the dependency identity. It does not create occupancy, assignment,
+annotation, coverage, or other future caches.
+
 ## Minimal strategy definition
 
 ```json
@@ -87,11 +133,18 @@ continues to serialize as a JSON object with string enum keys.
 
 Selection outcome is one of `entered_battle`, `left_unready`, `exited_before_strategy`,
 `exited_after_strategy`, or `unknown`. It describes the selection phase only and does not reuse
-runtime `LEFT`, `DISCONNECTED`, or `ELIMINATED` status. Only `entered_battle` participates in final
-team completeness, identity completeness, default team queries, and final-team strategy
-uniqueness. An `exited_after_strategy` participant may retain a temporary strategy that duplicates
-an entered participant's strategy.
+runtime `LEFT`, `DISCONNECTED`, or `ELIMINATED` status. In the M0.1a compatibility model, only
+`entered_battle` participates in snapshot completeness, identity completeness, default team
+queries, and snapshot-level strategy uniqueness. This is not the approved confirmed-occupancy
+rule. An `exited_after_strategy` record may currently retain duplicate legacy strategy evidence;
+M0.2b will distinguish candidates from ready-confirmed permanent occupancy.
 Every `observed_at` value must include a timezone.
+
+The legacy `strategy_id` field may contain normalized interpretation produced by an older catalog,
+not a revision-independent raw visual fact. M0.2a preserves the field and evidence but new
+revision-aware logic must not use it to establish occupancy, runtime assignment, or
+catalog-dependent confirmation. M0.2b will separate raw strategy observations from normalized
+interpretation.
 
 ## Strategy-selection snapshot
 

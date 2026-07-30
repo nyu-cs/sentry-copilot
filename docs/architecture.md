@@ -14,6 +14,8 @@ recording / image folder / live capture later
               SessionReducer
                     ↓
                SessionState
+                    │
+          SessionRulesetContext
               ↙    ↓     ↘
  strategy context  knowledge UI  route overlay service
 ```
@@ -26,12 +28,22 @@ Recognizers do not edit `SessionState`. The reducer enforces:
 - strategy-selection observations merge field by field into one reducer-owned snapshot;
 - `selection_row` never implies a runtime player slot;
 - expected participant count is explicit and never inferred from recognized rows;
-- final-team strategies are unique among participants who entered battle;
+- M0.1a snapshot completeness requires unique entered-player strategy values, without treating
+  that compatibility check as confirmed occupancy;
 - frozen strategies change only through explicit manual correction;
 - runtime exit and elimination never mutate historical strategy selection;
 - non-positive health marks elimination;
 - unknown evidence remains unknown;
 - map and ruleset identity are explicit.
+
+`SessionRulesetContext` is the sole authority for new ruleset-, revision-, locale-, and
+catalog-aware code. Legacy session ruleset/locale values are compatibility mirrors. If a context
+is supplied without those legacy values, model construction fills the mirrors; explicitly
+conflicting values are rejected.
+
+The context owns a monotonic generation. Future revision-dependent derived values must carry a
+dependency stamp containing ruleset, revision, locale, catalog version, and generation. M0.2a.1
+defines the stamp but does not create future occupancy, assignment, annotation, or coverage state.
 
 ## Strategy-selection subsystem
 
@@ -43,10 +55,14 @@ Selection-stage exits remain in the raw snapshot but are excluded from the defau
 query. The expected count may be one to four and is never inferred from recognition results.
 Identity completion, runtime survival, and runtime-slot association are separate concerns.
 
-The current `StrategySelectionSnapshot` in `SessionState` is authoritative regardless of whether
-its fields came from the selection screen, a future fallback panel, or manual correction. M0.1a
-does not implement recognition or runtime association. It remains an immutable historical account
-of selection for query purposes when a runtime player later leaves, disconnects, or is eliminated.
+The current `StrategySelectionSnapshot` in `SessionState` remains an immutable prebattle
+materialized view and historical query source. It is not the future runtime-slot annotation
+authority. M0.1a does not implement recognition, confirmed occupancy, or runtime association.
+
+Its legacy participant `strategy_id` may contain catalog-dependent normalized interpretation.
+M0.2a preserves that value and evidence but does not use it to create new revision-aware occupancy,
+assignment, or catalog-dependent confirmation. Raw visual observations and normalized strategy
+interpretation are separated in M0.2b.
 
 Future runtime monitoring is a separate observation stream. It will distinguish `normal` from
 `secret_core`, allow `round_number=None`, carry an optional wave number, and record status

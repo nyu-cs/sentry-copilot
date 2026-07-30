@@ -7,7 +7,10 @@
 - 左侧玩家头像是个性化头像，只能用于保持槽位连续性，**不能推断玩家策略**。
 - 玩家头像下方数字是血量；当前种子模型在血量 `<= 0` 时写入 legacy `ELIMINATED`。
   后续 runtime 业务模型会归一为 `INACTIVE + HP_DEPLETED`，并独立记录是否离开或观战。
-- 策略选择界面是主要采集时机；reducer 维护的最多四人策略快照是本局策略权威状态。
+- 策略选择界面是主要采集时机；reducer 维护的最多四人策略快照是 prebattle 物化视图
+  和历史查询来源，不是未来 runtime slot 标签的权威状态。
+- 当前目标玩法正式名称是“卫戍协议：盟约 下半”，其开放前期和更新后期是两个独立
+  revision；`SessionRulesetContext` 独立记录 ruleset、revision、locale 和 catalog version。
 - 单人或多人实际参战人数由 `expected_participant_count` 明确记录，不能按已识别行数猜测。
 - 策略快照保存历史选择；局内退出、断线或淘汰不会删除玩家或改变快照完整度。
 - `#XXXX` 以四位字符串保存并且只在本局唯一；策略选择行不等于局内左侧槽位。
@@ -47,6 +50,7 @@ Video / Image Folder / Live Window (later)
                 SessionReducer
                      ↓
                  SessionState
+            (SessionRulesetContext)
                   ↙       ↘
        knowledge panels   RouteOverlayService
                                  ↓
@@ -74,6 +78,11 @@ Video / Image Folder / Live Window (later)
 `TeamStrategyContext` 是历史策略上下文，不是当前有效队伍查询。未来 active-team
 查询会排除所有 `INACTIVE` 玩家，但不会修改历史策略快照。
 
+当前 `StrategySelectionParticipant.strategy_id` 是 M0.1a 兼容字段，可能已经包含旧
+catalog 的规范化解释。M0.2a 保留字段及其 evidence，但 revision-aware 新代码不得
+据此建立 occupancy、runtime assignment 或 catalog-dependent confirmation；正式迁移
+留给 M0.2b。
+
 ## 路径功能
 
 ```text
@@ -90,7 +99,7 @@ Video / Image Folder / Live Window (later)
 
 ```text
 src/sentry_copilot/
-  domain/      对局状态、最多四人策略快照、字段证据和归并规则
+  domain/      对局状态、ruleset context、最多四人策略快照、字段证据和归并规则
   player/      引导式 fallback 策略检查
   routes/      地图路线模型、筛选、投影和渲染
   vision/      地图识别与校准接口

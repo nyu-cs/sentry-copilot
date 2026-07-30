@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .enums import GameMode, Phase, PlayerStatus, Server, StageType
+from .identifiers import LocaleId, RulesetId, RulesetRevisionId
+from .rulesets import RulesetDependencyStamp, SessionRulesetContext
 from .strategy_selection import StrategySelectionSnapshot
 
 
@@ -36,18 +40,85 @@ class StageState(BaseModel):
 
 
 class SessionState(BaseModel):
-    model_config = ConfigDict(validate_assignment=True)
+    model_config = ConfigDict(validate_assignment=True, validate_default=True)
 
     session_id: str
     server: Server = Server.CN
     locale: str = "zh_CN"
-    ruleset_id: str = "unknown"
+    ruleset_id: RulesetId = "unknown"
+    ruleset_context: SessionRulesetContext | None = None
     mode: GameMode = GameMode.SOLO
     current_map_id: str | None = None
     stage: StageState = Field(default_factory=StageState)
     players: list[PlayerState] = Field(default_factory=list)
     strategy_selection: StrategySelectionSnapshot | None = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_legacy_ruleset_mirrors(cls, value: Any) -> Any:
+        if not isinstance(value, Mapping):
+            return value
+        raw_context = value.get("ruleset_context")
+        if raw_context is None:
+            return value
+        context = SessionRulesetContext.model_validate(raw_context)
+        payload = dict(value)
+        expected_mirrors = {
+            "ruleset_id": context.ruleset_id,
+            "locale": context.locale_id.value,
+        }
+        for field_name, expected_value in expected_mirrors.items():
+            if field_name in payload and payload[field_name] != expected_value:
+                raise ValueError(
+                    f"explicit legacy {field_name} does not match ruleset_context"
+                )
+            payload[field_name] = expected_value
+        payload["ruleset_context"] = context
+        return payload
+
+    @model_validator(mode="after")
+    def ruleset_context_is_consistent(self) -> SessionState:
+        if self.ruleset_context is not None:
+            if self.ruleset_id != self.ruleset_context.ruleset_id:
+                raise ValueError("legacy ruleset_id does not match ruleset_context")
+            if self.locale != self.ruleset_context.locale_id.value:
+                raise ValueError("legacy locale does not match ruleset_context")
+        if (
+            self.strategy_selection is not None
+            and self.strategy_selection.ruleset_id != self.effective_ruleset_id
+        ):
+            raise ValueError(
+                "strategy selection ruleset_id does not match the session ruleset context"
+            )
+        return self
+
+    @property
+    def effective_ruleset_id(self) -> RulesetId:
+        if self.ruleset_context is not None:
+            return self.ruleset_context.ruleset_id
+        return self.ruleset_id
+
+    @property
+    def effective_locale_id(self) -> LocaleId | None:
+        if self.ruleset_context is not None:
+            return self.ruleset_context.locale_id
+        try:
+            return LocaleId(self.locale)
+        except ValueError:
+            return None
+
+    @property
+    def effective_ruleset_revision_id(self) -> RulesetRevisionId | None:
+        if self.ruleset_context is None:
+            return None
+        return self.ruleset_context.ruleset_revision_id
+
+    @property
+    def ruleset_dependency_stamp(self) -> RulesetDependencyStamp | None:
+        if self.ruleset_context is None:
+            return None
+        return self.ruleset_context.dependency_stamp
 
     def player(self, slot: int) -> PlayerState:
         for player in self.players:

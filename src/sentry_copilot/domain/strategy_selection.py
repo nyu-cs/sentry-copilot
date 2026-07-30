@@ -15,7 +15,7 @@ from pydantic import (
     model_validator,
 )
 
-from .enums import EvidenceKind
+from .evidence import EvidenceRecord as EvidenceRecord
 
 PlayerTag = Annotated[str, StringConstraints(strict=True, pattern=r"^\d{4}$")]
 
@@ -42,17 +42,6 @@ class SnapshotCompleteness(StrEnum):
     PARTIAL = "partial"
     STRATEGIES_COMPLETE = "strategies_complete"
     FULLY_IDENTIFIED = "fully_identified"
-
-
-class EvidenceRecord(BaseModel):
-    """Evidence for one participant field or one whole-page observation."""
-
-    model_config = ConfigDict(frozen=True)
-
-    source: EvidenceKind
-    confidence: float = Field(ge=0.0, le=1.0)
-    observed_at: AwareDatetime
-    source_detail: str | None = None
 
 
 class FrozenEvidenceMap(Mapping[ParticipantField, EvidenceRecord]):

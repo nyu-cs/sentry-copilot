@@ -24,13 +24,55 @@
 - [x] Store the authoritative current snapshot in `SessionState`.
 - [x] Expose a team strategy query that does not read runtime-slot strategy caches.
 
-## M0.1b — Fallback inspection and runtime association
+## M0.2a — Revision-aware session and strategy catalog foundation
+
+### M0.2a.1 — SessionRulesetContext and normalized IDs
+
+- [x] Add normalized ruleset, revision, strategy, catalog-version, and locale identifiers.
+- [x] Add an immutable `SessionRulesetContext` with unknown-revision support and audit history.
+- [x] Add a locale-aware dependency stamp and monotonic context generation contract.
+- [x] Keep legacy session ruleset/locale fields as validated compatibility mirrors.
+- [x] Keep the M0.1a snapshot ruleset as a compatibility assertion, not a second authority.
+
+### M0.2a.2 — Revision-aware synthetic strategy catalog
+
+- [ ] Add ruleset, revision, strategy identity, revision profile, and locale resource models.
+- [ ] Keep both icon keys and asset references authoritative only on the revision profile.
+- [ ] Add revision-aware lookup and cross-record catalog validation.
+- [ ] Add synthetic strategies and icons without real game data.
+- [ ] Separate target support declarations from validated support records.
+- [ ] Reuse the existing PyYAML dependency and share one parser/validator between runtime loading
+  and repository validation.
+- [ ] Keep revision profiles minimal; localized descriptions carry human-readable effects, with no
+  structured effect language or recommendation fields in M0.2a.
+
+### M0.2a.3 — Revision selection and correction
+
+- [ ] Add manual and replay-metadata revision selection.
+- [ ] Support repeated explicit corrections with atomic immutable updates.
+- [ ] Keep one current revision and an auditable revision-change history.
+- [ ] Preserve raw evidence while invalidating revision-dependent derived results by dependency stamp.
+- [ ] Report catalog mismatch without silently switching revisions.
+
+## M0.2b — Confirmed strategy occupancy and prebattle migration
+
+- [ ] Separate observed strategy candidates from ready-confirmed selection.
+- [ ] Preserve ready-confirmed strategy-unknown as a valid state.
+- [ ] Enforce permanent unique occupancy across entered and post-selection-exited players.
+- [ ] Reposition snapshot completeness as prebattle data quality only.
+
+## M0.2c — Runtime roster and slot assignment
+
+- [ ] Add battle roster and runtime player slots.
+- [ ] Add slot-participant association and slot-strategy assignment.
+- [ ] Keep selection rows independent from runtime slots.
+
+## M0.2d — Manual fallback and conflict resolution
 
 - [ ] Redefine the top-left strategy panel workflow as fallback.
-- [ ] Allow unresolved fallback observations with a runtime slot and unique strategy.
-- [ ] Model runtime association candidates and explicit user confirmation.
-- [ ] Resolve by player tag, unique strategy, or manual binding without creating participants.
-- [ ] Review removal of legacy `PlayerState.strategy_id` only after association exists.
+- [ ] Allow unresolved fallback observations with explicit runtime context.
+- [ ] Resolve by player tag, unique legal strategy, direct panel, or user confirmation.
+- [ ] Do not create selection participants from fallback observations.
 
 ## M1 — Replay route overlay
 

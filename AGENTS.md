@@ -9,8 +9,9 @@ The repository must remain useful and testable while the game mode is unavailabl
 
 1. The left-side portrait is a personalized player avatar, not the selected strategy.
 2. Never derive or set `strategy_id` from `avatar_visual_key`.
-3. The strategy-selection screen is the primary strategy acquisition source. The reducer-owned
-   `StrategySelectionSnapshot` is the authoritative in-session strategy state.
+3. The strategy-selection screen is the primary prebattle acquisition source. The reducer-owned
+   `StrategySelectionSnapshot` is an immutable prebattle materialized view and historical query
+   source; it is not the future runtime-slot annotation authority.
 4. `player_tag` is a session-local four-digit string. It is not a global account identifier.
 5. `selection_row` is not a runtime player slot. Never bind them by order.
 6. A strategy snapshot contains at most four participants. Completeness is relative to an explicit
@@ -31,12 +32,22 @@ The repository must remain useful and testable while the game mode is unavailabl
 12. Store route points in normalized battlefield coordinates, never fixed screen pixels.
 13. Low-confidence map recognition or calibration must produce an explicit unknown result and no overlay.
 14. Do not add game assets, third-party recordings, or unlicensed screenshots to Git.
+15. `SessionRulesetContext` is the sole authority for new ruleset-, revision-, locale-, and
+    catalog-aware code. Legacy `SessionState.ruleset_id`, `SessionState.locale`, and snapshot
+    `ruleset_id` values are compatibility mirrors or assertions only.
+16. The target ruleset's confirmed Chinese name is `卫戍协议：盟约 下半`. Its pre-update and
+    post-update revisions are separate data states; do not confuse the name's `下半` with a
+    revision.
+17. A legacy `StrategySelectionParticipant.strategy_id` may already contain catalog-dependent
+    interpretation. Preserve its evidence, but do not use it for new occupancy, assignment, or
+    revision-dependent confirmation until the M0.2b migration.
 
 ## Module boundaries
 
 - `capture/`: produces frames only.
 - `vision/`: produces observations only; it must not mutate session state.
 - `domain/reducer.py`: applies events and domain invariants to `SessionState`.
+- `domain/rulesets.py`: owns immutable session ruleset/revision context and dependency identity.
 - `domain/strategy_selection.py`: owns the reducer-managed strategy snapshot for up to four players.
 - `player/`: owns user-guided fallback inspection workflows.
 - `routes/`: owns map/route schemas, selection, projection, and rendering.
