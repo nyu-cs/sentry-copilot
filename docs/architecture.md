@@ -45,6 +45,23 @@ The context owns a monotonic generation. Future revision-dependent derived value
 dependency stamp containing ruleset, revision, locale, catalog version, and generation. M0.2a.1
 defines the stamp but does not create future occupancy, assignment, annotation, or coverage state.
 
+## Strategy catalog subsystem
+
+Catalog data is immutable and revision-aware. `StrategyIdentity` owns only a normalized
+`strategy_id`. `RulesetStrategyProfile` owns the revision-specific availability, initial HP,
+`icon_visual_key`, and `icon_asset_reference`; it is the only current icon-mapping authority.
+`LocaleStrategyResource` owns revision- and locale-specific names, descriptions, OCR aliases, and
+visible text variants.
+
+Runtime loading and repository validation both call the same PyYAML parser and cross-record
+validator. Lookup is exact: locale resources require catalog version, revision, strategy, and
+locale, with no implicit fallback across revisions or languages. Asset references must be safe
+relative paths below the catalog directory.
+
+Support targets and validation evidence are catalog-registry metadata, not session state. A target
+declaration does not imply validated support, and passing the synthetic fixture validates only
+that fixture. M0.2a.2 does not create assignment, occupancy, recognition, or derived HP matching.
+
 ## Strategy-selection subsystem
 
 The strategy-selection screen is the primary acquisition source. Each participant has an opaque

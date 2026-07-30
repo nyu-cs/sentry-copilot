@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <title>SYNTHETIC post-update guard icon</title>
+  <rect width="96" height="96" rx="16" fill="#193d52"/>
+  <path d="M48 10 80 27v25c0 19-14 30-32 35-18-5-32-16-32-35V27Z" fill="#70d6bd"/>
+  <circle cx="48" cy="47" r="14" fill="#193d52"/>
+  <text x="48" y="52" text-anchor="middle" font-size="12" fill="#d5fff4">SYN</text>
+</svg>

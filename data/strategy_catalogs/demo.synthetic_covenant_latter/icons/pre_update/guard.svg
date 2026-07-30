@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <title>SYNTHETIC pre-update guard icon</title>
+  <rect width="96" height="96" rx="16" fill="#244d61"/>
+  <path d="M48 14 76 28v22c0 18-12 28-28 34C32 78 20 68 20 50V28Z" fill="#7fd1b9"/>
+  <text x="48" y="54" text-anchor="middle" font-size="13" fill="#102a36">SYN</text>
+</svg>

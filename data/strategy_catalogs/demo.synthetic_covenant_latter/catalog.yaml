@@ -1,0 +1,129 @@
+# Entire file is SYNTHETIC test data. It contains no real game strategy information.
+catalog_version: catalog.synthetic.v1
+is_synthetic: true
+
+rulesets:
+  - ruleset_id: demo.synthetic_covenant_latter
+    revision_ids:
+      - demo.synthetic_covenant_latter.pre_update
+      - demo.synthetic_covenant_latter.post_update
+    supported_locales:
+      - zh_CN
+      - ja_JP
+
+revisions:
+  - ruleset_revision_id: demo.synthetic_covenant_latter.pre_update
+    ruleset_id: demo.synthetic_covenant_latter
+    revision_order: 0
+  - ruleset_revision_id: demo.synthetic_covenant_latter.post_update
+    ruleset_id: demo.synthetic_covenant_latter
+    revision_order: 1
+
+strategy_identities:
+  - strategy_id: strategy.synthetic.guard
+  - strategy_id: strategy.synthetic.growth
+  - strategy_id: strategy.synthetic.support
+
+profiles:
+  - ruleset_revision_id: demo.synthetic_covenant_latter.pre_update
+    strategy_id: strategy.synthetic.guard
+    availability: available
+    initial_hp: 101
+    icon_visual_key: icon.synthetic.guard.pre_update
+    icon_asset_reference: icons/pre_update/guard.svg
+  - ruleset_revision_id: demo.synthetic_covenant_latter.pre_update
+    strategy_id: strategy.synthetic.growth
+    availability: available
+    initial_hp: 202
+    icon_visual_key: icon.synthetic.growth.pre_update
+    icon_asset_reference: icons/pre_update/growth.svg
+  - ruleset_revision_id: demo.synthetic_covenant_latter.post_update
+    strategy_id: strategy.synthetic.guard
+    availability: available
+    initial_hp: 111
+    icon_visual_key: icon.synthetic.guard.post_update
+    icon_asset_reference: icons/post_update/guard.svg
+  - ruleset_revision_id: demo.synthetic_covenant_latter.post_update
+    strategy_id: strategy.synthetic.growth
+    availability: available
+    initial_hp: 222
+    icon_visual_key: icon.synthetic.growth.post_update
+    icon_asset_reference: icons/post_update/growth.svg
+  - ruleset_revision_id: demo.synthetic_covenant_latter.post_update
+    strategy_id: strategy.synthetic.support
+    availability: available
+    initial_hp: 333
+    icon_visual_key: icon.synthetic.support.post_update
+    icon_asset_reference: icons/post_update/support.svg
+
+locale_resources:
+  - ruleset_revision_id: demo.synthetic_covenant_latter.pre_update
+    strategy_id: strategy.synthetic.guard
+    locale_id: zh_CN
+    name: 合成守备方案 α
+    description: 仅供合成测试的开放前期守备描述，不代表真实策略效果。
+    ocr_aliases: [合成守备甲]
+    visible_text_variants: [合成守备方案A]
+  - ruleset_revision_id: demo.synthetic_covenant_latter.pre_update
+    strategy_id: strategy.synthetic.guard
+    locale_id: ja_JP
+    name: 合成防衛プラン・アルファ
+    description: 合成テスト専用の更新前防衛説明で、実在する効果ではありません。
+    ocr_aliases: [合成防衛甲]
+    visible_text_variants: [合成防衛プランA]
+  - ruleset_revision_id: demo.synthetic_covenant_latter.pre_update
+    strategy_id: strategy.synthetic.growth
+    locale_id: zh_CN
+    name: 合成成长方案 β
+    description: 仅供合成测试的开放前期成长描述，不代表真实策略效果。
+    ocr_aliases: [合成成长乙]
+    visible_text_variants: [合成成长方案B]
+  - ruleset_revision_id: demo.synthetic_covenant_latter.pre_update
+    strategy_id: strategy.synthetic.growth
+    locale_id: ja_JP
+    name: 合成成長プラン・ベータ
+    description: 合成テスト専用の更新前成長説明で、実在する効果ではありません。
+    ocr_aliases: [合成成長乙]
+    visible_text_variants: [合成成長プランB]
+  - ruleset_revision_id: demo.synthetic_covenant_latter.post_update
+    strategy_id: strategy.synthetic.guard
+    locale_id: zh_CN
+    name: 合成守备方案 α
+    description: 仅供合成测试的更新后守备描述，刻意区别于开放前期。
+    ocr_aliases: [合成守备甲]
+    visible_text_variants: [合成守备方案A]
+  - ruleset_revision_id: demo.synthetic_covenant_latter.post_update
+    strategy_id: strategy.synthetic.guard
+    locale_id: ja_JP
+    name: 合成防衛プラン・アルファ
+    description: 合成テスト専用の更新後防衛説明で、更新前とは意図的に異なります。
+    ocr_aliases: [合成防衛甲]
+    visible_text_variants: [合成防衛プランA]
+  - ruleset_revision_id: demo.synthetic_covenant_latter.post_update
+    strategy_id: strategy.synthetic.growth
+    locale_id: zh_CN
+    name: 合成成长方案 β
+    description: 仅供合成测试的更新后成长描述，刻意区别于开放前期。
+    ocr_aliases: [合成成长乙]
+    visible_text_variants: [合成成长方案B]
+  - ruleset_revision_id: demo.synthetic_covenant_latter.post_update
+    strategy_id: strategy.synthetic.growth
+    locale_id: ja_JP
+    name: 合成成長プラン・ベータ
+    description: 合成テスト専用の更新後成長説明で、更新前とは意図的に異なります。
+    ocr_aliases: [合成成長乙]
+    visible_text_variants: [合成成長プランB]
+  - ruleset_revision_id: demo.synthetic_covenant_latter.post_update
+    strategy_id: strategy.synthetic.support
+    locale_id: zh_CN
+    name: 合成支援方案 γ
+    description: 仅供合成测试的更新后新增方案，不代表真实策略效果。
+    ocr_aliases: [合成支援丙]
+    visible_text_variants: [合成支援方案C]
+  - ruleset_revision_id: demo.synthetic_covenant_latter.post_update
+    strategy_id: strategy.synthetic.support
+    locale_id: ja_JP
+    name: 合成支援プラン・ガンマ
+    description: 合成テスト専用の更新後追加プランで、実在する効果ではありません。
+    ocr_aliases: [合成支援丙]
+    visible_text_variants: [合成支援プランC]

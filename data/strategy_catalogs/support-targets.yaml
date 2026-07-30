@@ -1,0 +1,18 @@
+# TARGET_SUPPORT declarations only. This file does not claim VALIDATED_SUPPORT.
+targets:
+  - ruleset_id: sentry_protocol.covenant_latter
+    ruleset_revision_id: sentry_protocol.covenant_latter.pre_update
+    locale_id: zh_CN
+  - ruleset_id: sentry_protocol.covenant_latter
+    ruleset_revision_id: sentry_protocol.covenant_latter.pre_update
+    locale_id: ja_JP
+  - ruleset_id: sentry_protocol.covenant_latter
+    ruleset_revision_id: sentry_protocol.covenant_latter.post_update
+    locale_id: zh_CN
+  - ruleset_id: sentry_protocol.covenant_latter
+    ruleset_revision_id: sentry_protocol.covenant_latter.post_update
+    locale_id: ja_JP
+
+# Individual records will be added only after their evidence exists. Records never auto-promote
+# a target declaration to validated support.
+validation_records: []

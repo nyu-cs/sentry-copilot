@@ -11,6 +11,8 @@
   和历史查询来源，不是未来 runtime slot 标签的权威状态。
 - 当前目标玩法正式名称是“卫戍协议：盟约 下半”，其开放前期和更新后期是两个独立
   revision；`SessionRulesetContext` 独立记录 ruleset、revision、locale 和 catalog version。
+- revision-aware catalog 按 `catalog version + revision + strategy + locale` 精确查询。
+  当前仓库只含明确标记的 synthetic catalog 与 synthetic SVG；它们不构成真实版本验收。
 - 单人或多人实际参战人数由 `expected_participant_count` 明确记录，不能按已识别行数猜测。
 - 策略快照保存历史选择；局内退出、断线或淘汰不会删除玩家或改变快照完整度。
 - `#XXXX` 以四位字符串保存并且只在本局唯一；策略选择行不等于局内左侧槽位。
@@ -28,6 +30,8 @@ python -m venv .venv
 pip install -e ".[dev]"
 pytest
 ruff check .
+python -m mypy
+python tools/validate_repository.py
 python -m sentry_copilot.cli validate-data --maps data/maps
 python -m sentry_copilot.cli demo-route-overlay \
   --map-file data/maps/demo.synthetic_training_map.yaml \
@@ -99,6 +103,7 @@ catalog 的规范化解释。M0.2a 保留字段及其 evidence，但 revision-aw
 
 ```text
 src/sentry_copilot/
+  catalogs/    revision-aware catalog 加载、精确查询和共享校验
   domain/      对局状态、ruleset context、最多四人策略快照、字段证据和归并规则
   player/      引导式 fallback 策略检查
   routes/      地图路线模型、筛选、投影和渲染
@@ -106,6 +111,7 @@ src/sentry_copilot/
   services/    模块编排
   capture/     回放帧来源
 data/maps/    版本化地图路线 YAML
+data/strategy_catalogs/  仅 synthetic catalog、synthetic locale 与 synthetic SVG
 data/replays/  录像标注元数据，不含视频
 docs/          架构、路线系统和 Codex 任务
 ```

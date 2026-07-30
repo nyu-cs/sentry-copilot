@@ -41,6 +41,11 @@ The repository must remain useful and testable while the game mode is unavailabl
 17. A legacy `StrategySelectionParticipant.strategy_id` may already contain catalog-dependent
     interpretation. Preserve its evidence, but do not use it for new occupancy, assignment, or
     revision-dependent confirmation until the M0.2b migration.
+18. `RulesetStrategyProfile` is the sole icon-mapping authority for a strategy in one revision.
+    `StrategyIdentity` stores only the normalized strategy ID, and locale resources never store
+    icons.
+19. A target-support declaration is not validated support. Synthetic catalog validation proves
+    only the synthetic fixture and must never be presented as validation of a real game revision.
 
 ## Module boundaries
 
@@ -48,6 +53,7 @@ The repository must remain useful and testable while the game mode is unavailabl
 - `vision/`: produces observations only; it must not mutate session state.
 - `domain/reducer.py`: applies events and domain invariants to `SessionState`.
 - `domain/rulesets.py`: owns immutable session ruleset/revision context and dependency identity.
+- `catalogs/`: loads exact revision-aware strategy and locale data and applies shared validation.
 - `domain/strategy_selection.py`: owns the reducer-managed strategy snapshot for up to four players.
 - `player/`: owns user-guided fallback inspection workflows.
 - `routes/`: owns map/route schemas, selection, projection, and rendering.
@@ -60,6 +66,7 @@ pip install -e ".[dev]"
 pytest
 ruff check .
 python -m mypy
+python tools/validate_repository.py
 python -m sentry_copilot.cli validate-data --maps data/maps
 python -m sentry_copilot.cli demo-route-overlay \
   --map-file data/maps/demo.synthetic_training_map.yaml \

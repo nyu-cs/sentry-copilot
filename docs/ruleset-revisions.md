@@ -90,6 +90,25 @@ again after a sequence such as early → late → early.
 M0.2a.1 defines this dependency identity but does not create assignment, annotation, occupancy, or
 other future caches.
 
+## Catalog lookup
+
+M0.2a.2 resolves strategy profiles with:
+
+```text
+catalog_version + ruleset_revision_id + strategy_id
+```
+
+It resolves localized text with:
+
+```text
+catalog_version + ruleset_revision_id + strategy_id + locale_id
+```
+
+There is no implicit fallback between pre-update and post-update revisions or between `zh_CN` and
+`ja_JP`. Revision profiles, not stable strategy identities or locale resources, own icon keys and
+asset references. Current public fixtures are synthetic and do not establish validated support for
+the four real target combinations.
+
 ## Legacy strategy interpretation
 
 `StrategySelectionParticipant.strategy_id` predates revision-aware catalogs. A stored value may be

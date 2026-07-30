@@ -66,24 +66,50 @@ Future revision-dependent values use this stamp:
 M0.2a.1 defines only the dependency identity. It does not create occupancy, assignment,
 annotation, coverage, or other future caches.
 
-## Minimal strategy definition
+## Revision-aware strategy catalog
+
+Stable identity is deliberately minimal:
+
+```json
+{"strategy_id": "strategy.synthetic.guard"}
+```
+
+Revision-specific facts live on the profile:
 
 ```json
 {
+  "ruleset_revision_id": "demo.synthetic_covenant_latter.pre_update",
   "strategy_id": "strategy.synthetic.guard",
-  "names": {
-    "zh_CN": "合成守备策略",
-    "ja_JP": "合成防衛戦略"
-  },
-  "ruleset_ids": ["demo.v1"],
-  "description": null,
-  "tags": []
+  "availability": "available",
+  "initial_hp": 101,
+  "icon_visual_key": "icon.synthetic.guard.pre_update",
+  "icon_asset_reference": "icons/pre_update/guard.svg"
 }
 ```
 
-Only synthetic definitions are used until real strategy rules are confirmed.
-In Python, `ruleset_ids` and `tags` are `frozenset[str]` so a validated definition cannot be
-mutated later. JSON continues to represent them as arrays.
+The profile is the only icon-mapping authority. `StrategyIdentity` has no icon field, and locale
+resources have no icon field. Human-readable resources use an exact revision/strategy/locale key:
+
+```json
+{
+  "ruleset_revision_id": "demo.synthetic_covenant_latter.pre_update",
+  "strategy_id": "strategy.synthetic.guard",
+  "locale_id": "zh_CN",
+  "name": "合成守备方案甲",
+  "description": "仅供合成测试的描述。",
+  "ocr_aliases": ["合成守备甲"],
+  "visible_text_variants": ["合成守备方案 A"]
+}
+```
+
+There is no implicit revision or locale fallback. The catalog loader validates references,
+uniqueness, required locale coverage, positive initial HP, safe relative assets, resolved files,
+and catalog-version identity before exposing any lookup.
+
+`SupportTarget` declares intended product support. `ValidationRecord` stores only a validation
+kind, outcome, aware timestamp, catalog version, and evidence references. Neither a target
+declaration nor a passing synthetic fixture means that a real ruleset/revision/locale combination
+has validated support. Support metadata is registry data and is not copied into `SessionState`.
 
 ## Strategy-selection participant
 

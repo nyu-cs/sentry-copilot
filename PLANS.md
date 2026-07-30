@@ -36,14 +36,14 @@
 
 ### M0.2a.2 — Revision-aware synthetic strategy catalog
 
-- [ ] Add ruleset, revision, strategy identity, revision profile, and locale resource models.
-- [ ] Keep both icon keys and asset references authoritative only on the revision profile.
-- [ ] Add revision-aware lookup and cross-record catalog validation.
-- [ ] Add synthetic strategies and icons without real game data.
-- [ ] Separate target support declarations from validated support records.
-- [ ] Reuse the existing PyYAML dependency and share one parser/validator between runtime loading
+- [x] Add ruleset, revision, strategy identity, revision profile, and locale resource models.
+- [x] Keep both icon keys and asset references authoritative only on the revision profile.
+- [x] Add revision-aware lookup and cross-record catalog validation.
+- [x] Add synthetic strategies and icons without real game data.
+- [x] Separate target support declarations from validated support records.
+- [x] Reuse the existing PyYAML dependency and share one parser/validator between runtime loading
   and repository validation.
-- [ ] Keep revision profiles minimal; localized descriptions carry human-readable effects, with no
+- [x] Keep revision profiles minimal; localized descriptions carry human-readable effects, with no
   structured effect language or recommendation fields in M0.2a.
 
 ### M0.2a.3 — Revision selection and correction
