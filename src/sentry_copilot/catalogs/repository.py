@@ -10,11 +10,14 @@ from pydantic import ValidationError
 from sentry_copilot.domain.identifiers import (
     CatalogVersion,
     LocaleId,
+    RulesetId,
     RulesetRevisionId,
     StrategyId,
 )
 from sentry_copilot.domain.strategy import (
     LocaleStrategyResource,
+    ProtocolRuleset,
+    RulesetRevision,
     RulesetStrategyProfile,
     StrategyAvailability,
     StrategyCatalog,
@@ -47,6 +50,8 @@ class StrategyCatalogRepository:
         versions = [entry.catalog.catalog_version for entry in catalogs]
         if len(versions) != len(set(versions)):
             raise CatalogLoadError("catalog_version values must be repository-unique")
+        for entry in catalogs:
+            validate_catalog(entry.catalog, asset_root=entry.asset_root)
         self._catalogs = catalogs
 
     @classmethod
@@ -67,6 +72,34 @@ class StrategyCatalogRepository:
             if entry.catalog.catalog_version == catalog_version:
                 return entry.catalog
         raise CatalogLookupError(f"unknown catalog_version: {catalog_version}")
+
+    def get_ruleset(
+        self,
+        *,
+        catalog_version: CatalogVersion,
+        ruleset_id: RulesetId,
+    ) -> ProtocolRuleset:
+        catalog = self.catalog(catalog_version)
+        for ruleset in catalog.rulesets:
+            if ruleset.ruleset_id == ruleset_id:
+                return ruleset
+        raise CatalogLookupError(
+            "ruleset not found for exact catalog/ruleset key"
+        )
+
+    def get_revision(
+        self,
+        *,
+        catalog_version: CatalogVersion,
+        ruleset_revision_id: RulesetRevisionId,
+    ) -> RulesetRevision:
+        catalog = self.catalog(catalog_version)
+        for revision in catalog.revisions:
+            if revision.ruleset_revision_id == ruleset_revision_id:
+                return revision
+        raise CatalogLookupError(
+            "revision not found for exact catalog/revision key"
+        )
 
     def get_profile(
         self,

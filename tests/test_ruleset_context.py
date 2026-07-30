@@ -46,6 +46,7 @@ def selected_context(
     locale_id: LocaleId = LocaleId.ZH_CN,
     generation: int = 1,
     history: tuple[RevisionSelectionRecord, ...] = (),
+    selected_at: datetime = NOW,
 ) -> SessionRulesetContext:
     return SessionRulesetContext(
         ruleset_id=RULESET_ID,
@@ -53,7 +54,7 @@ def selected_context(
         locale_id=locale_id,
         catalog_version="catalog.synthetic.v1",
         selection_method=RevisionSelectionMethod.MANUAL,
-        selected_at=NOW,
+        selected_at=selected_at,
         selection_evidence=(observed_evidence(),),
         revision_history=history,
         context_generation=generation,
@@ -101,12 +102,79 @@ def test_revision_history_contains_every_replaced_generation_in_order() -> None:
         revision_id=LATE_REVISION_ID,
         generation=2,
         history=(first_selection,),
+        selected_at=NOW + timedelta(minutes=1),
     )
     assert context.context_generation == 2
     assert context.revision_history == (first_selection,)
 
     with pytest.raises(ValidationError, match="each replaced context generation"):
         selected_context(revision_id=LATE_REVISION_ID, generation=2)
+
+
+def test_unknown_revision_can_be_preserved_as_generation_zero_history() -> None:
+    unknown_record = RevisionSelectionRecord(
+        ruleset_revision_id=None,
+        catalog_version=None,
+        selection_method=RevisionSelectionMethod.UNKNOWN,
+        selected_at=NOW,
+        replaced_at=NOW + timedelta(minutes=1),
+        context_generation=0,
+        evidence=(observed_evidence(),),
+        reason="synthetic revision pending",
+    )
+    context = selected_context(
+        generation=1,
+        history=(unknown_record,),
+        selected_at=NOW + timedelta(minutes=1),
+    )
+    assert context.revision_history == (unknown_record,)
+    assert SessionRulesetContext.model_validate_json(context.model_dump_json()) == context
+
+
+def test_revision_history_times_are_aware_and_ordered() -> None:
+    with pytest.raises(ValidationError, match="timezone"):
+        RevisionSelectionRecord(
+            ruleset_revision_id=EARLY_REVISION_ID,
+            catalog_version="catalog.synthetic.v1",
+            selection_method=RevisionSelectionMethod.MANUAL,
+            selected_at=datetime(2026, 1, 1),
+            replaced_at=NOW,
+            context_generation=1,
+        )
+    chronological_record = RevisionSelectionRecord(
+        ruleset_revision_id=EARLY_REVISION_ID,
+        catalog_version="catalog.synthetic.v1",
+        selection_method=RevisionSelectionMethod.MANUAL,
+        selected_at=NOW,
+        replaced_at=NOW + timedelta(minutes=2),
+        context_generation=1,
+    )
+    with pytest.raises(ValidationError, match="chronological"):
+        selected_context(
+            revision_id=LATE_REVISION_ID,
+            generation=2,
+            history=(chronological_record,),
+            selected_at=NOW + timedelta(minutes=1),
+        )
+    with pytest.raises(ValidationError, match="cannot precede"):
+        RevisionSelectionRecord(
+            ruleset_revision_id=EARLY_REVISION_ID,
+            catalog_version="catalog.synthetic.v1",
+            selection_method=RevisionSelectionMethod.MANUAL,
+            selected_at=NOW + timedelta(minutes=1),
+            replaced_at=NOW,
+            context_generation=1,
+        )
+
+
+def test_current_selection_reason_cannot_be_blank() -> None:
+    with pytest.raises(ValidationError, match="reason"):
+        SessionRulesetContext.model_validate(
+            {
+                **selected_context().model_dump(),
+                "selection_reason": " ",
+            }
+        )
 
 
 def test_dependency_stamp_includes_locale_and_generation() -> None:

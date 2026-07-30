@@ -90,6 +90,29 @@ again after a sequence such as early → late → early.
 M0.2a.1 defines this dependency identity but does not create assignment, annotation, occupancy, or
 other future caches.
 
+## Explicit selection and correction
+
+M0.2a.3 supports two initial sources only:
+
+- explicit manual selection;
+- explicit replay metadata.
+
+It does not infer revision from locale, file timestamps, upload dates, system time, or screen
+content. If no context exists, initial selection creates generation one with empty history. If a
+generation-zero unknown context exists, initial selection preserves it as the first history
+record. Once concrete, further changes require explicit correction.
+
+Correction keeps ruleset and locale fixed. It may change revision, or explicitly select a new
+validated catalog version for the same revision. Every successful correction appends the complete
+old selection—including method, selection/replacement times, evidence, reason, and generation—and
+increments generation. There is no correction-count limit. Exact duplicates and mismatches are
+typed rejections and do not change state.
+
+The command service validates the target against `StrategyCatalogRepository`; the generic reducer
+receives only accepted facts. Failure never partially updates mirrors, history, prebattle snapshot,
+or evidence. The current dependency stamp is the complete invalidation contract until future
+revision-dependent objects exist.
+
 ## Catalog lookup
 
 M0.2a.2 resolves strategy profiles with:

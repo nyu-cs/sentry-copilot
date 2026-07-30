@@ -62,6 +62,29 @@ Support targets and validation evidence are catalog-registry metadata, not sessi
 declaration does not imply validated support, and passing the synthetic fixture validates only
 that fixture. M0.2a.2 does not create assignment, occupancy, recognition, or derived HP matching.
 
+## Ruleset context operations
+
+Ruleset selection and correction use an application boundary:
+
+```text
+explicit command
+→ RulesetContextService validates session and exact catalog target
+→ accepted typed event
+→ generic reducer builds a complete candidate SessionState
+→ whole-state validation
+→ new state returned
+```
+
+The reducer does not receive a catalog repository and never reads YAML or the file system. Initial
+selection is manual or imported from explicit replay metadata; automatic detection is not part of
+M0.2a.3. A concrete context requires explicit correction, while an unknown generation-zero
+context uses initial selection and is preserved as generation-zero history.
+
+Each successful replacement appends the old selection, increments `context_generation`, and
+atomically synchronizes legacy mirrors. Exact duplicate correction is a typed rejection. Mismatch
+checks never mutate or silently switch the session. Raw observations, field evidence, and the
+prebattle snapshot remain revision-independent historical data.
+
 ## Strategy-selection subsystem
 
 The strategy-selection screen is the primary acquisition source. Each participant has an opaque

@@ -46,6 +46,9 @@ The repository must remain useful and testable while the game mode is unavailabl
     icons.
 19. A target-support declaration is not validated support. Synthetic catalog validation proves
     only the synthetic fixture and must never be presented as validation of a real game revision.
+20. Ruleset revision selection and correction are explicit command-service operations. The
+    generic reducer accepts only catalog-validated facts and must never load YAML, access the file
+    system, infer a revision, or silently switch contexts.
 
 ## Module boundaries
 
@@ -54,6 +57,8 @@ The repository must remain useful and testable while the game mode is unavailabl
 - `domain/reducer.py`: applies events and domain invariants to `SessionState`.
 - `domain/rulesets.py`: owns immutable session ruleset/revision context and dependency identity.
 - `catalogs/`: loads exact revision-aware strategy and locale data and applies shared validation.
+- `services/ruleset_context_service.py`: validates explicit context commands against catalogs
+  before dispatching accepted facts to the reducer.
 - `domain/strategy_selection.py`: owns the reducer-managed strategy snapshot for up to four players.
 - `player/`: owns user-guided fallback inspection workflows.
 - `routes/`: owns map/route schemas, selection, projection, and rendering.

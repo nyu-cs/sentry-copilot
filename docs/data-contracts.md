@@ -33,6 +33,7 @@ New revision-aware code reads one immutable `SessionRulesetContext`:
   "selection_method": "manual",
   "selected_at": "2026-01-01T00:00:00Z",
   "selection_evidence": [],
+  "selection_reason": "synthetic explicit selection",
   "revision_history": [],
   "context_generation": 1
 }
@@ -43,8 +44,9 @@ The normalized ruleset corresponds to the confirmed Chinese display name
 pre-update and post-update catalog revisions.
 
 An unknown revision uses `null` for revision and catalog version, `unknown` selection method, and
-generation zero. A selected revision requires a catalog version, a non-unknown selection method,
-and a positive generation. All selection and replacement times must include a timezone.
+generation zero. When replaced, it is retained as a generation-zero history record. A selected
+revision requires a catalog version, a non-unknown selection method, and a positive generation.
+All selection and replacement times must include a timezone, and `replaced_at >= selected_at`.
 
 `SessionState.ruleset_id` and `SessionState.locale` remain compatibility mirrors. Construction
 fills omitted mirrors from context and rejects explicitly conflicting mirrors. Without a context,
@@ -65,6 +67,17 @@ Future revision-dependent values use this stamp:
 
 M0.2a.1 defines only the dependency identity. It does not create occupancy, assignment,
 annotation, coverage, or other future caches.
+
+Explicit operations use `SelectSessionRulesetContext` or `CorrectSessionRulesetRevision`. The
+application service verifies the exact catalog, ruleset, revision, and locale before creating
+`SessionRulesetContextSelected` or `SessionRulesetRevisionCorrected`. The reducer applies only
+these accepted facts. A complete duplicate is rejected without adding history or generation;
+same revision with a different validated catalog version is an explicit correction.
+
+`get_session_ruleset_context(state)` and
+`get_current_ruleset_dependency_stamp(state)` are read-only queries. The latter returns `null`
+while revision is unknown. M0.2a.3 creates no occupancy, assignment, annotation, coverage, or
+invalidation ledger.
 
 ## Revision-aware strategy catalog
 

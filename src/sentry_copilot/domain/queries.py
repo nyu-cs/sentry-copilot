@@ -3,6 +3,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 
 from .models import SessionState
+from .rulesets import RulesetDependencyStamp, SessionRulesetContext
 from .strategy_selection import SelectionOutcome, SnapshotCompleteness
 
 
@@ -29,6 +30,22 @@ class TeamStrategyContext(BaseModel):
             for participant in self.participants
             if participant.strategy_id is not None
         ]
+
+
+def get_session_ruleset_context(
+    state: SessionState,
+) -> SessionRulesetContext | None:
+    """Return the immutable current ruleset context without changing state."""
+
+    return state.ruleset_context
+
+
+def get_current_ruleset_dependency_stamp(
+    state: SessionState,
+) -> RulesetDependencyStamp | None:
+    """Return the exact dependency identity for current revision-aware data."""
+
+    return state.ruleset_dependency_stamp
 
 
 def build_team_strategy_context(state: SessionState) -> TeamStrategyContext | None:

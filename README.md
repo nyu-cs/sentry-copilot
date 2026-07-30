@@ -13,6 +13,8 @@
   revision；`SessionRulesetContext` 独立记录 ruleset、revision、locale 和 catalog version。
 - revision-aware catalog 按 `catalog version + revision + strategy + locale` 精确查询。
   当前仓库只含明确标记的 synthetic catalog 与 synthetic SVG；它们不构成真实版本验收。
+- ruleset revision 只能通过显式手动选择、明确 replay metadata 或显式 correction 更新；
+  每次成功更新递增 generation 并保存历史，mismatch 不会触发静默切换。
 - 单人或多人实际参战人数由 `expected_participant_count` 明确记录，不能按已识别行数猜测。
 - 策略快照保存历史选择；局内退出、断线或淘汰不会删除玩家或改变快照完整度。
 - `#XXXX` 以四位字符串保存并且只在本局唯一；策略选择行不等于局内左侧槽位。

@@ -1,17 +1,16 @@
 # 下一条 Codex 任务门禁
 
-M0.2a.2“Revision-aware synthetic strategy catalog”完成后，先审查独立提交和全部质量检查。
+M0.2a.3“Revision selection、显式更正与失效契约”完成后，先审查独立提交和全部质量检查。
 
-未经明确批准，不要继续 M0.2a.3、M0.2b 或路线 M1。
+未经明确批准，不要继续 M0.2b、M0.2c、M0.2d 或路线 M1。
 
-下一增量 M0.2a.3 只包含：
+下一增量 M0.2b 只考虑：
 
-- 手动选择与 replay metadata 导入 revision；
-- 同一 session 内可重复、原子、可审计的显式 revision correction；
-- 单一当前 revision 与完整 revision change history；
-- mismatch 报告，不静默切换 revision；
-- revision-independent evidence 保留；
-- 通过 dependency stamp 表达未来 revision-dependent derived state 的失效。
+- observed strategy candidate 与 ready-confirmed selection 分离；
+- 准备勾代表不可撤销的正式选择；
+- ready 已确认但具体策略未知；
+- confirmed strategy occupancy 在本局单向占用且不因离场释放；
+- 将 legacy snapshot `strategy_id` 从 catalog-dependent interpretation 迁移为明确分层。
 
-M0.2a.3 不得创建尚不存在的 occupancy、assignment、annotation 或 coverage 缓存，也不
-包含真实 catalog、真实图标、PRTS 抓取、OCR、OpenCV、capture、桌面 UI 或自动点击。
+在批准详细计划前，不得实现 occupancy、准备勾 reducer、BattleRoster、runtime slots、
+assignment、annotation、OCR、OpenCV、capture、桌面 UI、自动点击、真实 catalog 或路线 M1。

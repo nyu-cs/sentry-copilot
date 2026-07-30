@@ -12,12 +12,16 @@ from .events import (
     PlayerHealthObserved,
     PlayerStrategyObserved,
     SessionEvent,
+    SessionRulesetContextSelected,
+    SessionRulesetRevisionCorrected,
     StageObserved,
     StrategySelectionSnapshotCorrected,
     StrategySelectionSnapshotFrozen,
     StrategySelectionSnapshotObserved,
 )
+from .identifiers import LocaleId, RulesetId
 from .models import SessionState
+from .rulesets import RevisionSelectionRecord, SessionRulesetContext
 from .strategy_selection import (
     EvidenceRecord,
     ParticipantField,
@@ -48,9 +52,25 @@ _PARTICIPANT_ATTRIBUTES = {
     ParticipantField.SELECTION_OUTCOME: "selection_outcome",
 }
 
+EvidenceEvent = (
+    PlayerAvatarObserved
+    | PlayerHealthObserved
+    | PlayerStrategyObserved
+    | MapObserved
+    | StageObserved
+    | StrategySelectionSnapshotObserved
+    | StrategySelectionSnapshotFrozen
+    | StrategySelectionSnapshotCorrected
+)
+
 
 def reduce_session(state: SessionState, event: SessionEvent) -> SessionState:
     """Apply one event while enforcing domain invariants."""
+
+    if isinstance(event, SessionRulesetContextSelected):
+        return _apply_ruleset_context_selection(state, event)
+    if isinstance(event, SessionRulesetRevisionCorrected):
+        return _apply_ruleset_revision_correction(state, event)
 
     next_state = state.model_copy(deep=True)
 
@@ -121,13 +141,170 @@ def _require_snapshot_context(state: SessionState, session_id: str, ruleset_id: 
         raise InvalidObservationError("strategy snapshot ruleset_id does not match SessionState")
 
 
-def _event_evidence(event: SessionEvent) -> EvidenceRecord:
+def _event_evidence(event: EvidenceEvent) -> EvidenceRecord:
     return EvidenceRecord(
         source=event.evidence,
         confidence=event.confidence,
         observed_at=event.timestamp,
         source_detail=event.type,
     )
+
+
+def _apply_ruleset_context_selection(
+    state: SessionState,
+    event: SessionRulesetContextSelected,
+) -> SessionState:
+    _require_ruleset_event_session(state, event.session_id)
+    current = state.ruleset_context
+    if current is not None and current.ruleset_revision_id is not None:
+        raise InvalidObservationError(
+            "initial ruleset context selection cannot replace a concrete revision"
+        )
+
+    history: tuple[RevisionSelectionRecord, ...] = ()
+    generation = 1
+    if current is not None:
+        _require_unchanged_ruleset_and_locale(
+            current,
+            ruleset_id=event.ruleset_id,
+            locale_id=event.locale_id,
+        )
+        _require_non_decreasing_selection_time(current, event.selected_at)
+        history = (
+            *current.revision_history,
+            _history_record(current, replaced_at=event.selected_at),
+        )
+        generation = current.context_generation + 1
+
+    return _rebuild_state_with_ruleset_context(
+        state,
+        context=SessionRulesetContext(
+            ruleset_id=event.ruleset_id,
+            ruleset_revision_id=event.ruleset_revision_id,
+            locale_id=event.locale_id,
+            catalog_version=event.catalog_version,
+            selection_method=event.selection_method,
+            selected_at=event.selected_at,
+            selection_evidence=event.selection_evidence,
+            selection_reason=event.reason,
+            revision_history=history,
+            context_generation=generation,
+        ),
+        updated_at=event.selected_at,
+    )
+
+
+def _apply_ruleset_revision_correction(
+    state: SessionState,
+    event: SessionRulesetRevisionCorrected,
+) -> SessionState:
+    _require_ruleset_event_session(state, event.session_id)
+    current = state.ruleset_context
+    if current is None or current.ruleset_revision_id is None:
+        raise InvalidObservationError(
+            "ruleset revision correction requires a concrete current context"
+        )
+    _require_unchanged_ruleset_and_locale(
+        current,
+        ruleset_id=event.ruleset_id,
+        locale_id=event.locale_id,
+    )
+    if (
+        current.ruleset_revision_id == event.ruleset_revision_id
+        and current.catalog_version == event.catalog_version
+    ):
+        raise InvalidObservationError("identical ruleset context cannot be corrected")
+    _require_non_decreasing_selection_time(current, event.selected_at)
+
+    context = SessionRulesetContext(
+        ruleset_id=event.ruleset_id,
+        ruleset_revision_id=event.ruleset_revision_id,
+        locale_id=event.locale_id,
+        catalog_version=event.catalog_version,
+        selection_method=event.selection_method,
+        selected_at=event.selected_at,
+        selection_evidence=event.selection_evidence,
+        selection_reason=event.reason,
+        revision_history=(
+            *current.revision_history,
+            _history_record(current, replaced_at=event.selected_at),
+        ),
+        context_generation=current.context_generation + 1,
+    )
+    return _rebuild_state_with_ruleset_context(
+        state,
+        context=context,
+        updated_at=event.selected_at,
+    )
+
+
+def _require_ruleset_event_session(state: SessionState, session_id: str) -> None:
+    if state.session_id != session_id:
+        raise InvalidObservationError(
+            "ruleset context event session_id does not match SessionState"
+        )
+
+
+def _require_unchanged_ruleset_and_locale(
+    current: SessionRulesetContext,
+    *,
+    ruleset_id: RulesetId,
+    locale_id: LocaleId,
+) -> None:
+    if current.ruleset_id != ruleset_id:
+        raise InvalidObservationError("ruleset context event cannot change ruleset_id")
+    if current.locale_id != locale_id:
+        raise InvalidObservationError("ruleset context event cannot change locale_id")
+
+
+def _require_non_decreasing_selection_time(
+    current: SessionRulesetContext,
+    selected_at: datetime,
+) -> None:
+    if selected_at < current.selected_at:
+        raise InvalidObservationError(
+            "ruleset context selected_at cannot precede the current selection"
+        )
+
+
+def _history_record(
+    current: SessionRulesetContext,
+    *,
+    replaced_at: datetime,
+) -> RevisionSelectionRecord:
+    return RevisionSelectionRecord(
+        ruleset_revision_id=current.ruleset_revision_id,
+        catalog_version=current.catalog_version,
+        selection_method=current.selection_method,
+        selected_at=current.selected_at,
+        replaced_at=replaced_at,
+        context_generation=current.context_generation,
+        evidence=current.selection_evidence,
+        reason=current.selection_reason,
+    )
+
+
+def _rebuild_state_with_ruleset_context(
+    state: SessionState,
+    *,
+    context: SessionRulesetContext,
+    updated_at: datetime,
+) -> SessionState:
+    payload = state.model_dump()
+    payload.update(
+        {
+            "ruleset_context": context,
+            "ruleset_id": context.ruleset_id,
+            "locale": context.locale_id.value,
+            "updated_at": updated_at.astimezone(UTC),
+        }
+    )
+    try:
+        return SessionState.model_validate(payload)
+    except ValidationError as exc:
+        raise InvalidObservationError(
+            "ruleset context event violates SessionState invariants"
+        ) from exc
 
 
 def _require_non_manual_snapshot_observation(

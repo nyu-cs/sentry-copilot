@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from .evidence import EvidenceRecord
 from .identifiers import (
@@ -27,12 +34,12 @@ class RevisionSelectionRecord(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    ruleset_revision_id: RulesetRevisionId
-    catalog_version: CatalogVersion
+    ruleset_revision_id: RulesetRevisionId | None = None
+    catalog_version: CatalogVersion | None = None
     selection_method: RevisionSelectionMethod
     selected_at: AwareDatetime
     replaced_at: AwareDatetime
-    context_generation: int = Field(ge=1)
+    context_generation: int = Field(ge=0)
     evidence: tuple[EvidenceRecord, ...] = Field(default_factory=tuple)
     reason: str | None = None
 
@@ -75,8 +82,16 @@ class SessionRulesetContext(BaseModel):
     selection_method: RevisionSelectionMethod = RevisionSelectionMethod.UNKNOWN
     selected_at: AwareDatetime
     selection_evidence: tuple[EvidenceRecord, ...] = Field(default_factory=tuple)
+    selection_reason: str | None = None
     revision_history: tuple[RevisionSelectionRecord, ...] = Field(default_factory=tuple)
     context_generation: int = Field(default=0, ge=0)
+
+    @field_validator("selection_reason")
+    @classmethod
+    def selection_reason_must_not_be_blank(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("revision selection reason cannot be blank")
+        return value
 
     @model_validator(mode="after")
     def current_selection_is_internally_consistent(self) -> SessionRulesetContext:
@@ -89,11 +104,32 @@ class SessionRulesetContext(BaseModel):
         history_generations = tuple(
             record.context_generation for record in self.revision_history
         )
-        expected_generations = tuple(range(1, self.context_generation))
-        if history_generations != expected_generations:
+        selected_from_no_context = tuple(range(1, self.context_generation))
+        selected_from_unknown_context = tuple(range(0, self.context_generation))
+        if history_generations not in (
+            selected_from_no_context,
+            selected_from_unknown_context,
+        ):
             raise ValueError(
                 "revision history must contain each replaced context generation in order"
             )
+        next_selection_times = (
+            (
+                *(record.selected_at for record in self.revision_history[1:]),
+                self.selected_at,
+            )
+            if self.revision_history
+            else ()
+        )
+        if any(
+            record.replaced_at > next_selected_at
+            for record, next_selected_at in zip(
+                self.revision_history,
+                next_selection_times,
+                strict=True,
+            )
+        ):
+            raise ValueError("revision history timestamps must be chronological")
         return self
 
     @property

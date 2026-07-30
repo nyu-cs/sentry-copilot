@@ -48,11 +48,11 @@
 
 ### M0.2a.3 — Revision selection and correction
 
-- [ ] Add manual and replay-metadata revision selection.
-- [ ] Support repeated explicit corrections with atomic immutable updates.
-- [ ] Keep one current revision and an auditable revision-change history.
-- [ ] Preserve raw evidence while invalidating revision-dependent derived results by dependency stamp.
-- [ ] Report catalog mismatch without silently switching revisions.
+- [x] Add manual and replay-metadata revision selection.
+- [x] Support repeated explicit corrections with atomic immutable updates.
+- [x] Keep one current revision and an auditable revision-change history.
+- [x] Preserve raw evidence while invalidating revision-dependent derived results by dependency stamp.
+- [x] Report catalog mismatch without silently switching revisions.
 
 ## M0.2b — Confirmed strategy occupancy and prebattle migration
 
