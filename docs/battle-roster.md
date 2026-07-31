@@ -83,7 +83,8 @@ unchanged.
 
 ## Future slot and manual-panel boundary
 
-M0.2c.1 creates no runtime slot authority. The approved future fallback chain is:
+M0.2c.1 creates no runtime slot authority. M0.2c.2 subsequently adds the first two association
+steps of the approved fallback chain, while strategy assignment remains deferred:
 
 ```text
 runtime slot

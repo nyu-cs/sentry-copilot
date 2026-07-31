@@ -129,6 +129,17 @@ M0.2c.1 只把可靠观察到正常参与状态的玩家派生为 `BattleRoster`
 读不到 tag 时保持 unresolved 或请求人工确认；不能建立 slot-only 策略权威，也不实现
 `DIRECT_SLOT_STRATEGY_PANEL`。所有视角切换和面板操作仍由用户手动完成。
 
+M0.2c.2 将局内玩家栏建模为带 layout epoch 的不可变 observation history。`visual_index`
+只是当前画面位置；小幅可靠移动可以沿用同一 slot ID，无法证明连续性的重排必须创建新
+layout 和新 slot，且不继承旧 association。当前 `BattleRuntimeSlot` 由有效 observation
+查询派生，不在 `SessionState` 中保存第二份 current-slot 镜像。
+
+slot-participant association 只允许指向 `BattleRoster` confirmed entrants，basis 仅有
+`DIRECT_PLAYER_TAG`、`DIRECT_SELF_MARKER` 和 `MANUAL_CONFIRMATION`。同一 slot 声称多个
+participant，或同一 participant 被多个 current slots 声称，都会保留全部证据并形成
+显式 conflict，不按最新记录或最高置信度选胜者。association 不依赖 strategy catalog
+revision；M0.2c.2 尚未实现任何 slot-strategy assignment 或策略面板识别流程。
+
 `StrategySelectionSnapshot.frozen` 只关闭普通 legacy snapshot 合并，不关闭独立的
 prebattle evidence、ready correction、commitment、direct/manual identification 或迁移。
 revision correction 保留全部原始证据、commitment、claim 与迁移历史；catalog-derived

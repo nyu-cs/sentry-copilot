@@ -10,11 +10,25 @@ from .battle_roster import (
     battle_entry_status,
     derive_battle_roster,
 )
-from .identifiers import EvidenceId, SessionId, SessionParticipantId
+from .identifiers import (
+    EvidenceId,
+    RuntimeSlotId,
+    SessionId,
+    SessionParticipantId,
+)
 from .models import SessionState
 from .prebattle import PrebattleEvidenceLedger
 from .prebattle_migration import LegacyPrebattleMigrationState
 from .rulesets import RulesetDependencyStamp, SessionRulesetContext
+from .runtime_slots import (
+    BattleRuntimeSlot,
+    EffectiveSlotParticipantAssociation,
+    RuntimeSlotView,
+    SlotAssociationConflict,
+    SlotAssociationView,
+    derive_runtime_slot_view,
+    derive_slot_association_view,
+)
 from .strategy_commitment import (
     ParticipantCommitmentLevel,
     ReadyConfirmedCommitment,
@@ -106,6 +120,92 @@ def get_active_battle_participants(
         participant
         for participant in build_battle_roster(state).participants
         if participant.participation_status == PlayerParticipationStatus.ACTIVE
+    )
+
+
+def get_slot_association_view(state: SessionState) -> SlotAssociationView:
+    """Derive current-layout associations without catalog or legacy slot caches."""
+
+    snapshot = state.strategy_selection
+    player_tags = {
+        participant.session_player_id: participant.player_tag
+        for participant in snapshot.participants
+        if participant.player_tag is not None
+    } if snapshot is not None else {}
+    self_participant_id = next(
+        (
+            participant.session_player_id
+            for participant in snapshot.participants
+            if participant.is_self is True
+        ),
+        None,
+    ) if snapshot is not None else None
+    roster = build_battle_roster(state)
+    return derive_slot_association_view(
+        session_id=state.session_id,
+        ledger=state.runtime_slot_evidence,
+        association_state=state.slot_associations,
+        entrant_ids=frozenset(
+            participant.session_player_id for participant in roster.participants
+        ),
+        player_tags=player_tags,
+        self_participant_id=self_participant_id,
+    )
+
+
+def build_current_runtime_slots(state: SessionState) -> RuntimeSlotView:
+    """Derive current visible slots; layout epochs never inherit associations."""
+
+    association_view = get_slot_association_view(state)
+    return derive_runtime_slot_view(
+        session_id=state.session_id,
+        ledger=state.runtime_slot_evidence,
+        associated_slot_ids=frozenset(
+            association.runtime_slot_id
+            for association in association_view.associations
+        ),
+    )
+
+
+def get_runtime_slot(
+    state: SessionState,
+    runtime_slot_id: RuntimeSlotId,
+) -> BattleRuntimeSlot | None:
+    """Return one slot only from the current unambiguous layout epoch."""
+
+    return build_current_runtime_slots(state).get(runtime_slot_id)
+
+
+def get_effective_slot_participant_association(
+    state: SessionState,
+    runtime_slot_id: RuntimeSlotId,
+) -> EffectiveSlotParticipantAssociation | None:
+    """Return one association only when all strong claims are uncontested."""
+
+    return get_slot_association_view(state).for_slot(runtime_slot_id)
+
+
+def get_uncontested_slot_participant_associations(
+    state: SessionState,
+) -> tuple[EffectiveSlotParticipantAssociation, ...]:
+    return get_slot_association_view(state).associations
+
+
+def get_slot_association_conflicts(
+    state: SessionState,
+) -> tuple[SlotAssociationConflict, ...]:
+    return get_slot_association_view(state).conflicts
+
+
+def get_unresolved_runtime_slots(
+    state: SessionState,
+) -> tuple[BattleRuntimeSlot, ...]:
+    """Return current slots lacking an uncontested participant; create no task/UI state."""
+
+    return tuple(
+        slot
+        for slot in build_current_runtime_slots(state).slots
+        if not slot.has_effective_association
     )
 
 

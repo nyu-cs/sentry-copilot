@@ -224,6 +224,13 @@ Only then may participant-bound direct panel evidence strengthen strategy identi
 derive assignment through uncontested occupancy. There is no slot-only panel authority or
 `DIRECT_SLOT_STRATEGY_PANEL` bypass.
 
+M0.2c.2 now persists immutable runtime-slot observation and association-claim history. Current
+`BattleRuntimeSlot` and association/conflict views remain query-derived. Slot identity is scoped to
+one explicit layout epoch; visual index is never identity, and an uncertain reorder starts a new
+layout without inheriting old claims. Only current confirmed battle entrants may be associated.
+Tag, self marker, and manual confirmation are the only accepted bases; legacy slot position,
+selection row, avatar, HP, and strategy fields are isolated from this layer.
+
 ## Route subsystem boundaries
 
 1. **Map recognition**: identify `map_id`.

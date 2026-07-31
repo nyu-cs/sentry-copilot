@@ -55,9 +55,10 @@ The legacy reducer rejects a strategy event when `slot != selected_player_slot`.
 valid recognition result from being assigned to the wrong teammate, but it is not the future
 assignment authority.
 
-The future fallback uses `DIRECT_PLAYER_TAG` or explicit user confirmation for participant
-association, then existing participant-bound `DIRECT_OBSERVATION` for the panel strategy. It never
-creates a fifth participant and never automates any click, perspective change, or panel opening.
+M0.2c.2 implements the participant-association half using `DIRECT_PLAYER_TAG`, direct self marker,
+or explicit user confirmation. M0.2c.3 may later bind participant-scoped `DIRECT_OBSERVATION` panel
+evidence and derive assignment. It never creates a fifth participant, never establishes a
+slot-only strategy fact, and never automates any click, perspective change, or panel opening.
 
 Do not infer inactivation from one missing frame. Insufficient evidence produces reason `UNKNOWN`
 with confidence and evidence retained.

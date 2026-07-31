@@ -68,6 +68,12 @@ The repository must remain useful and testable while the game mode is unavailabl
     manual fallback establishes `runtime slot -> participant` from the displayed `name#XXXX`
     before deriving participant strategy and slot assignment; do not add a slot-only strategy
     authority or `DIRECT_SLOT_STRATEGY_PANEL` bypass.
+27. Runtime slot identity is a normalized ID within an explicit layout epoch. `visual_index`,
+    selection row, legacy slot position, avatar, and HP are never stable participant-association
+    identities. An uncertain reorder starts a new layout and inherits no association.
+28. Slot-participant association targets confirmed battle entrants only. Current associations are
+    derived from unsuperseded `DIRECT_PLAYER_TAG`, `DIRECT_SELF_MARKER`, or explicit manual claims;
+    one-to-one conflicts remain unresolved and never use latest-write-wins or confidence ranking.
 24. Concrete strategy identification is separate from raw evidence and commitment. Catalog-derived
     identification requires raw candidate evidence and the current dependency stamp; direct and
     manual identification remain generation-independent but must be checked against the current
@@ -99,6 +105,8 @@ The repository must remain useful and testable while the game mode is unavailabl
   ready evidence without assigning a concrete strategy.
 - `domain/battle_roster.py`: owns immutable runtime participation history and derives the current
   `BattleRoster` from effective entry and inactivation evidence.
+- `domain/runtime_slots.py`: owns immutable slot/layout observations, observation corrections,
+  association claim history, one-to-one conflicts, and query-derived current slot views.
 - `domain/strategy_identification.py`: owns immutable concrete claim history, supersession,
   conflict read models, and query-derived uncontested occupancy.
 - `services/strategy_identification_service.py`: validates concrete claims against commitment and

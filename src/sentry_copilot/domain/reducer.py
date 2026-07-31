@@ -23,6 +23,8 @@ from .events import (
     SessionEvent,
     SessionRulesetContextSelected,
     SessionRulesetRevisionCorrected,
+    SlotAssociationRecordsAppended,
+    SlotAssociationsCorrected,
     StageObserved,
     StrategyIdentificationRecordsAppended,
     StrategySelectionSnapshotCorrected,
@@ -45,6 +47,18 @@ from .prebattle import (
 )
 from .prebattle_migration import LegacyPrebattleMigrationState
 from .rulesets import RevisionSelectionRecord, SessionRulesetContext
+from .runtime_slots import (
+    RuntimeSlotEvidenceEntry,
+    RuntimeSlotEvidenceLedger,
+    RuntimeSlotObservation,
+    RuntimeSlotObservationCorrected,
+    SlotAssociationCorrection,
+    SlotAssociationState,
+    SlotParticipantAssociationBasis,
+    SlotParticipantAssociationRecord,
+    current_runtime_layout_id,
+    derive_runtime_slot_view,
+)
 from .strategy_commitment import derive_strategy_commitments
 from .strategy_identification import StrategyIdentificationState
 from .strategy_selection import (
@@ -107,6 +121,12 @@ def reduce_session(state: SessionState, event: SessionEvent) -> SessionState:
         return _apply_prebattle_evidence(state, event)
     if isinstance(event, (BattleParticipantInactivated, BattleInactivationCorrected)):
         return _apply_battle_participation_evidence(state, event)
+    if isinstance(event, (RuntimeSlotObservation, RuntimeSlotObservationCorrected)):
+        return _apply_runtime_slot_evidence(state, event)
+    if isinstance(event, SlotAssociationRecordsAppended):
+        return _apply_slot_association_records(state, event)
+    if isinstance(event, SlotAssociationsCorrected):
+        return _apply_slot_association_correction(state, event)
     if isinstance(event, StrategyIdentificationRecordsAppended):
         return _apply_strategy_identification_records(state, event)
     if isinstance(event, LegacyPrebattleSnapshotMigrated):
@@ -467,6 +487,244 @@ def _apply_battle_participation_evidence(
         raise InvalidObservationError(
             "battle participation evidence violates session invariants"
         ) from exc
+
+
+def _apply_runtime_slot_evidence(
+    state: SessionState,
+    event: RuntimeSlotEvidenceEntry,
+) -> SessionState:
+    if event.session_id != state.session_id:
+        raise InvalidObservationError(
+            "runtime slot evidence session_id does not match SessionState"
+        )
+    current = state.runtime_slot_evidence or RuntimeSlotEvidenceLedger(
+        session_id=state.session_id
+    )
+    existing = current.get(event.evidence_id)
+    if existing is not None:
+        if existing == event:
+            return state
+        raise InvalidObservationError(
+            "runtime slot evidence ID already has different content"
+        )
+    event_time = (
+        event.observed_at
+        if isinstance(event, RuntimeSlotObservation)
+        else event.corrected_at
+    )
+    try:
+        ledger = RuntimeSlotEvidenceLedger(
+            session_id=state.session_id,
+            entries=(*current.entries, event),
+        )
+        payload = state.model_dump()
+        payload.update(
+            {
+                "runtime_slot_evidence": ledger,
+                "updated_at": event_time.astimezone(UTC),
+            }
+        )
+        return SessionState.model_validate(payload)
+    except ValidationError as exc:
+        raise InvalidObservationError(
+            "runtime slot evidence violates session invariants"
+        ) from exc
+
+
+def _apply_slot_association_records(
+    state: SessionState,
+    event: SlotAssociationRecordsAppended,
+) -> SessionState:
+    if event.session_id != state.session_id:
+        raise InvalidObservationError(
+            "slot association event session_id does not match SessionState"
+        )
+    current = state.slot_associations or SlotAssociationState(
+        session_id=state.session_id
+    )
+    new_records: list[SlotParticipantAssociationRecord] = []
+    for record in event.records:
+        existing = current.get_record(record.record_id)
+        if existing is not None:
+            if existing != record:
+                raise InvalidObservationError(
+                    "slot association record ID already has different content"
+                )
+            continue
+        _require_valid_slot_association_record(state, record)
+        new_records.append(record)
+    if not new_records:
+        return state
+    return _rebuild_with_slot_associations(
+        state,
+        records=(*current.records, *new_records),
+        corrections=current.corrections,
+        updated_at=event.timestamp,
+    )
+
+
+def _apply_slot_association_correction(
+    state: SessionState,
+    event: SlotAssociationsCorrected,
+) -> SessionState:
+    if event.session_id != state.session_id:
+        raise InvalidObservationError(
+            "slot correction event session_id does not match SessionState"
+        )
+    current = state.slot_associations or SlotAssociationState(
+        session_id=state.session_id
+    )
+    existing_correction = current.get_correction(event.correction.correction_id)
+    if existing_correction is not None:
+        if existing_correction != event.correction:
+            raise InvalidObservationError(
+                "slot correction ID already has different content"
+            )
+        if any(
+            current.get_record(record.record_id) != record
+            for record in event.replacement_records
+        ):
+            raise InvalidObservationError(
+                "replayed slot correction replacements differ from stored content"
+            )
+        return state
+
+    for record in event.replacement_records:
+        existing = current.get_record(record.record_id)
+        if existing is not None:
+            raise InvalidObservationError(
+                "slot correction replacement record ID already exists"
+            )
+        _require_valid_slot_association_record(state, record)
+    return _rebuild_with_slot_associations(
+        state,
+        records=(*current.records, *event.replacement_records),
+        corrections=(*current.corrections, event.correction),
+        updated_at=event.correction.corrected_at,
+    )
+
+
+def _rebuild_with_slot_associations(
+    state: SessionState,
+    *,
+    records: tuple[SlotParticipantAssociationRecord, ...],
+    corrections: tuple[SlotAssociationCorrection, ...],
+    updated_at: datetime,
+) -> SessionState:
+    try:
+        associations = SlotAssociationState(
+            session_id=state.session_id,
+            records=records,
+            corrections=corrections,
+        )
+        payload = state.model_dump()
+        payload.update(
+            {
+                "slot_associations": associations,
+                "updated_at": updated_at.astimezone(UTC),
+            }
+        )
+        return SessionState.model_validate(payload)
+    except ValidationError as exc:
+        raise InvalidObservationError(
+            "slot association event violates session invariants"
+        ) from exc
+
+
+def _require_valid_slot_association_record(
+    state: SessionState,
+    record: SlotParticipantAssociationRecord,
+) -> None:
+    if record.session_id != state.session_id:
+        raise InvalidObservationError(
+            "slot association record session_id does not match SessionState"
+        )
+    ledger = state.runtime_slot_evidence
+    if ledger is None:
+        raise InvalidObservationError("slot association requires runtime slot evidence")
+    if current_runtime_layout_id(ledger) != record.layout_id:
+        raise InvalidObservationError(
+            "slot association record must target the current layout"
+        )
+    slot = derive_runtime_slot_view(
+        session_id=state.session_id,
+        ledger=ledger,
+    ).get(record.runtime_slot_id)
+    if slot is None:
+        raise InvalidObservationError(
+            "slot association record must target a current visible slot"
+        )
+    roster = derive_battle_roster(
+        session_id=state.session_id,
+        prebattle_evidence=state.prebattle_evidence,
+        participation_state=state.battle_participation,
+    )
+    if roster.for_participant(record.session_player_id) is None:
+        raise InvalidObservationError(
+            "slot association participant must be a confirmed battle entrant"
+        )
+
+    effective_observations = {
+        observation.evidence_id: observation
+        for observation in ledger.effective_observations
+    }
+    supporting: list[RuntimeSlotObservation] = []
+    for evidence_id in record.evidence_ids:
+        evidence = effective_observations.get(evidence_id)
+        if evidence is None:
+            raise InvalidObservationError(
+                "slot association requires effective observation evidence"
+            )
+        if (
+            evidence.layout_id != record.layout_id
+            or evidence.runtime_slot_id != record.runtime_slot_id
+        ):
+            raise InvalidObservationError(
+                "slot association evidence cannot cross layout or slot"
+            )
+        if evidence.observed_at > record.associated_at:
+            raise InvalidObservationError(
+                "slot association cannot precede its observation evidence"
+            )
+        supporting.append(evidence)
+
+    snapshot = state.strategy_selection
+    participant = (
+        next(
+            (
+                item
+                for item in snapshot.participants
+                if item.session_player_id == record.session_player_id
+            ),
+            None,
+        )
+        if snapshot is not None
+        else None
+    )
+    if participant is None:
+        raise InvalidObservationError(
+            "slot association participant does not belong to the session"
+        )
+    observed_support = tuple(
+        evidence
+        for evidence in supporting
+        if evidence.provenance == EvidenceKind.OBSERVED
+    )
+    if record.basis == SlotParticipantAssociationBasis.DIRECT_PLAYER_TAG:
+        if participant.player_tag is None or not any(
+            evidence.observed_player_tag == participant.player_tag
+            for evidence in observed_support
+        ):
+            raise InvalidObservationError(
+                "direct player-tag association requires the participant's four-digit tag"
+            )
+    elif record.basis == SlotParticipantAssociationBasis.DIRECT_SELF_MARKER:
+        if participant.is_self is not True or not any(
+            evidence.self_marker_visible for evidence in observed_support
+        ):
+            raise InvalidObservationError(
+                "direct self association requires the session self marker"
+            )
 
 
 def _require_prebattle_participant(

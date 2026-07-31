@@ -35,6 +35,13 @@ from .prebattle import (
 )
 from .prebattle_migration import LegacySnapshotMigrationRecord
 from .rulesets import RevisionSelectionMethod
+from .runtime_slots import (
+    RuntimeSlotObservation,
+    RuntimeSlotObservationCorrected,
+    SlotAssociationCorrection,
+    SlotParticipantAssociationBasis,
+    SlotParticipantAssociationRecord,
+)
 from .strategy_identification import (
     StrategyIdentificationBasis,
     StrategyIdentificationRecord,
@@ -169,6 +176,63 @@ class StrategyIdentificationRecordsAppended(BaseModel):
     timestamp: AwareDatetime
 
 
+class SlotAssociationRecordsAppended(BaseModel):
+    """Append strong slot-participant claims after domain validation."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    type: Literal["slot_association_records_appended"] = (
+        "slot_association_records_appended"
+    )
+    session_id: SessionId
+    records: tuple[SlotParticipantAssociationRecord, ...] = Field(min_length=1)
+    timestamp: AwareDatetime
+
+    @model_validator(mode="after")
+    def records_are_initial_claims(self) -> SlotAssociationRecordsAppended:
+        record_ids = [record.record_id for record in self.records]
+        if len(record_ids) != len(set(record_ids)):
+            raise ValueError("slot association event record IDs must be unique")
+        if any(record.session_id != self.session_id for record in self.records):
+            raise ValueError("slot association event session IDs must match")
+        if any(record.supersedes_record_ids for record in self.records):
+            raise ValueError("association supersession requires a correction event")
+        return self
+
+
+class SlotAssociationsCorrected(BaseModel):
+    """Apply one auditable atomic batch of manual association replacements."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    type: Literal["slot_associations_corrected"] = "slot_associations_corrected"
+    session_id: SessionId
+    correction: SlotAssociationCorrection
+    replacement_records: tuple[SlotParticipantAssociationRecord, ...] = Field(
+        min_length=1
+    )
+
+    @model_validator(mode="after")
+    def correction_matches_replacements(self) -> SlotAssociationsCorrected:
+        if self.correction.session_id != self.session_id:
+            raise ValueError("slot correction event session IDs must match")
+        record_ids = tuple(record.record_id for record in self.replacement_records)
+        if len(record_ids) != len(set(record_ids)):
+            raise ValueError("slot correction replacement IDs must be unique")
+        if set(record_ids) != set(self.correction.replacement_record_ids):
+            raise ValueError("slot correction replacement references must match")
+        if any(
+            record.session_id != self.session_id
+            or record.basis != SlotParticipantAssociationBasis.MANUAL_CONFIRMATION
+            or not record.supersedes_record_ids
+            or record.associated_at != self.correction.corrected_at
+            or record.manual_reason != self.correction.reason
+            for record in self.replacement_records
+        ):
+            raise ValueError("slot correction requires matching manual replacements")
+        return self
+
+
 class LegacyPrebattleSnapshotMigrated(BaseModel):
     """Accepted atomic import prepared by the explicit migration service."""
 
@@ -263,6 +327,10 @@ SessionEvent = (
     | StrategySelectionConfirmedEvidence
     | ReadyFalsePositiveCorrected
     | StrategyIdentificationRecordsAppended
+    | RuntimeSlotObservation
+    | RuntimeSlotObservationCorrected
+    | SlotAssociationRecordsAppended
+    | SlotAssociationsCorrected
     | LegacyPrebattleSnapshotMigrated
     | SessionRulesetContextSelected
     | SessionRulesetRevisionCorrected

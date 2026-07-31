@@ -24,6 +24,11 @@ from .prebattle_migration import (
     LegacySnapshotMigrationRecord,
 )
 from .rulesets import RulesetDependencyStamp, SessionRulesetContext
+from .runtime_slots import (
+    RuntimeSlotEvidenceLedger,
+    RuntimeSlotObservation,
+    SlotAssociationState,
+)
 from .strategy_commitment import (
     StrategyCommitmentState,
     derive_strategy_commitments,
@@ -79,6 +84,8 @@ class SessionState(BaseModel):
     strategy_commitments: StrategyCommitmentState | None = None
     strategy_identifications: StrategyIdentificationState | None = None
     battle_participation: BattleParticipationState | None = None
+    runtime_slot_evidence: RuntimeSlotEvidenceLedger | None = None
+    slot_associations: SlotAssociationState | None = None
     legacy_prebattle_migrations: LegacyPrebattleMigrationState | None = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
@@ -129,6 +136,7 @@ class SessionState(BaseModel):
         self._validate_prebattle_state()
         self._validate_strategy_identifications()
         self._validate_battle_participation()
+        self._validate_runtime_slots_and_associations()
         self._validate_legacy_migrations()
         return self
 
@@ -249,6 +257,61 @@ class SessionState(BaseModel):
             prebattle_evidence=self.prebattle_evidence,
             participation_state=participation,
         )
+
+    def _validate_runtime_slots_and_associations(self) -> None:
+        ledger = self.runtime_slot_evidence
+        associations = self.slot_associations
+        if ledger is not None and ledger.session_id != self.session_id:
+            raise ValueError("runtime slot evidence session_id does not match SessionState")
+        if associations is None:
+            return
+        if associations.session_id != self.session_id:
+            raise ValueError("slot association session_id does not match SessionState")
+        if ledger is None:
+            raise ValueError("slot associations require runtime slot evidence")
+        if self.strategy_selection is None or self.prebattle_evidence is None:
+            raise ValueError(
+                "slot associations require participant and battle-entry history"
+            )
+
+        participants = {
+            participant.session_player_id
+            for participant in self.strategy_selection.participants
+        }
+        evidence_by_id = {
+            entry.evidence_id: entry
+            for entry in ledger.entries
+            if isinstance(entry, RuntimeSlotObservation)
+        }
+        historical_entries = tuple(
+            entry
+            for entry in self.prebattle_evidence.entries
+            if isinstance(entry, BattleEntryConfirmed)
+        )
+        for record in associations.records:
+            if record.session_player_id not in participants:
+                raise ValueError(
+                    "slot association participant must belong to the session"
+                )
+            for evidence_id in record.evidence_ids:
+                evidence = evidence_by_id.get(evidence_id)
+                if evidence is None:
+                    raise ValueError("slot association evidence must exist")
+                if (
+                    evidence.layout_id != record.layout_id
+                    or evidence.runtime_slot_id != record.runtime_slot_id
+                ):
+                    raise ValueError(
+                        "slot association evidence cannot cross layout or slot"
+                    )
+            if not any(
+                entry.session_player_id == record.session_player_id
+                and entry.timestamp <= record.associated_at
+                for entry in historical_entries
+            ):
+                raise ValueError(
+                    "slot association requires prior confirmed entry history"
+                )
 
     def _validate_legacy_migrations(self) -> None:
         migrations = self.legacy_prebattle_migrations

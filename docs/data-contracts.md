@@ -433,6 +433,56 @@ status changes, and optionally save roster checkpoints at wave start or end. The
 may occur in any normal wave, stage interval, or secret-core wave and must never mutate
 `StrategySelectionSnapshot`, lower expected participant count, or clear historical strategy IDs.
 
+## Runtime slot evidence and association
+
+Raw slot evidence is revision-independent and participant-free:
+
+```json
+{
+  "type": "runtime_slot_observed",
+  "evidence_id": "evidence.synthetic.slot.1",
+  "session_id": "session.synthetic",
+  "layout_id": "layout.synthetic.1",
+  "runtime_slot_id": "runtime-slot.synthetic.1",
+  "observed_at": "2026-08-04T09:00:10Z",
+  "visual_index": 1,
+  "roi": {"x": 0.02, "y": 0.1, "width": 0.12, "height": 0.14},
+  "slot_visible": true,
+  "normal_active_presentation_visible": true,
+  "inactive_presentation": null,
+  "observed_display_name": "Synthetic Alpha",
+  "observed_player_tag": "0038",
+  "self_marker_visible": false,
+  "provenance": "observed",
+  "confidence": 0.97
+}
+```
+
+An association record adds interpretation separately:
+
+```json
+{
+  "record_id": "association.synthetic.slot-1.player-1",
+  "session_id": "session.synthetic",
+  "layout_id": "layout.synthetic.1",
+  "runtime_slot_id": "runtime-slot.synthetic.1",
+  "session_player_id": "session-player-1",
+  "basis": "direct_player_tag",
+  "associated_at": "2026-08-04T09:00:12Z",
+  "evidence_ids": ["evidence.synthetic.slot.1"],
+  "supersedes_record_ids": [],
+  "manual_reason": null
+}
+```
+
+`RuntimeSlotId`, `RuntimeSlotLayoutId`, `SlotAssociationRecordId`, and
+`SlotAssociationCorrectionId` use strict normalized strings. Current slots and associations are
+query projections. Strong claims require current slot evidence and a confirmed battle entrant;
+direct tag uses the exact four-digit session tag, direct self uses explicit marker evidence, and
+manual confirmation requires an audit reason. Association conflicts preserve every claim and
+produce no effective relation. Observation and association corrections preserve original history
+and replay idempotently.
+
 ## Route query
 
 ```json

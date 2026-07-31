@@ -35,6 +35,22 @@ EvidenceId = Annotated[
     str,
     StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
 ]
+RuntimeSlotId = Annotated[
+    str,
+    StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
+]
+RuntimeSlotLayoutId = Annotated[
+    str,
+    StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
+]
+SlotAssociationRecordId = Annotated[
+    str,
+    StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
+]
+SlotAssociationCorrectionId = Annotated[
+    str,
+    StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
+]
 StrategyIdentificationRecordId = Annotated[
     str,
     StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),

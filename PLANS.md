@@ -108,10 +108,12 @@
 
 ### M0.2c.2 — Runtime slots and participant association
 
-- [ ] Add runtime player slots without binding them to selection rows by order.
-- [ ] Add conflict-aware slot-participant association.
-- [ ] Support `DIRECT_PLAYER_TAG` from the manually visited player's bottom `name#XXXX` display.
-- [ ] Keep association unresolved when the tag cannot be read; allow explicit user confirmation.
+- [x] Add query-derived runtime player slots without binding them to selection rows by order.
+- [x] Add layout epochs and preserve slot identity only when continuity is explicitly reliable.
+- [x] Add conflict-aware, one-to-one slot-participant association for confirmed entrants.
+- [x] Support `DIRECT_PLAYER_TAG` from the manually visited player's bottom `name#XXXX` display.
+- [x] Support direct self-marker and explicit manual confirmation without avatar/HP matching.
+- [x] Keep association unresolved when the tag cannot be read; preserve auditable corrections.
 
 ### M0.2c.3 — Slot-strategy assignment
 
