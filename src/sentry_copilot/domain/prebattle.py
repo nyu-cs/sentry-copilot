@@ -13,7 +13,14 @@ from pydantic import (
 )
 
 from .enums import EvidenceKind
-from .identifiers import EvidenceId, SessionId, SessionParticipantId
+from .evidence import EvidenceRecord
+from .identifiers import (
+    EvidenceId,
+    LegacyMigrationOperationId,
+    SessionId,
+    SessionParticipantId,
+    SnapshotFingerprint,
+)
 
 
 class NormalizedRoi(BaseModel):
@@ -40,6 +47,10 @@ class PrebattleObservationKind(StrEnum):
     BATTLE_ENTRY_CONFIRMED = "battle_entry_confirmed"
     BATTLE_ENTRY_NOT_CONFIRMED = "battle_entry_not_confirmed"
     STRATEGY_SELECTION_CONFIRMED = "strategy_selection_confirmed"
+    LEGACY_READY_IMPORTED = "legacy_ready_imported"
+    LEGACY_STRATEGY_INTERPRETATION_IMPORTED = (
+        "legacy_strategy_interpretation_imported"
+    )
 
 
 class BattleEntryNotConfirmedReason(StrEnum):
@@ -174,6 +185,57 @@ class StrategySelectionConfirmedEvidence(PrebattleObservationBase):
         return self
 
 
+class LegacySnapshotEvidenceBase(BaseModel):
+    """Typed legacy materialized evidence; it never pretends to be a raw frame."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    evidence_id: EvidenceId
+    session_id: SessionId
+    session_player_id: SessionParticipantId
+    migration_operation_id: LegacyMigrationOperationId
+    snapshot_fingerprint: SnapshotFingerprint
+    timestamp: AwareDatetime
+    migrated_at: AwareDatetime
+    provenance: Literal["legacy_snapshot_migration"] = "legacy_snapshot_migration"
+    legacy_field_evidence: EvidenceRecord
+
+    @model_validator(mode="after")
+    def timestamp_preserves_original_observation(self) -> LegacySnapshotEvidenceBase:
+        if self.timestamp != self.legacy_field_evidence.observed_at:
+            raise ValueError("legacy evidence timestamp must preserve the field observation time")
+        return self
+
+
+class LegacyReadySnapshotImported(LegacySnapshotEvidenceBase):
+    """Positive legacy ready value imported without inventing raw visual history."""
+
+    type: Literal["legacy_ready_snapshot_imported"] = "legacy_ready_snapshot_imported"
+    kind: Literal[PrebattleObservationKind.LEGACY_READY_IMPORTED] = (
+        PrebattleObservationKind.LEGACY_READY_IMPORTED
+    )
+    ready_check_visible: Literal[True] = True
+
+
+class LegacyStrategyInterpretationImported(LegacySnapshotEvidenceBase):
+    """A legacy normalized value, not raw evidence or a strong strategy fact."""
+
+    type: Literal["legacy_strategy_interpretation_imported"] = (
+        "legacy_strategy_interpretation_imported"
+    )
+    kind: Literal[
+        PrebattleObservationKind.LEGACY_STRATEGY_INTERPRETATION_IMPORTED
+    ] = PrebattleObservationKind.LEGACY_STRATEGY_INTERPRETATION_IMPORTED
+    legacy_strategy_id: str
+
+    @field_validator("legacy_strategy_id")
+    @classmethod
+    def strategy_value_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("legacy strategy interpretation cannot be blank")
+        return value
+
+
 class ReadyFalsePositiveCorrected(BaseModel):
     """Manual correction that invalidates false-positive ready evidence.
 
@@ -221,6 +283,8 @@ PrebattleEvidenceEntry = Annotated[
     | BattleEntryConfirmed
     | BattleEntryNotConfirmed
     | StrategySelectionConfirmedEvidence
+    | LegacyReadySnapshotImported
+    | LegacyStrategyInterpretationImported
     | ReadyFalsePositiveCorrected,
     Field(discriminator="type"),
 ]
@@ -251,9 +315,12 @@ class PrebattleEvidenceLedger(BaseModel):
                 continue
             for target_id in entry.invalidated_ready_evidence_ids:
                 target = by_id.get(target_id)
-                if not isinstance(target, ReadyCheckObserved):
+                if not isinstance(
+                    target,
+                    (ReadyCheckObserved, LegacyReadySnapshotImported),
+                ):
                     raise ValueError(
-                        "ready correction targets must reference ready-check evidence"
+                        "ready correction targets must reference positive ready evidence"
                     )
                 if positions[target_id] >= entry_index:
                     raise ValueError(

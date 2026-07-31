@@ -41,8 +41,8 @@ Recognizers do not edit `SessionState`. The reducer enforces:
   conflict state; it is never persisted as a second authority;
 - `selection_row` never implies a runtime player slot;
 - expected participant count is explicit and never inferred from recognized rows;
-- M0.1a snapshot completeness requires unique entered-player strategy values, without treating
-  that compatibility check as confirmed occupancy;
+- M0.1a snapshot completeness measures only whether expected entered-player legacy strategy
+  fields have values; repeated interpretations remain valid snapshot history and are not occupancy;
 - frozen strategies change only through explicit manual correction;
 - runtime exit and elimination never mutate historical strategy selection;
 - non-positive health marks elimination;
@@ -87,6 +87,33 @@ Every prebattle event carries normalized session and participant IDs. The reduce
 cross-session events and participants absent from the session's strategy-selection snapshot.
 Ledger and commitment aggregates are frozen; the reducer constructs and validates a complete new
 `SessionState`, so a failed correction cannot partially change the input.
+
+## Legacy snapshot migration
+
+M0.2b.3 keeps `StrategySelectionSnapshot` as the legacy prebattle materialized view and imports it
+only through an explicit service:
+
+```text
+ImportLegacyStrategySnapshotEvidence
+        ↓ validate session + canonical snapshot fingerprint
+LegacyPrebattleSnapshotMigrationService
+        ↓ deterministic field IDs + one atomic accepted event
+typed legacy evidence + ready commitment + weak interpretation history
+```
+
+The migration history is keyed independently by a caller-supplied operation ID and by the
+canonical SHA-256 snapshot fingerprint. Repeating one operation with equal command content or
+using a different operation for an already imported fingerprint is a no-op. Reusing an operation
+ID for different command content is rejected. Legacy `ready=true` becomes typed positive evidence;
+`false` or unknown never withdraws another commitment. A legacy strategy value and its original
+field evidence are preserved as catalog-dependent interpretation history, never as a raw visual
+candidate or effective occupancy.
+
+`snapshot.frozen` means only that ordinary legacy snapshot capture has closed. It does not close
+the independent evidence ledger, corrections, commitments, direct/manual identification, battle
+entry evidence, or migration history. Revision correction performs no destructive rewrite:
+revision-independent evidence and commitment remain, stamp-dependent records become stale, and
+direct/manual claims are rechecked against the current catalog by the existing read model.
 
 ## Concrete identification and effective occupancy
 
@@ -160,7 +187,8 @@ prebattle snapshot remain revision-independent historical data.
 The strategy-selection screen is the primary acquisition source. Each participant has an opaque
 session-local ID and independent evidence for tag, display name, avatar, strategy, ready state,
 selection outcome, and self state. A frozen snapshot is strategy-complete when its explicit
-expected count matches the number of `entered_battle` participants and each has a unique strategy.
+expected count matches the number of `entered_battle` participants and each legacy strategy field
+has a value. Repeated values are allowed because this is field coverage, not confirmed occupancy.
 Selection-stage exits remain in the raw snapshot but are excluded from the default final-team
 query. The expected count may be one to four and is never inferred from recognition results.
 Identity completion, runtime survival, and runtime-slot association are separate concerns.
@@ -170,9 +198,10 @@ materialized view and historical query source. It is not the future runtime-slot
 authority. M0.1a does not implement recognition, confirmed occupancy, or runtime association.
 
 Its legacy participant `strategy_id` may contain catalog-dependent normalized interpretation.
-M0.2a preserves that value and evidence but does not use it to create new revision-aware occupancy,
-assignment, or catalog-dependent confirmation. Raw visual observations and normalized strategy
-interpretation are separated in M0.2b.
+M0.2b.3 preserves that value and field evidence through explicit migration. A compatible value may
+produce a stamped weak legacy record for audit, but the current read model excludes that basis from
+effective identification and occupancy until a later direct/manual confirmation explicitly
+supersedes it. Raw visual observations and normalized strategy interpretation remain separate.
 
 Future runtime monitoring is a separate observation stream. It will distinguish `normal` from
 `secret_core`, allow `round_number=None`, carry an optional wave number, and record status

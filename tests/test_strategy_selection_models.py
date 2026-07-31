@@ -261,22 +261,28 @@ def test_non_empty_player_tags_are_unique() -> None:
         snapshot([participant(1, player_tag="0038"), participant(2, player_tag="0038")])
 
 
-def test_non_empty_strategy_ids_are_unique() -> None:
-    with pytest.raises(ValidationError, match="strategy_id"):
-        snapshot(
-            [
-                participant(
-                    1,
-                    strategy_id="strategy.synthetic.guard",
-                    selection_outcome=SelectionOutcome.ENTERED_BATTLE,
-                ),
-                participant(
-                    2,
-                    strategy_id="strategy.synthetic.guard",
-                    selection_outcome=SelectionOutcome.ENTERED_BATTLE,
-                ),
-            ]
-        )
+def test_duplicate_legacy_strategy_observations_are_valid_materialized_data() -> None:
+    result = snapshot(
+        [
+            participant(
+                1,
+                strategy_id="strategy.synthetic.guard",
+                selection_outcome=SelectionOutcome.ENTERED_BATTLE,
+            ),
+            participant(
+                2,
+                strategy_id="strategy.synthetic.guard",
+                selection_outcome=SelectionOutcome.ENTERED_BATTLE,
+            ),
+        ],
+        expected_participant_count=2,
+        frozen=True,
+    )
+    assert result.strategy_complete is True
+    assert [item.strategy_id for item in result.participants] == [
+        "strategy.synthetic.guard",
+        "strategy.synthetic.guard",
+    ]
 
 
 def test_selection_rows_are_unique() -> None:
@@ -514,7 +520,7 @@ def test_unknown_outcome_is_not_counted_as_entered() -> None:
     assert result.completeness_level == SnapshotCompleteness.PARTIAL
 
 
-def test_exited_strategy_can_duplicate_entered_strategy() -> None:
+def test_legacy_snapshot_preserves_repeated_exited_and_entered_interpretations() -> None:
     result = snapshot(
         [
             participant(

@@ -83,8 +83,9 @@ The snapshot is not frozen, expected participant count is unknown, entered parti
 not match it, or at least one entered strategy is unknown.
 
 STRATEGIES_COMPLETE
-The frozen snapshot has the expected number of entered participants and each has a unique strategy,
-but at least one entered player tag is unknown.
+The frozen snapshot has the expected number of entered participants and each legacy strategy field
+has a value, but at least one entered player tag is unknown. Strategy values may repeat because
+this level measures old materialized field coverage, not confirmed occupancy.
 
 FULLY_IDENTIFIED
 Strategies are complete and every entered participant has a valid unique four-digit player tag.
@@ -97,11 +98,10 @@ of four remain partial. `expected_participant_count` is the final number that en
 the number initially shown or currently alive.
 
 `left_unready`, `exited_before_strategy`, and `exited_after_strategy` do not enter the final count
-or default `TeamStrategyContext`. They remain in the raw snapshot. The current M0.1a compatibility
-model may contain duplicate strategy values on these historical records, but those values must be
-treated as legacy prebattle interpretation rather than confirmed occupancy. M0.2b will apply the
-approved permanent-occupancy rule after separating candidates, ready confirmation, and normalized
-strategy identity.
+or default `TeamStrategyContext`. They remain in the raw snapshot. Duplicate strategy values are
+valid legacy observations for every selection outcome. M0.2b.3 preserves them as weak prebattle
+interpretations; only the concrete-identification/conflict read model can determine uncontested
+occupancy.
 
 ## Freeze and correction
 
@@ -113,6 +113,10 @@ A snapshot may be frozen while partial. After freezing:
 - explicit manual correction may replace frozen values;
 - multi-participant corrections validate atomically;
 - a correction cannot create a new participant.
+
+Freezing closes only ordinary merging into the legacy materialized view. It does not prevent the
+separate evidence ledger from accepting typed evidence, corrections, commitment evidence,
+direct/manual identification, battle-entry facts, or explicit legacy migration.
 
 Manual field evidence is accepted only through `StrategySelectionSnapshotCorrected`.
 Correction merges each field into a candidate copy. Changed values require and adopt manual
@@ -154,12 +158,17 @@ until runtime association is implemented and reviewed separately.
 
 `StrategySelectionParticipant.strategy_id` is also a legacy boundary for revision-aware work. It
 may already be a normalized catalog interpretation rather than revision-independent raw evidence.
-M0.2a preserves the value and evidence. M0.2b.2 adds a separate identification history but does
-not automatically promote this legacy field; explicit, idempotent migration remains M0.2b.3.
+M0.2b.3 now imports the value and original field evidence explicitly and idempotently. A compatible
+value may also create a stamped weak legacy record, but that basis never enters current effective
+identification or occupancy. Manual confirmation must explicitly supersede a migrated legacy
+interpretation; repeated migration cannot restore it.
 
-## Deferred to M0.2b or later
+`build_team_strategy_context` intentionally retains the snapshot projection for compatibility. It
+is a legacy historical/prebattle materialized query, not a current commitment, confirmed
+occupancy, runtime assignment, or active-team query.
 
-- legacy snapshot evidence migration;
+## Deferred beyond M0.2b.3
+
 - fallback panel observation models;
 - runtime-slot association;
 - matching by unique strategy or player tag;

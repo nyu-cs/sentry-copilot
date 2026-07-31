@@ -15,7 +15,8 @@
 - [x] Add minimal ruleset-scoped strategy definitions.
 - [x] Add session-local strategy-selection participants with four-digit player tags.
 - [x] Keep field-level evidence for tag, name, avatar, strategy, ready, self, and selection outcome.
-- [x] Enforce participant, row, non-empty tag, and non-empty strategy uniqueness.
+- [x] Enforce participant, row, and non-empty tag uniqueness while preserving repeated legacy
+  strategy observations for later interpretation.
 - [x] Track an explicit expected participant count without inferring it from observations.
 - [x] Compute strategy completeness for one to four participants who entered battle.
 - [x] Preserve selection-stage exits in history while excluding them from the final team query.
@@ -80,8 +81,18 @@
 
 ### M0.2b.3 — Legacy snapshot migration and revision invalidation
 
-- [ ] Migrate legacy snapshot evidence explicitly and idempotently.
-- [ ] Reposition snapshot completeness as prebattle data quality only.
+- [x] Migrate legacy snapshot evidence explicitly and idempotently with stable operation,
+  fingerprint, evidence, and identification IDs.
+- [x] Import legacy ready values into typed evidence without moving an earlier commitment time or
+  restoring evidence excluded by a false-positive correction.
+- [x] Preserve legacy strategy values as weak, revision-dependent interpretation history that
+  cannot directly create current identification or occupancy.
+- [x] Reposition snapshot completeness as prebattle data quality only and allow repeated legacy
+  strategy observations.
+- [x] Keep frozen snapshots open to independent evidence, correction, identification, and migration
+  histories.
+- [x] Preserve all history across revision correction and derive freshness and compatibility at
+  query time.
 
 ## M0.2c — Runtime roster and slot assignment
 

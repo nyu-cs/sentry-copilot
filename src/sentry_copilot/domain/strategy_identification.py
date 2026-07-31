@@ -25,6 +25,7 @@ class StrategyIdentificationBasis(StrEnum):
     CATALOG_DERIVED = "catalog_derived"
     DIRECT_OBSERVATION = "direct_observation"
     MANUAL_CONFIRMATION = "manual_confirmation"
+    LEGACY_SNAPSHOT_INTERPRETATION = "legacy_snapshot_interpretation"
 
 
 class StrategyIdentificationConflictType(StrEnum):
@@ -70,9 +71,12 @@ class StrategyIdentificationRecord(BaseModel):
 
     @model_validator(mode="after")
     def basis_controls_dependencies_and_correction(self) -> StrategyIdentificationRecord:
-        if self.basis == StrategyIdentificationBasis.CATALOG_DERIVED:
+        if self.basis in (
+            StrategyIdentificationBasis.CATALOG_DERIVED,
+            StrategyIdentificationBasis.LEGACY_SNAPSHOT_INTERPRETATION,
+        ):
             if self.dependency_stamp is None:
-                raise ValueError("catalog-derived identification requires a dependency stamp")
+                raise ValueError("catalog-dependent identification requires a dependency stamp")
         elif self.dependency_stamp is not None:
             raise ValueError("direct/manual identification cannot carry a dependency stamp")
 
@@ -183,6 +187,9 @@ class StrategyOccupancyView(BaseModel):
     stale_record_ids: tuple[StrategyIdentificationRecordId, ...] = Field(
         default_factory=tuple
     )
+    legacy_record_ids: tuple[StrategyIdentificationRecordId, ...] = Field(
+        default_factory=tuple
+    )
 
 
 def derive_strategy_occupancy_view(
@@ -198,6 +205,7 @@ def derive_strategy_occupancy_view(
         return StrategyOccupancyView()
 
     stale_record_ids: list[StrategyIdentificationRecordId] = []
+    legacy_record_ids: list[StrategyIdentificationRecordId] = []
     eligible_records: list[StrategyIdentificationRecord] = []
     conflicts: list[StrategyIdentificationConflict] = []
     catalog_conflict_participants: set[SessionParticipantId] = set()
@@ -206,10 +214,17 @@ def derive_strategy_occupancy_view(
         if record.session_player_id not in committed_participant_ids:
             continue
         if (
-            record.basis == StrategyIdentificationBasis.CATALOG_DERIVED
+            record.basis
+            in (
+                StrategyIdentificationBasis.CATALOG_DERIVED,
+                StrategyIdentificationBasis.LEGACY_SNAPSHOT_INTERPRETATION,
+            )
             and record.dependency_stamp != current_dependency_stamp
         ):
             stale_record_ids.append(record.record_id)
+            continue
+        if record.basis == StrategyIdentificationBasis.LEGACY_SNAPSHOT_INTERPRETATION:
+            legacy_record_ids.append(record.record_id)
             continue
         if record.strategy_id not in available_strategy_ids:
             conflicts.append(
@@ -315,4 +330,5 @@ def derive_strategy_occupancy_view(
             )
         ),
         stale_record_ids=tuple(sorted(stale_record_ids)),
+        legacy_record_ids=tuple(sorted(legacy_record_ids)),
     )

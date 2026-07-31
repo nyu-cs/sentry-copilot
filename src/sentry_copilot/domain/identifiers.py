@@ -39,6 +39,14 @@ StrategyIdentificationRecordId = Annotated[
     str,
     StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
 ]
+LegacyMigrationOperationId = Annotated[
+    str,
+    StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
+]
+SnapshotFingerprint = Annotated[
+    str,
+    StringConstraints(strict=True, pattern=r"^[0-9a-f]{64}$"),
+]
 
 
 class LocaleId(StrEnum):

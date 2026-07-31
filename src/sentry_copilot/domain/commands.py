@@ -14,10 +14,12 @@ from pydantic import (
 from .evidence import EvidenceRecord
 from .identifiers import (
     CatalogVersion,
+    LegacyMigrationOperationId,
     LocaleId,
     RulesetId,
     RulesetRevisionId,
     SessionId,
+    SnapshotFingerprint,
 )
 from .prebattle import (
     StrategySelectionConfirmationSource,
@@ -92,6 +94,10 @@ class RecordStrategyIdentification(BaseModel):
 
     @model_validator(mode="after")
     def evidence_matches_record(self) -> RecordStrategyIdentification:
+        if self.record.basis == (
+            StrategyIdentificationBasis.LEGACY_SNAPSHOT_INTERPRETATION
+        ):
+            raise ValueError("legacy identification records require the migration service")
         if self.record.supersedes_record_ids:
             raise ValueError("initial identification cannot supersede existing records")
         evidence = self.commitment_evidence
@@ -116,6 +122,25 @@ class RecordStrategyIdentification(BaseModel):
                 "commitment evidence source must match direct/manual identification basis"
             )
         return self
+
+
+class ImportLegacyStrategySnapshotEvidence(BaseModel):
+    """Explicit request to import one canonical legacy snapshot exactly once."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    session_id: SessionId
+    migration_operation_id: LegacyMigrationOperationId
+    snapshot_fingerprint: SnapshotFingerprint
+    migrated_at: AwareDatetime
+    reason: str | None = None
+
+    @field_validator("reason")
+    @classmethod
+    def migration_reason_must_not_be_blank(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("legacy migration reason cannot be blank")
+        return value
 
 
 class CorrectStrategyIdentifications(BaseModel):

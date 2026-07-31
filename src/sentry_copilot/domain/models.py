@@ -8,13 +8,24 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .enums import GameMode, Phase, PlayerStatus, Server, StageType
 from .identifiers import LocaleId, RulesetId, RulesetRevisionId, SessionId
-from .prebattle import PrebattleEvidenceLedger
+from .prebattle import (
+    LegacyReadySnapshotImported,
+    LegacyStrategyInterpretationImported,
+    PrebattleEvidenceLedger,
+)
+from .prebattle_migration import (
+    LegacyPrebattleMigrationState,
+    LegacySnapshotMigrationRecord,
+)
 from .rulesets import RulesetDependencyStamp, SessionRulesetContext
 from .strategy_commitment import (
     StrategyCommitmentState,
     derive_strategy_commitments,
 )
-from .strategy_identification import StrategyIdentificationState
+from .strategy_identification import (
+    StrategyIdentificationBasis,
+    StrategyIdentificationState,
+)
 from .strategy_selection import StrategySelectionSnapshot
 
 
@@ -61,6 +72,7 @@ class SessionState(BaseModel):
     prebattle_evidence: PrebattleEvidenceLedger | None = None
     strategy_commitments: StrategyCommitmentState | None = None
     strategy_identifications: StrategyIdentificationState | None = None
+    legacy_prebattle_migrations: LegacyPrebattleMigrationState | None = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @model_validator(mode="before")
@@ -109,6 +121,7 @@ class SessionState(BaseModel):
             )
         self._validate_prebattle_state()
         self._validate_strategy_identifications()
+        self._validate_legacy_migrations()
         return self
 
     def _validate_prebattle_state(self) -> None:
@@ -183,6 +196,68 @@ class SessionState(BaseModel):
                     raise ValueError(
                         "strategy identification evidence cannot cross participants"
                     )
+
+    def _validate_legacy_migrations(self) -> None:
+        migrations = self.legacy_prebattle_migrations
+        if migrations is None:
+            return
+        if migrations.session_id != self.session_id:
+            raise ValueError("legacy migration state session_id does not match SessionState")
+        if self.strategy_selection is None:
+            raise ValueError("legacy migration history requires a strategy snapshot")
+        evidence_by_id = {
+            entry.evidence_id: entry
+            for entry in (
+                self.prebattle_evidence.entries
+                if self.prebattle_evidence is not None
+                else ()
+            )
+        }
+        identification_by_id = {
+            record.record_id: record
+            for record in (
+                self.strategy_identifications.records
+                if self.strategy_identifications is not None
+                else ()
+            )
+        }
+        for record in migrations.records:
+            for evidence_id in record.ready_evidence_ids:
+                evidence = evidence_by_id.get(evidence_id)
+                if not isinstance(evidence, LegacyReadySnapshotImported):
+                    raise ValueError("legacy ready migration evidence must exist")
+                self._require_legacy_evidence_provenance(record, evidence)
+            for evidence_id in record.strategy_evidence_ids:
+                evidence = evidence_by_id.get(evidence_id)
+                if not isinstance(evidence, LegacyStrategyInterpretationImported):
+                    raise ValueError("legacy strategy migration evidence must exist")
+                self._require_legacy_evidence_provenance(record, evidence)
+            for identification_id in record.identification_record_ids:
+                identification = identification_by_id.get(identification_id)
+                if identification is None:
+                    raise ValueError("legacy migration identification references must exist")
+                if identification.basis != (
+                    StrategyIdentificationBasis.LEGACY_SNAPSHOT_INTERPRETATION
+                ):
+                    raise ValueError("legacy migration may reference only weak legacy records")
+                if not set(identification.evidence_ids).issubset(
+                    record.strategy_evidence_ids
+                ):
+                    raise ValueError(
+                        "legacy identification must use its migration's strategy evidence"
+                    )
+
+    @staticmethod
+    def _require_legacy_evidence_provenance(
+        record: LegacySnapshotMigrationRecord,
+        evidence: LegacyReadySnapshotImported
+        | LegacyStrategyInterpretationImported,
+    ) -> None:
+        if (
+            evidence.migration_operation_id != record.operation_id
+            or evidence.snapshot_fingerprint != record.snapshot_fingerprint
+        ):
+            raise ValueError("legacy migration evidence provenance must match its record")
 
     @property
     def effective_ruleset_id(self) -> RulesetId:

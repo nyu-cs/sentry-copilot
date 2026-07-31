@@ -199,15 +199,6 @@ class StrategySelectionSnapshot(BaseModel):
             ],
             "player_tag",
         )
-        self._require_unique(
-            [
-                participant.strategy_id
-                for participant in self.participants
-                if participant.selection_outcome == SelectionOutcome.ENTERED_BATTLE
-                and participant.strategy_id is not None
-            ],
-            "strategy_id",
-        )
         if sum(participant.is_self is True for participant in self.participants) > 1:
             raise ValueError("at most one participant can be self")
         return self
@@ -228,10 +219,7 @@ class StrategySelectionSnapshot(BaseModel):
             for participant in entered_participants
             if participant.strategy_id is not None
         ]
-        return (
-            len(strategy_ids) == self.expected_participant_count
-            and len(strategy_ids) == len(set(strategy_ids))
-        )
+        return len(strategy_ids) == self.expected_participant_count
 
     @property
     def identity_complete(self) -> bool:

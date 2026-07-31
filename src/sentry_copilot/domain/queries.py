@@ -5,6 +5,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict
 from .identifiers import EvidenceId, SessionId, SessionParticipantId
 from .models import SessionState
 from .prebattle import PrebattleEvidenceLedger
+from .prebattle_migration import LegacyPrebattleMigrationState
 from .rulesets import RulesetDependencyStamp, SessionRulesetContext
 from .strategy_commitment import (
     ParticipantCommitmentLevel,
@@ -67,6 +68,14 @@ def get_prebattle_evidence_ledger(
     """Return the immutable append-only prebattle evidence history."""
 
     return state.prebattle_evidence
+
+
+def get_legacy_prebattle_migration_state(
+    state: SessionState,
+) -> LegacyPrebattleMigrationState | None:
+    """Return explicit legacy import history without mutating or re-importing it."""
+
+    return state.legacy_prebattle_migrations
 
 
 def get_ready_confirmed_commitment(
@@ -180,11 +189,12 @@ def get_current_ruleset_dependency_stamp(
 
 
 def build_team_strategy_context(state: SessionState) -> TeamStrategyContext | None:
-    """Build the historical battle-entry strategy view for all ENTERED_BATTLE players.
+    """Build the legacy materialized strategy view for ENTERED_BATTLE snapshot rows.
 
     Players remain included after later leaving, disconnecting, being eliminated, or reaching
-    non-positive HP. This is not a current active-team query; that requires a separate future
-    query interface.
+    non-positive HP. Snapshot values are not confirmed occupancy and this is not a current
+    active-team query; new code must use commitment, identification, occupancy, and conflict
+    queries instead.
     """
 
     snapshot = state.strategy_selection

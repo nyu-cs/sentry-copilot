@@ -20,12 +20,21 @@ and optional explicit supersession links.
   dependency stamp.
 - `MANUAL_CONFIRMATION` requires matching manual evidence and an audit reason, and carries no
   dependency stamp.
+- `LEGACY_SNAPSHOT_INTERPRETATION` requires a full dependency stamp and matching typed legacy
+  strategy evidence. It preserves an old normalized interpretation for audit but is never eligible
+  for current identification or occupancy by itself.
 
 Direct and manual records do not become stale merely because context generation changes. Their
 strategy is nevertheless checked against the current revision catalog every time the read model is
 derived. Catalog-derived records are fresh only when their entire stamp equals the current stamp.
 Returning early → late → early therefore does not revive an old derived record because the
 generation differs.
+
+Legacy interpretation records follow the same dependency freshness test as catalog-derived
+records. A fresh compatible legacy record is still exposed only in `legacy_record_ids`; a stale
+one moves to `stale_record_ids`. A direct/manual correction must explicitly supersede it. Because
+the original record and supersession remain append-only, rerunning migration cannot restore the
+old interpretation as current.
 
 ## Commitment and battle entry
 
@@ -77,3 +86,6 @@ conflicts. Public service queries are:
 Zero eligible claims yields zero occupancies. One fresh compatible unconflicted strategy for one
 committed participant yields one occupancy. Conflicting claims yield explicit conflict records and
 no occupancy for the affected strategy. No latest-write-wins or silent revision switch is used.
+
+Legacy `build_team_strategy_context` remains a separate snapshot projection and is intentionally
+not used by any of these authority queries.

@@ -174,16 +174,16 @@ Selection outcome is one of `entered_battle`, `left_unready`, `exited_before_str
 `exited_after_strategy`, or `unknown`. It describes the selection phase only and does not reuse
 runtime `LEFT`, `DISCONNECTED`, or `ELIMINATED` status. In the M0.1a compatibility model, only
 `entered_battle` participates in snapshot completeness, identity completeness, default team
-queries, and snapshot-level strategy uniqueness. This is not the approved confirmed-occupancy
-rule. An `exited_after_strategy` record may currently retain duplicate legacy strategy evidence;
-M0.2b will distinguish candidates from ready-confirmed permanent occupancy.
+queries. Snapshot strategy values are legacy observations/interpretations and may repeat for any
+selection outcome. Repetition is neither valid confirmed occupancy nor a model-construction error;
+the concrete-identification query layer owns strong-claim conflict detection.
 Every `observed_at` value must include a timezone.
 
 The legacy `strategy_id` field may contain normalized interpretation produced by an older catalog,
-not a revision-independent raw visual fact. M0.2a preserves the field and evidence but new
-revision-aware logic must not use it to establish occupancy, runtime assignment, or
-catalog-dependent confirmation. M0.2b will separate raw strategy observations from normalized
-interpretation.
+not a revision-independent raw visual fact. M0.2b.3 preserves the field and its original evidence
+through an explicit migration adapter. Even a catalog-compatible imported value remains a weak,
+stamp-dependent legacy interpretation and cannot establish effective identification, occupancy,
+or runtime assignment.
 
 ## Strategy-selection snapshot
 
@@ -202,7 +202,8 @@ interpretation.
 Derived properties:
 
 - `strategy_complete`: the snapshot is frozen, expected count is known, `entered_battle` count
-  equals it, and every entered participant has a unique strategy.
+  equals it, and every entered participant's legacy strategy field has a value. Values need not be
+  unique because this property measures materialized field coverage, not occupancy.
 - `identity_complete`: strategy is complete and every entered participant has a valid unique
   four-digit player tag.
 - `completeness_level`: `partial`, `strategies_complete`, or `fully_identified`.
@@ -217,6 +218,9 @@ participants, release their strategy IDs, or recompute snapshot completeness.
 Snapshot models are frozen. Python stores participants and snapshot evidence as tuples; JSON
 continues to use arrays. `captured_at` and all strategy-selection event timestamps must include a
 timezone. Reducer updates rebuild and validate a new snapshot instead of mutating the existing one.
+
+`frozen` closes ordinary snapshot merging only. It does not close the separate prebattle evidence,
+correction, commitment, identification, battle-entry, or migration streams.
 
 ## Prebattle evidence ledger
 
@@ -331,6 +335,44 @@ requires observed normal active participation and can establish only a strategy-
 commitment. `battle_entry_not_confirmed` records that normal participation was not observed, such
 as when the first stable frame already shows departure. Presence in the battle UI alone cannot
 infer entry, a strategy ID, occupancy, a roster, or a follow-up task.
+
+## Legacy prebattle migration
+
+Legacy snapshot import is an explicit command-service operation, never a `SessionState`
+constructor side effect or query-time write. The command carries:
+
+- normalized session ID;
+- stable migration operation ID;
+- canonical lowercase SHA-256 snapshot fingerprint;
+- timezone-aware migration time;
+- optional audit reason.
+
+`LegacyPrebattleMigrationState` stores immutable `LegacySnapshotMigrationRecord` entries. Both
+operation ID and fingerprint are unique. Field evidence IDs and optional weak identification IDs
+are deterministic functions of fingerprint, participant, and field. Equal replay is therefore a
+no-op, while reuse of one operation ID with different command content is rejected atomically.
+
+Two typed evidence records preserve the source boundary:
+
+- `LegacyReadySnapshotImported` is positive ready evidence with the original `EvidenceRecord`,
+  original observation time, fingerprint, operation ID, and migration time. Only legacy
+  `ready=true` creates it.
+- `LegacyStrategyInterpretationImported` preserves the old string value and original strategy
+  field evidence. It is not raw frame evidence and does not itself identify a current strategy.
+
+When a legacy strategy value is a normalized ID available in the current catalog, the migration
+may also append a `LEGACY_SNAPSHOT_INTERPRETATION` identification record with the full current
+dependency stamp. That basis remains excluded from effective identification and occupancy. It is
+query-visible only as weak audit history; context changes make it stale, and a later manual record
+must explicitly supersede it. Repeating migration never removes supersession.
+
+Migration may run after `StrategySelectionSnapshot.frozen`. Revision correction never deletes the
+snapshot, migration history, raw/legacy evidence, ready commitment, or identification history.
+Current freshness and compatibility remain query-derived.
+
+`build_team_strategy_context` deliberately retains its old snapshot projection for compatibility.
+It is a legacy prebattle materialized query, not a commitment, effective-identification,
+uncontested-occupancy, runtime-assignment, or current-active-team query.
 
 ## Future runtime participation transition
 

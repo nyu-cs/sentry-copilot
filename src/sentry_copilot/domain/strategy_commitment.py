@@ -7,6 +7,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validato
 from .identifiers import EvidenceId, SessionId, SessionParticipantId
 from .prebattle import (
     BattleEntryConfirmed,
+    LegacyReadySnapshotImported,
     PrebattleEvidenceLedger,
     ReadyCheckObserved,
     StrategySelectionConfirmedEvidence,
@@ -88,6 +89,7 @@ def derive_strategy_commitments(
                 entry,
                 (
                     ReadyCheckObserved,
+                    LegacyReadySnapshotImported,
                     BattleEntryConfirmed,
                     StrategySelectionConfirmedEvidence,
                 ),
@@ -114,7 +116,10 @@ def derive_strategy_commitments(
                 confirmed_at=participant_evidence[0].timestamp,
                 ready_evidence_ids=tuple(
                     entry.evidence_id for entry in participant_evidence
-                    if isinstance(entry, ReadyCheckObserved)
+                    if isinstance(
+                        entry,
+                        (ReadyCheckObserved, LegacyReadySnapshotImported),
+                    )
                 ),
                 battle_entry_evidence_ids=tuple(
                     entry.evidence_id for entry in participant_evidence

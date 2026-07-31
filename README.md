@@ -79,12 +79,14 @@ Video / Image Folder / Live Window (later)
 → 首次有效准备勾建立 ready-confirmed、具体策略未知的 commitment
 → 明确记录实际参战人数，不按识别出的行数推断
 → reducer 合并为当前 StrategySelectionSnapshot
-→ 离开选择阶段时冻结
+→ 离开选择阶段时冻结 legacy 物化视图
+→ 显式迁移 adapter 按稳定 fingerprint 导入旧 ready 与策略解释证据
 → 局内查询读取实际参战玩家的历史策略，不要求 runtime slot 映射
 ```
 
-快照冻结、最终入场人数已知且每名 `ENTERED_BATTLE` 参与者的策略均确认时，即可供
-局内查询；单人、三人或四人对局使用同一规则。选择阶段退出者仍保留在原始快照，
+快照冻结、最终入场人数已知且每名 `ENTERED_BATTLE` 参与者的 legacy 策略字段均有值时，
+其物化视图达到策略字段完整；这只表示 prebattle 数据覆盖，不表示 concrete strategy
+occupancy 或产品标注完成。单人、三人或四人对局使用同一规则。选择阶段退出者仍保留在原始快照，
 但不进入默认最终队伍查询。部分玩家名、头像或编号仍可未知。运行时仍存活人数与
 快照记录人数彼此独立。左上角面板流程保留为未来 fallback，所有切换和打开面板
 操作都由用户完成。v0.1 不做自动点击。
@@ -93,9 +95,10 @@ Video / Image Folder / Live Window (later)
 查询会排除所有 `INACTIVE` 玩家，但不会修改历史策略快照。
 
 当前 `StrategySelectionParticipant.strategy_id` 是 M0.1a 兼容字段，可能已经包含旧
-catalog 的规范化解释。M0.2a 保留字段及其 evidence，但 revision-aware 新代码不得
-据此建立 occupancy、runtime assignment 或 catalog-dependent confirmation；正式迁移
-留给 M0.2b。
+catalog 的规范化解释。M0.2b.3 通过显式、可审计、幂等的 adapter 保存原字段证据；
+可兼容当前 catalog 的值只形成带 dependency stamp 的弱 legacy interpretation，不能
+直接成为 current identification、occupancy 或 runtime assignment。legacy snapshot
+允许重复策略观察，真正的重复正式 claim 仍由 occupancy conflict query 表达。
 
 M0.2b.1 的 commitment 尚不包含 concrete strategy occupancy。重复准备勾只追加证据，
 不会创建第二个 commitment 或后移 `confirmed_at`。若人工确认某个准备勾属于识别
@@ -113,6 +116,14 @@ generation 改变自动失效，但会在当前 revision catalog 下重新检查
 的 commitment，但不能推断 `strategy_id`。玩家只是显示在局内栏不等于已经入场；若
 首个可靠稳定画面已经显示其退出，且之前没有 ready 或其他正式选择证据，则保持
 `BATTLE_ENTRY_NOT_CONFIRMED`，不建立 commitment、具体 occupancy 或补查任务。
+
+`StrategySelectionSnapshot.frozen` 只关闭普通 legacy snapshot 合并，不关闭独立的
+prebattle evidence、ready correction、commitment、direct/manual identification 或迁移。
+revision correction 保留全部原始证据、commitment、claim 与迁移历史；catalog-derived
+及 weak legacy interpretation 依 dependency stamp 变 stale，direct/manual claim 则在
+当前 catalog 下重新检查 compatibility。`build_team_strategy_context` 保持 legacy
+物化查询语义，新代码应读取 commitment、effective identification、uncontested
+occupancy 和 conflict queries。
 
 ## 路径功能
 

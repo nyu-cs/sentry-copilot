@@ -111,10 +111,19 @@ Read-only APIs:
 The context is ordered by selection row only for stable display. It does not infer runtime slots
 and contains no concrete strategy ID.
 
-## Deferred
+## Legacy snapshot compatibility
 
-M0.2b.3 will explicitly and idempotently migrate legacy snapshot evidence and revise old snapshot
-completeness/uniqueness semantics.
+M0.2b.3 explicitly imports legacy `ready=true` as
+`LegacyReadySnapshotImported`. It retains the source field evidence and observation time while
+marking migration provenance, and it uses deterministic IDs so replay cannot create a second
+commitment. Legacy `ready=false` or unknown values create no negative evidence and never withdraw
+an existing commitment. Imported ready evidence participates in the same false-positive
+correction mechanism; repeating migration does not reactivate an excluded evidence ID.
+
+Snapshot `frozen` does not close the commitment or evidence histories. A migration after freeze can
+establish or strengthen a commitment, but an existing earlier `confirmed_at` remains unchanged.
+
+## Deferred
 
 OCR, vision, capture, UI, runtime roster, slot association, assignment, and automatic clicking are
 outside this milestone.

@@ -16,7 +16,8 @@ The repository must remain useful and testable while the game mode is unavailabl
 5. `selection_row` is not a runtime player slot. Never bind them by order.
 6. A strategy snapshot contains at most four participants. Completeness is relative to an explicit
    `expected_participant_count` of players whose `selection_outcome` is `entered_battle`; never
-   infer that count from the number of observed participants.
+   infer that count from the number of observed participants. Snapshot completeness is legacy
+   prebattle field coverage, not confirmed occupancy; repeated legacy strategy values are allowed.
 7. Strategy selection is historical state. Runtime inactivation must not change
    `selection_outcome`, remove participants, change strategies, or change snapshot completeness.
    Future business logic groups active leave and disconnect under `LEFT_OR_DISCONNECTED`; it must
@@ -39,8 +40,8 @@ The repository must remain useful and testable while the game mode is unavailabl
     post-update revisions are separate data states; do not confuse the name's `下半` with a
     revision.
 17. A legacy `StrategySelectionParticipant.strategy_id` may already contain catalog-dependent
-    interpretation. Preserve its evidence, but do not use it for new occupancy, assignment, or
-    revision-dependent confirmation until the M0.2b migration.
+    interpretation. Preserve it through the explicit, audited migration adapter, but never treat
+    the imported weak interpretation as current identification, occupancy, or assignment.
 18. `RulesetStrategyProfile` is the sole icon-mapping authority for a strategy in one revision.
     `StrategyIdentity` stores only the normalized strategy ID, and locale resources never store
     icons.
@@ -68,6 +69,9 @@ The repository must remain useful and testable while the game mode is unavailabl
     active participation may produce `BATTLE_ENTRY_CONFIRMED`. A first stable frame that already
     shows departure cannot create a commitment, concrete identification, or occupancy; prior ready
     evidence remains authoritative if it exists.
+27. Legacy snapshot migration is explicit and idempotent by operation ID and canonical snapshot
+    fingerprint. `snapshot.frozen` closes only ordinary legacy snapshot merging; it never closes
+    the independent evidence, correction, commitment, identification, or migration histories.
 
 ## Module boundaries
 
@@ -80,12 +84,15 @@ The repository must remain useful and testable while the game mode is unavailabl
   before dispatching accepted facts to the reducer.
 - `domain/strategy_selection.py`: owns the reducer-managed strategy snapshot for up to four players.
 - `domain/prebattle.py`: owns typed, immutable, evidence-ID-addressed raw prebattle history.
+- `domain/prebattle_migration.py`: owns immutable legacy migration audit history.
 - `domain/strategy_commitment.py`: derives current ready-confirmed commitments from effective
   ready evidence without assigning a concrete strategy.
 - `domain/strategy_identification.py`: owns immutable concrete claim history, supersession,
   conflict read models, and query-derived uncontested occupancy.
 - `services/strategy_identification_service.py`: validates concrete claims against commitment and
   the current catalog before dispatching accepted immutable facts.
+- `services/prebattle_migration_service.py`: explicitly imports one legacy snapshot into typed
+  evidence and weak, non-authoritative interpretation history.
 - `player/`: owns user-guided fallback inspection workflows.
 - `routes/`: owns map/route schemas, selection, projection, and rendering.
 - `services/`: orchestrates modules without embedding recognition heuristics.

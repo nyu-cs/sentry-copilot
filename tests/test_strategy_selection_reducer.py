@@ -417,7 +417,7 @@ def test_correction_upgrades_stronger_same_value_evidence() -> None:
     )
 
 
-def test_manual_strategy_swap_is_atomic() -> None:
+def test_manual_snapshot_interpretation_swap_is_atomic() -> None:
     current = state().model_copy(update={"strategy_selection": full_snapshot(frozen=True)})
     manual = evidence(source=EvidenceKind.MANUAL, confidence=1.0)
     replacements = [
@@ -442,18 +442,18 @@ def test_manual_strategy_swap_is_atomic() -> None:
 def test_invalid_manual_correction_leaves_original_snapshot_unchanged() -> None:
     current = state().model_copy(update={"strategy_selection": full_snapshot(frozen=True)})
     original_snapshot = current.strategy_selection
-    duplicate = participant(
+    invalid = participant(
         1,
-        strategy_id="strategy.synthetic.4",
-        strategy_evidence=evidence(source=EvidenceKind.MANUAL, confidence=1.0),
+        strategy_id="strategy.synthetic.corrected",
+        strategy_evidence=evidence(source=EvidenceKind.OBSERVED, confidence=1.0),
     )
-    with pytest.raises(InvalidObservationError, match="invariants"):
+    with pytest.raises(InvalidObservationError, match="manual evidence"):
         reduce_session(
             current,
             StrategySelectionSnapshotCorrected(
                 session_id="session.synthetic",
                 ruleset_id="demo.v1",
-                replacements=[duplicate],
+                replacements=[invalid],
             ),
         )
     assert current.strategy_selection == original_snapshot

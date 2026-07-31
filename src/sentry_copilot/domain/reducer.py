@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from .enums import EvidenceKind, PlayerStatus
 from .events import (
+    LegacyPrebattleSnapshotMigrated,
     MapObserved,
     PlayerAvatarObserved,
     PlayerHealthObserved,
@@ -25,6 +26,7 @@ from .models import SessionState
 from .prebattle import (
     BattleEntryConfirmed,
     BattleEntryNotConfirmed,
+    LegacyReadySnapshotImported,
     PrebattleEvidenceEntry,
     PrebattleEvidenceLedger,
     ReadyCheckObserved,
@@ -32,6 +34,7 @@ from .prebattle import (
     StrategyCandidateObserved,
     StrategySelectionConfirmedEvidence,
 )
+from .prebattle_migration import LegacyPrebattleMigrationState
 from .rulesets import RevisionSelectionRecord, SessionRulesetContext
 from .strategy_commitment import derive_strategy_commitments
 from .strategy_identification import StrategyIdentificationState
@@ -94,6 +97,8 @@ def reduce_session(state: SessionState, event: SessionEvent) -> SessionState:
         return _apply_prebattle_evidence(state, event)
     if isinstance(event, StrategyIdentificationRecordsAppended):
         return _apply_strategy_identification_records(state, event)
+    if isinstance(event, LegacyPrebattleSnapshotMigrated):
+        return _apply_legacy_prebattle_migration(state, event)
     if isinstance(event, SessionRulesetContextSelected):
         return _apply_ruleset_context_selection(state, event)
     if isinstance(event, SessionRulesetRevisionCorrected):
@@ -208,6 +213,129 @@ def _apply_strategy_identification_records(
         ) from exc
 
 
+def _apply_legacy_prebattle_migration(
+    state: SessionState,
+    event: LegacyPrebattleSnapshotMigrated,
+) -> SessionState:
+    if event.session_id != state.session_id:
+        raise InvalidObservationError(
+            "legacy migration event session_id does not match SessionState"
+        )
+    if state.strategy_selection is None:
+        raise InvalidObservationError("legacy migration requires a strategy snapshot")
+
+    migrations = state.legacy_prebattle_migrations or LegacyPrebattleMigrationState(
+        session_id=state.session_id
+    )
+    existing_operation = migrations.for_operation(
+        event.migration_record.operation_id
+    )
+    if existing_operation is not None:
+        if existing_operation != event.migration_record:
+            raise InvalidObservationError(
+                "legacy migration operation ID already has different content"
+            )
+        _require_migration_event_content_matches_state(state, event)
+        return state
+    if migrations.for_snapshot(event.migration_record.snapshot_fingerprint) is not None:
+        return state
+
+    current_ledger = state.prebattle_evidence
+    evidence_entries = list(current_ledger.entries if current_ledger is not None else ())
+    evidence_by_id = {entry.evidence_id: entry for entry in evidence_entries}
+    for entry in event.evidence_entries:
+        existing_evidence = evidence_by_id.get(entry.evidence_id)
+        if existing_evidence is not None:
+            if existing_evidence != entry:
+                raise InvalidObservationError(
+                    "legacy migration evidence ID already has different content"
+                )
+            continue
+        evidence_entries.append(entry)
+        evidence_by_id[entry.evidence_id] = entry
+
+    current_identifications = state.strategy_identifications
+    identification_records = list(
+        current_identifications.records if current_identifications is not None else ()
+    )
+    records_by_id = {record.record_id: record for record in identification_records}
+    for record in event.identification_records:
+        existing_record = records_by_id.get(record.record_id)
+        if existing_record is not None:
+            if existing_record != record:
+                raise InvalidObservationError(
+                    "legacy migration identification ID already has different content"
+                )
+            continue
+        identification_records.append(record)
+        records_by_id[record.record_id] = record
+
+    try:
+        ledger = (
+            PrebattleEvidenceLedger(
+                session_id=state.session_id,
+                entries=tuple(evidence_entries),
+            )
+            if evidence_entries
+            else current_ledger
+        )
+        identifications = (
+            StrategyIdentificationState(
+                session_id=state.session_id,
+                records=tuple(identification_records),
+            )
+            if identification_records
+            else current_identifications
+        )
+        migration_state = LegacyPrebattleMigrationState(
+            session_id=state.session_id,
+            records=(*migrations.records, event.migration_record),
+        )
+        payload = state.model_dump()
+        payload.update(
+            {
+                "prebattle_evidence": ledger,
+                "strategy_commitments": (
+                    derive_strategy_commitments(ledger) if ledger is not None else None
+                ),
+                "strategy_identifications": identifications,
+                "legacy_prebattle_migrations": migration_state,
+                "updated_at": event.migration_record.migrated_at.astimezone(UTC),
+            }
+        )
+        return SessionState.model_validate(payload)
+    except ValidationError as exc:
+        raise InvalidObservationError(
+            "legacy migration event violates session invariants"
+        ) from exc
+
+
+def _require_migration_event_content_matches_state(
+    state: SessionState,
+    event: LegacyPrebattleSnapshotMigrated,
+) -> None:
+    ledger = state.prebattle_evidence
+    identifications = state.strategy_identifications
+    for entry in event.evidence_entries:
+        existing_evidence = (
+            ledger.get(entry.evidence_id) if ledger is not None else None
+        )
+        if existing_evidence != entry:
+            raise InvalidObservationError(
+                "replayed legacy migration evidence differs from stored content"
+            )
+    for record in event.identification_records:
+        existing_record = (
+            identifications.get(record.record_id)
+            if identifications is not None
+            else None
+        )
+        if existing_record != record:
+            raise InvalidObservationError(
+                "replayed legacy migration identification differs from stored content"
+            )
+
+
 def _apply_prebattle_evidence(
     state: SessionState,
     event: PrebattleEvidenceEntry,
@@ -286,7 +414,10 @@ def _require_ready_correction_targets(
 ) -> None:
     for evidence_id in correction.invalidated_ready_evidence_ids:
         target = ledger.get(evidence_id)
-        if not isinstance(target, ReadyCheckObserved):
+        if not isinstance(
+            target,
+            (ReadyCheckObserved, LegacyReadySnapshotImported),
+        ):
             raise InvalidObservationError(
                 "ready false-positive correction target is not ready evidence"
             )

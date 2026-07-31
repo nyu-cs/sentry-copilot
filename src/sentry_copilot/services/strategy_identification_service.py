@@ -400,7 +400,12 @@ class StrategyIdentificationService:
     @staticmethod
     def _apply_event(
         state: SessionState,
-        event: PrebattleEvidenceEntry | StrategyIdentificationRecordsAppended,
+        event: (
+            BattleEntryConfirmed
+            | BattleEntryNotConfirmed
+            | StrategySelectionConfirmedEvidence
+            | StrategyIdentificationRecordsAppended
+        ),
     ) -> SessionState:
         try:
             candidate = reduce_session(state, event)

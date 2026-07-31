@@ -9,6 +9,7 @@ from pydantic import (
     ConfigDict,
     Field,
     field_validator,
+    model_validator,
 )
 
 from .enums import EvidenceKind, Phase, StageType
@@ -23,13 +24,19 @@ from .identifiers import (
 from .prebattle import (
     BattleEntryConfirmed,
     BattleEntryNotConfirmed,
+    LegacyReadySnapshotImported,
+    LegacyStrategyInterpretationImported,
     ReadyCheckObserved,
     ReadyFalsePositiveCorrected,
     StrategyCandidateObserved,
     StrategySelectionConfirmedEvidence,
 )
+from .prebattle_migration import LegacySnapshotMigrationRecord
 from .rulesets import RevisionSelectionMethod
-from .strategy_identification import StrategyIdentificationRecord
+from .strategy_identification import (
+    StrategyIdentificationBasis,
+    StrategyIdentificationRecord,
+)
 from .strategy_selection import StrategySelectionParticipant, StrategySelectionSnapshot
 
 
@@ -160,6 +167,83 @@ class StrategyIdentificationRecordsAppended(BaseModel):
     timestamp: AwareDatetime
 
 
+class LegacyPrebattleSnapshotMigrated(BaseModel):
+    """Accepted atomic import prepared by the explicit migration service."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    type: Literal["legacy_prebattle_snapshot_migrated"] = (
+        "legacy_prebattle_snapshot_migrated"
+    )
+    session_id: SessionId
+    migration_record: LegacySnapshotMigrationRecord
+    evidence_entries: tuple[
+        LegacyReadySnapshotImported | LegacyStrategyInterpretationImported,
+        ...,
+    ] = Field(default_factory=tuple)
+    identification_records: tuple[StrategyIdentificationRecord, ...] = Field(
+        default_factory=tuple
+    )
+
+    @model_validator(mode="after")
+    def record_references_exact_event_content(self) -> LegacyPrebattleSnapshotMigrated:
+        if self.migration_record.session_id != self.session_id:
+            raise ValueError("legacy migration event session IDs must match")
+        ready_ids = tuple(
+            entry.evidence_id
+            for entry in self.evidence_entries
+            if isinstance(entry, LegacyReadySnapshotImported)
+        )
+        strategy_ids = tuple(
+            entry.evidence_id
+            for entry in self.evidence_entries
+            if isinstance(entry, LegacyStrategyInterpretationImported)
+        )
+        record_ids = tuple(record.record_id for record in self.identification_records)
+        if ready_ids != self.migration_record.ready_evidence_ids:
+            raise ValueError("legacy migration ready evidence references must match")
+        if strategy_ids != self.migration_record.strategy_evidence_ids:
+            raise ValueError("legacy migration strategy evidence references must match")
+        if record_ids != self.migration_record.identification_record_ids:
+            raise ValueError("legacy migration identification references must match")
+        if any(entry.session_id != self.session_id for entry in self.evidence_entries):
+            raise ValueError("legacy migration evidence session IDs must match")
+        if any(
+            entry.migration_operation_id != self.migration_record.operation_id
+            or entry.snapshot_fingerprint
+            != self.migration_record.snapshot_fingerprint
+            for entry in self.evidence_entries
+        ):
+            raise ValueError("legacy migration evidence provenance must match its record")
+        strategy_entries = {
+            entry.evidence_id: entry
+            for entry in self.evidence_entries
+            if isinstance(entry, LegacyStrategyInterpretationImported)
+        }
+        for record in self.identification_records:
+            if record.basis != (
+                StrategyIdentificationBasis.LEGACY_SNAPSHOT_INTERPRETATION
+            ):
+                raise ValueError("legacy migration may append only weak legacy records")
+            linked_entries = [
+                strategy_entries.get(evidence_id)
+                for evidence_id in record.evidence_ids
+            ]
+            if any(entry is None for entry in linked_entries):
+                raise ValueError(
+                    "legacy identification must reference migrated strategy evidence"
+                )
+            if any(
+                entry is not None
+                and entry.session_player_id != record.session_player_id
+                for entry in linked_entries
+            ):
+                raise ValueError(
+                    "legacy identification evidence cannot cross participants"
+                )
+        return self
+
+
 SessionEvent = (
     PlayerAvatarObserved
     | PlayerHealthObserved
@@ -176,6 +260,7 @@ SessionEvent = (
     | StrategySelectionConfirmedEvidence
     | ReadyFalsePositiveCorrected
     | StrategyIdentificationRecordsAppended
+    | LegacyPrebattleSnapshotMigrated
     | SessionRulesetContextSelected
     | SessionRulesetRevisionCorrected
 )
