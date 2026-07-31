@@ -2,6 +2,14 @@ from __future__ import annotations
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict
 
+from .battle_roster import (
+    BattleEntryStatus,
+    BattleRoster,
+    BattleRosterParticipant,
+    PlayerParticipationStatus,
+    battle_entry_status,
+    derive_battle_roster,
+)
 from .identifiers import EvidenceId, SessionId, SessionParticipantId
 from .models import SessionState
 from .prebattle import PrebattleEvidenceLedger
@@ -68,6 +76,37 @@ def get_prebattle_evidence_ledger(
     """Return the immutable append-only prebattle evidence history."""
 
     return state.prebattle_evidence
+
+
+def build_battle_roster(state: SessionState) -> BattleRoster:
+    """Derive confirmed entrants and current participation from audit history."""
+
+    return derive_battle_roster(
+        session_id=state.session_id,
+        prebattle_evidence=state.prebattle_evidence,
+        participation_state=state.battle_participation,
+    )
+
+
+def get_battle_entry_status(
+    state: SessionState,
+    session_player_id: SessionParticipantId,
+) -> BattleEntryStatus:
+    """Return explicit entry status without treating battle UI presence as entry."""
+
+    return battle_entry_status(state.prebattle_evidence, session_player_id)
+
+
+def get_active_battle_participants(
+    state: SessionState,
+) -> tuple[BattleRosterParticipant, ...]:
+    """Return current active entrants; historical inactive entrants remain in roster."""
+
+    return tuple(
+        participant
+        for participant in build_battle_roster(state).participants
+        if participant.participation_status == PlayerParticipationStatus.ACTIVE
+    )
 
 
 def get_legacy_prebattle_migration_state(

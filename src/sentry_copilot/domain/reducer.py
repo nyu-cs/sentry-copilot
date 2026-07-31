@@ -5,6 +5,14 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from .battle_roster import (
+    BattleInactivationCorrected,
+    BattleParticipantInactivated,
+    BattleParticipationEntry,
+    BattleParticipationState,
+    PlayerParticipationStatus,
+    derive_battle_roster,
+)
 from .enums import EvidenceKind, PlayerStatus
 from .events import (
     LegacyPrebattleSnapshotMigrated,
@@ -25,6 +33,7 @@ from .identifiers import LocaleId, RulesetId, SessionId, SessionParticipantId
 from .models import SessionState
 from .prebattle import (
     BattleEntryConfirmed,
+    BattleEntryFalsePositiveCorrected,
     BattleEntryNotConfirmed,
     LegacyReadySnapshotImported,
     PrebattleEvidenceEntry,
@@ -90,11 +99,14 @@ def reduce_session(state: SessionState, event: SessionEvent) -> SessionState:
             ReadyCheckObserved,
             BattleEntryConfirmed,
             BattleEntryNotConfirmed,
+            BattleEntryFalsePositiveCorrected,
             StrategySelectionConfirmedEvidence,
             ReadyFalsePositiveCorrected,
         ),
     ):
         return _apply_prebattle_evidence(state, event)
+    if isinstance(event, (BattleParticipantInactivated, BattleInactivationCorrected)):
+        return _apply_battle_participation_evidence(state, event)
     if isinstance(event, StrategyIdentificationRecordsAppended):
         return _apply_strategy_identification_records(state, event)
     if isinstance(event, LegacyPrebattleSnapshotMigrated):
@@ -345,6 +357,23 @@ def _apply_prebattle_evidence(
         session_id=event.session_id,
         session_player_id=event.session_player_id,
     )
+    if isinstance(event, BattleEntryConfirmed):
+        current_roster = derive_battle_roster(
+            session_id=state.session_id,
+            prebattle_evidence=state.prebattle_evidence,
+            participation_state=state.battle_participation,
+        )
+        participant = current_roster.for_participant(event.session_player_id)
+        if (
+            participant is not None
+            and participant.participation_status == PlayerParticipationStatus.INACTIVE
+            and participant.inactivated_at is not None
+            and event.timestamp > participant.inactivated_at
+        ):
+            raise InvalidObservationError(
+                "active battle-entry evidence cannot follow effective inactivation; "
+                "correct the assistant inactivation record first"
+            )
     current_ledger = state.prebattle_evidence or PrebattleEvidenceLedger(
         session_id=state.session_id
     )
@@ -377,6 +406,66 @@ def _apply_prebattle_evidence(
     except ValidationError as exc:
         raise InvalidObservationError(
             "prebattle evidence violates session invariants"
+        ) from exc
+
+
+def _apply_battle_participation_evidence(
+    state: SessionState,
+    event: BattleParticipationEntry,
+) -> SessionState:
+    _require_prebattle_participant(
+        state,
+        session_id=event.session_id,
+        session_player_id=event.session_player_id,
+    )
+    current = state.battle_participation or BattleParticipationState(
+        session_id=state.session_id
+    )
+    existing = current.get(event.evidence_id)
+    if existing is not None:
+        if existing == event:
+            return state
+        raise InvalidObservationError(
+            "battle participation evidence ID already has different content"
+        )
+
+    if isinstance(event, BattleParticipantInactivated):
+        roster = derive_battle_roster(
+            session_id=state.session_id,
+            prebattle_evidence=state.prebattle_evidence,
+            participation_state=current,
+        )
+        participant = roster.for_participant(event.session_player_id)
+        if participant is None:
+            raise InvalidObservationError(
+                "only a confirmed battle entrant can become inactive"
+            )
+        if participant.participation_status != PlayerParticipationStatus.ACTIVE:
+            raise InvalidObservationError(
+                "inactive battle participant cannot transition again"
+            )
+
+    event_time = (
+        event.observed_at
+        if isinstance(event, BattleParticipantInactivated)
+        else event.corrected_at
+    )
+    try:
+        participation = BattleParticipationState(
+            session_id=state.session_id,
+            entries=(*current.entries, event),
+        )
+        payload = state.model_dump()
+        payload.update(
+            {
+                "battle_participation": participation,
+                "updated_at": event_time.astimezone(UTC),
+            }
+        )
+        return SessionState.model_validate(payload)
+    except ValidationError as exc:
+        raise InvalidObservationError(
+            "battle participation evidence violates session invariants"
         ) from exc
 
 

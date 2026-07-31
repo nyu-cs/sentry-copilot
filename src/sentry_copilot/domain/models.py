@@ -6,9 +6,15 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .battle_roster import (
+    BattleParticipantInactivated,
+    BattleParticipationState,
+    derive_battle_roster,
+)
 from .enums import GameMode, Phase, PlayerStatus, Server, StageType
 from .identifiers import LocaleId, RulesetId, RulesetRevisionId, SessionId
 from .prebattle import (
+    BattleEntryConfirmed,
     LegacyReadySnapshotImported,
     LegacyStrategyInterpretationImported,
     PrebattleEvidenceLedger,
@@ -72,6 +78,7 @@ class SessionState(BaseModel):
     prebattle_evidence: PrebattleEvidenceLedger | None = None
     strategy_commitments: StrategyCommitmentState | None = None
     strategy_identifications: StrategyIdentificationState | None = None
+    battle_participation: BattleParticipationState | None = None
     legacy_prebattle_migrations: LegacyPrebattleMigrationState | None = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
@@ -121,6 +128,7 @@ class SessionState(BaseModel):
             )
         self._validate_prebattle_state()
         self._validate_strategy_identifications()
+        self._validate_battle_participation()
         self._validate_legacy_migrations()
         return self
 
@@ -196,6 +204,51 @@ class SessionState(BaseModel):
                     raise ValueError(
                         "strategy identification evidence cannot cross participants"
                     )
+
+    def _validate_battle_participation(self) -> None:
+        participation = self.battle_participation
+        if participation is None:
+            return
+        if participation.session_id != self.session_id:
+            raise ValueError(
+                "battle participation session_id does not match SessionState"
+            )
+        if self.strategy_selection is None or self.prebattle_evidence is None:
+            raise ValueError(
+                "battle participation requires participant and entry evidence history"
+            )
+        participant_ids = {
+            participant.session_player_id
+            for participant in self.strategy_selection.participants
+        }
+        if any(
+            entry.session_player_id not in participant_ids
+            for entry in participation.entries
+        ):
+            raise ValueError(
+                "battle participation participant must belong to the session"
+            )
+        entry_evidence = tuple(
+            entry
+            for entry in self.prebattle_evidence.entries
+            if isinstance(entry, BattleEntryConfirmed)
+        )
+        for entry in participation.entries:
+            if not isinstance(entry, BattleParticipantInactivated):
+                continue
+            if not any(
+                battle_entry.session_player_id == entry.session_player_id
+                and battle_entry.timestamp <= entry.observed_at
+                for battle_entry in entry_evidence
+            ):
+                raise ValueError(
+                    "inactivation requires prior confirmed battle-entry evidence"
+                )
+        derive_battle_roster(
+            session_id=self.session_id,
+            prebattle_evidence=self.prebattle_evidence,
+            participation_state=participation,
+        )
 
     def _validate_legacy_migrations(self) -> None:
         migrations = self.legacy_prebattle_migrations

@@ -96,15 +96,37 @@
 
 ## M0.2c — Runtime roster and slot assignment
 
-- [ ] Add battle roster and runtime player slots.
-- [ ] Add slot-participant association and slot-strategy assignment.
-- [ ] Keep selection rows independent from runtime slots.
+### M0.2c.1 — Battle participation facts and BattleRoster
+
+- [x] Derive battle entrants only from effective confirmed normal-participation evidence.
+- [x] Preserve entry-not-confirmed evidence for a first stable frame already showing departure.
+- [x] Add `ACTIVE` / terminal `INACTIVE`, inactivation reason, presentation, and normal/secret-core
+  stage context.
+- [x] Correct false-positive entry and inactivation interpretations without deleting evidence or
+  adding game-domain re-entry/reactivation transitions.
+- [x] Keep `BattleRoster` query-derived rather than persisting a second materialized mirror.
+
+### M0.2c.2 — Runtime slots and participant association
+
+- [ ] Add runtime player slots without binding them to selection rows by order.
+- [ ] Add conflict-aware slot-participant association.
+- [ ] Support `DIRECT_PLAYER_TAG` from the manually visited player's bottom `name#XXXX` display.
+- [ ] Keep association unresolved when the tag cannot be read; allow explicit user confirmation.
+
+### M0.2c.3 — Slot-strategy assignment
+
+- [ ] Derive assignment only through uncontested slot-participant association, confirmed entry,
+  effective participant identification, and uncontested occupancy.
+- [ ] Bind manual strategy-panel evidence to an already associated participant through existing
+  direct-observation identification.
+- [ ] Do not create `DIRECT_SLOT_STRATEGY_PANEL` or any slot-only strategy authority.
 
 ## M0.2d — Manual fallback and conflict resolution
 
 - [ ] Redefine the top-left strategy panel workflow as fallback.
 - [ ] Allow unresolved fallback observations with explicit runtime context.
-- [ ] Resolve by player tag, unique legal strategy, direct panel, or user confirmation.
+- [ ] Resolve participant association by player tag or user confirmation before applying direct
+  panel evidence to that participant.
 - [ ] Do not create selection participants from fallback observations.
 
 ## M1 — Replay route overlay
@@ -134,15 +156,6 @@
 
 ## Deferred
 
-- Add a typed runtime participation transition event carrying `observed_at`, stage, optional round,
-  optional wave, previous/new participation status, inactivation reason, inactive presentation,
-  HP, confidence, and evidence.
-- Model participation as `ACTIVE` or terminal `INACTIVE`; group active leave and disconnect under
-  `LEFT_OR_DISCONNECTED`, separate from `HP_DEPLETED`.
-- Distinguish `DEPARTED`, `SPECTATING`, and unknown presentation without treating presentation
-  alone as an inactivation reason.
-- Reserve runtime stage values for `normal` and `secret_core`; secret core does not require a
-  numeric round.
 - Observe every player at least once per wave, continue monitoring within a wave, and emit events
   only when status changes.
 - Allow roster checkpoints at wave start or wave end without mutating strategy-selection history.

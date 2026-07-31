@@ -117,6 +117,18 @@ generation 改变自动失效，但会在当前 revision catalog 下重新检查
 首个可靠稳定画面已经显示其退出，且之前没有 ready 或其他正式选择证据，则保持
 `BATTLE_ENTRY_NOT_CONFIRMED`，不建立 commitment、具体 occupancy 或补查任务。
 
+M0.2c.1 只把可靠观察到正常参与状态的玩家派生为 `BattleRoster` entrant。局内栏仍
+显示某行不等于入场。运行时参与状态分为 `ACTIVE` 与终态 `INACTIVE`；主动离开和断线
+统一为 `LEFT_OR_DISCONNECTED`，HP 归零为 `HP_DEPLETED`，画面呈现另分为
+`DEPARTED`、`SPECTATING` 或 `UNKNOWN`。原始 entry/inactivation 证据与人工纠正历史
+持久保存，roster 在查询时派生；误识别纠正可以改变助手当前解释，但不是玩家在游戏中
+重新入场或恢复 active。`normal` 与 `secret_core` 分开，secret core 不伪装成普通回合。
+
+未来人工策略面板补查必须先从目标视角底部 `name#XXXX` 建立
+`runtime slot -> participant` 关联，再把面板证据绑定到该 participant 并派生 assignment。
+读不到 tag 时保持 unresolved 或请求人工确认；不能建立 slot-only 策略权威，也不实现
+`DIRECT_SLOT_STRATEGY_PANEL`。所有视角切换和面板操作仍由用户手动完成。
+
 `StrategySelectionSnapshot.frozen` 只关闭普通 legacy snapshot 合并，不关闭独立的
 prebattle evidence、ready correction、commitment、direct/manual identification 或迁移。
 revision correction 保留全部原始证据、commitment、claim 与迁移历史；catalog-derived

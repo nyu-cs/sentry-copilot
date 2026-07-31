@@ -80,7 +80,8 @@ ready-confirmed selection.
 
 Immutable observed history and the assistant's current interpretation are separate.
 `ReadyFalsePositiveCorrected` is a manual, stable-ID ledger entry targeting one or more ready
-evidence IDs for the same participant.
+evidence IDs for the same participant. `BattleEntryFalsePositiveCorrected` applies the same
+preserve-and-exclude boundary to mistaken entry evidence.
 
 The reducer:
 
@@ -125,5 +126,6 @@ establish or strengthen a commitment, but an existing earlier `confirmed_at` rem
 
 ## Deferred
 
-OCR, vision, capture, UI, runtime roster, slot association, assignment, and automatic clicking are
-outside this milestone.
+OCR, vision, capture, UI, slot association, assignment, and automatic clicking are outside this
+milestone. M0.2c.1 subsequently derives `BattleRoster` from effective entry evidence without
+changing commitment authority.

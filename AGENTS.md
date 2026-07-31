@@ -58,6 +58,16 @@ The repository must remain useful and testable while the game mode is unavailabl
 23. False-positive ready recognition is a correctable assistant interpretation. Manual correction
     preserves the original observation and excludes it from the effective evidence set; it never
     claims that the player cancelled ready in the game.
+24. Battle UI presence does not prove battle entry. Only reliable observation of normal active
+    participation establishes a battle entrant; a first stable frame already showing departure
+    remains entry-not-confirmed.
+25. Runtime participation is `ACTIVE` or terminal `INACTIVE`. Assistant-record corrections may
+    invalidate or replace mistaken entry/inactivation evidence, but they are not game-domain
+    re-entry, reactivation, or revival transitions.
+26. Future direct strategy-panel evidence must bind to an already associated participant. The
+    manual fallback establishes `runtime slot -> participant` from the displayed `name#XXXX`
+    before deriving participant strategy and slot assignment; do not add a slot-only strategy
+    authority or `DIRECT_SLOT_STRATEGY_PANEL` bypass.
 24. Concrete strategy identification is separate from raw evidence and commitment. Catalog-derived
     identification requires raw candidate evidence and the current dependency stamp; direct and
     manual identification remain generation-independent but must be checked against the current
@@ -87,6 +97,8 @@ The repository must remain useful and testable while the game mode is unavailabl
 - `domain/prebattle_migration.py`: owns immutable legacy migration audit history.
 - `domain/strategy_commitment.py`: derives current ready-confirmed commitments from effective
   ready evidence without assigning a concrete strategy.
+- `domain/battle_roster.py`: owns immutable runtime participation history and derives the current
+  `BattleRoster` from effective entry and inactivation evidence.
 - `domain/strategy_identification.py`: owns immutable concrete claim history, supersession,
   conflict read models, and query-derived uncontested occupancy.
 - `services/strategy_identification_service.py`: validates concrete claims against commitment and

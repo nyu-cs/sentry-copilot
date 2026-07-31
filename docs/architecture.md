@@ -135,12 +135,12 @@ candidates are not occupancy. Two participants making the same concrete confirme
 claims for one participant produce `PARTICIPANT_STRATEGY_IDENTIFICATION_CONFLICT`; a direct/manual
 claim outside the current catalog produces `STRATEGY_CATALOG_COMPATIBILITY_CONFLICT`.
 
-Minimal battle reconciliation records only whether normal active participation was reliably
+M0.2b battle reconciliation records only whether normal active participation was reliably
 observed. `BATTLE_ENTRY_CONFIRMED` can establish or strengthen a strategy-unknown commitment, but
 contains no strategy ID. `BATTLE_ENTRY_NOT_CONFIRMED` is used when the first stable frame is already
 inactive or normal participation was never observed. A participant remaining visible as a departed
-row is not thereby a battle entrant. This milestone creates no `BattleRoster`, runtime slot,
-follow-up queue, or annotation.
+row is not thereby a battle entrant. M0.2c.1 now consumes those facts to derive `BattleRoster`, but
+still creates no runtime slot, follow-up queue, or annotation.
 
 ## Strategy catalog subsystem
 
@@ -203,15 +203,26 @@ produce a stamped weak legacy record for audit, but the current read model exclu
 effective identification and occupancy until a later direct/manual confirmation explicitly
 supersedes it. Raw visual observations and normalized strategy interpretation remain separate.
 
-Future runtime monitoring is a separate observation stream. It will distinguish `normal` from
-`secret_core`, allow `round_number=None`, carry an optional wave number, and record status
-transitions without writing back into selection outcome or strategy history.
+Runtime participation is a separate observation stream. It distinguishes `normal` from
+`secret_core`, requires `round_number=None` for secret core, carries an optional wave number, and
+records status transitions without writing back into selection outcome or strategy history.
 
-The future runtime business model separates participation (`ACTIVE` or terminal `INACTIVE`),
+The runtime business model separates participation (`ACTIVE` or terminal `INACTIVE`),
 inactivation reason (`LEFT_OR_DISCONNECTED`, `HP_DEPLETED`, or `UNKNOWN`), and inactive
 presentation (`DEPARTED`, `SPECTATING`, or `UNKNOWN`). `DISCONNECTED` is not a separate business
-reason. The historical team strategy context remains independent from a future current-active-team
-query.
+reason. `BattleParticipationState` retains append-only observations/corrections, while
+`build_battle_roster` derives entrants and current participation. `get_active_battle_participants`
+is separate from the historical team strategy context.
+
+Assistant-record correction does not add a game-domain re-entry or reactivation. Entry correction
+excludes mistaken `BattleEntryConfirmed` evidence; inactivation correction can invalidate or
+replace the current assistant interpretation while preserving every original fact for audit.
+
+Future runtime slots remain a separate authority chain. The manual panel fallback must first use
+the bottom `name#XXXX` display to establish a strong `DIRECT_PLAYER_TAG` participant association.
+Only then may participant-bound direct panel evidence strengthen strategy identification and
+derive assignment through uncontested occupancy. There is no slot-only panel authority or
+`DIRECT_SLOT_STRATEGY_PANEL` bypass.
 
 ## Route subsystem boundaries
 

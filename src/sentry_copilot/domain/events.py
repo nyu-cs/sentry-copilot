@@ -12,6 +12,7 @@ from pydantic import (
     model_validator,
 )
 
+from .battle_roster import BattleInactivationCorrected, BattleParticipantInactivated
 from .enums import EvidenceKind, Phase, StageType
 from .evidence import EvidenceRecord
 from .identifiers import (
@@ -23,6 +24,7 @@ from .identifiers import (
 )
 from .prebattle import (
     BattleEntryConfirmed,
+    BattleEntryFalsePositiveCorrected,
     BattleEntryNotConfirmed,
     LegacyReadySnapshotImported,
     LegacyStrategyInterpretationImported,
@@ -257,10 +259,13 @@ SessionEvent = (
     | ReadyCheckObserved
     | BattleEntryConfirmed
     | BattleEntryNotConfirmed
+    | BattleEntryFalsePositiveCorrected
     | StrategySelectionConfirmedEvidence
     | ReadyFalsePositiveCorrected
     | StrategyIdentificationRecordsAppended
     | LegacyPrebattleSnapshotMigrated
     | SessionRulesetContextSelected
     | SessionRulesetRevisionCorrected
+    | BattleParticipantInactivated
+    | BattleInactivationCorrected
 )

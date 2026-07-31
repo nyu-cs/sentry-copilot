@@ -46,6 +46,9 @@ class PrebattleObservationKind(StrEnum):
     READY_FALSE_POSITIVE_CORRECTION = "ready_false_positive_correction"
     BATTLE_ENTRY_CONFIRMED = "battle_entry_confirmed"
     BATTLE_ENTRY_NOT_CONFIRMED = "battle_entry_not_confirmed"
+    BATTLE_ENTRY_FALSE_POSITIVE_CORRECTION = (
+        "battle_entry_false_positive_correction"
+    )
     STRATEGY_SELECTION_CONFIRMED = "strategy_selection_confirmed"
     LEGACY_READY_IMPORTED = "legacy_ready_imported"
     LEGACY_STRATEGY_INTERPRETATION_IMPORTED = (
@@ -154,6 +157,46 @@ class BattleEntryNotConfirmed(PrebattleObservationBase):
         PrebattleObservationKind.BATTLE_ENTRY_NOT_CONFIRMED
     )
     reason: BattleEntryNotConfirmedReason
+
+
+class BattleEntryFalsePositiveCorrected(BaseModel):
+    """Manual correction of assistant entry evidence, not an in-game exit."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    type: Literal["battle_entry_false_positive_corrected"] = (
+        "battle_entry_false_positive_corrected"
+    )
+    kind: Literal[
+        PrebattleObservationKind.BATTLE_ENTRY_FALSE_POSITIVE_CORRECTION
+    ] = PrebattleObservationKind.BATTLE_ENTRY_FALSE_POSITIVE_CORRECTION
+    evidence_id: EvidenceId
+    session_id: SessionId
+    session_player_id: SessionParticipantId
+    timestamp: AwareDatetime
+    provenance: Literal[EvidenceKind.MANUAL] = EvidenceKind.MANUAL
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    invalidated_battle_entry_evidence_ids: tuple[EvidenceId, ...] = Field(
+        min_length=1
+    )
+    reason: str
+
+    @field_validator("invalidated_battle_entry_evidence_ids")
+    @classmethod
+    def target_ids_must_be_unique(
+        cls,
+        value: tuple[EvidenceId, ...],
+    ) -> tuple[EvidenceId, ...]:
+        if len(value) != len(set(value)):
+            raise ValueError("invalidated battle-entry evidence IDs must be unique")
+        return value
+
+    @field_validator("reason")
+    @classmethod
+    def reason_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("battle-entry correction reason cannot be blank")
+        return value
 
 
 class StrategySelectionConfirmedEvidence(PrebattleObservationBase):
@@ -282,6 +325,7 @@ PrebattleEvidenceEntry = Annotated[
     | ReadyCheckObserved
     | BattleEntryConfirmed
     | BattleEntryNotConfirmed
+    | BattleEntryFalsePositiveCorrected
     | StrategySelectionConfirmedEvidence
     | LegacyReadySnapshotImported
     | LegacyStrategyInterpretationImported
@@ -310,7 +354,33 @@ class PrebattleEvidenceLedger(BaseModel):
         positions = {
             entry.evidence_id: index for index, entry in enumerate(self.entries)
         }
+        invalidated_entry_ids: set[EvidenceId] = set()
         for entry_index, entry in enumerate(self.entries):
+            if isinstance(entry, BattleEntryFalsePositiveCorrected):
+                for target_id in entry.invalidated_battle_entry_evidence_ids:
+                    target = by_id.get(target_id)
+                    if not isinstance(target, BattleEntryConfirmed):
+                        raise ValueError(
+                            "battle-entry correction targets must reference confirmed entry"
+                        )
+                    if positions[target_id] >= entry_index:
+                        raise ValueError(
+                            "battle-entry correction targets must precede correction"
+                        )
+                    if target.session_player_id != entry.session_player_id:
+                        raise ValueError(
+                            "battle-entry correction cannot cross participants"
+                        )
+                    if entry.timestamp < target.timestamp:
+                        raise ValueError(
+                            "battle-entry correction cannot precede its target"
+                        )
+                    if target_id in invalidated_entry_ids:
+                        raise ValueError(
+                            "battle-entry evidence was already invalidated"
+                        )
+                    invalidated_entry_ids.add(target_id)
+                continue
             if not isinstance(entry, ReadyFalsePositiveCorrected):
                 continue
             for target_id in entry.invalidated_ready_evidence_ids:
@@ -349,4 +419,13 @@ class PrebattleEvidenceLedger(BaseModel):
             for entry in self.entries
             if isinstance(entry, ReadyFalsePositiveCorrected)
             for target_id in entry.invalidated_ready_evidence_ids
+        )
+
+    @property
+    def invalidated_battle_entry_evidence_ids(self) -> frozenset[EvidenceId]:
+        return frozenset(
+            target_id
+            for entry in self.entries
+            if isinstance(entry, BattleEntryFalsePositiveCorrected)
+            for target_id in entry.invalidated_battle_entry_evidence_ids
         )

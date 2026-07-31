@@ -20,7 +20,7 @@ The snapshot is historical selection state. A later runtime `LEFT`, `DISCONNECTE
 or clear its strategy. Current survivors and recorded selection participants are independent
 concepts.
 
-Those current enum labels are legacy observation/cache values. Future runtime business state uses:
+Those current enum labels are legacy observation/cache values. M0.2c.1 runtime business state uses:
 
 - participation: `ACTIVE` or terminal `INACTIVE`;
 - reason: `LEFT_OR_DISCONNECTED`, `HP_DEPLETED`, or `UNKNOWN`;
@@ -36,17 +36,28 @@ actions, and team contribution are no longer analyzed.
 ```text
 select target slot in assistant
 → user clicks the corresponding personalized avatar in game
-→ user opens the top-left strategy panel on that player's field
-→ assistant captures and recognizes the panel
-→ assistant binds the result to the explicit target slot
+→ user manually visits that player's perspective
+→ assistant reads the bottom display name + #XXXX
+→ the four-digit tag establishes runtime slot -> session participant association
+→ user manually opens the top-left strategy panel on that player's field
+→ panel evidence binds to the already associated participant
+→ participant direct identification and uncontested occupancy are derived
+→ runtime slot -> participant -> strategy assignment is derived
 → user corrects low-confidence output if needed
 ```
 
-The reducer rejects a strategy event when `slot != selected_player_slot`. This prevents a valid recognition result from being assigned to the wrong teammate.
+Display name alone is not unique. If the four-digit tag cannot be read reliably, association stays
+unresolved or the user must explicitly confirm it. Seeing the strategy panel does not permit the
+assistant to bypass participant association or create an independent slot-only strategy fact.
+`DIRECT_SLOT_STRATEGY_PANEL` is not an authority basis.
 
-This existing workflow is retained as a legacy fallback during M0.1a. M0.1b will redefine its
-output so an unresolved runtime slot can be matched by unique strategy, player tag, or explicit
-user confirmation without creating a fifth participant.
+The legacy reducer rejects a strategy event when `slot != selected_player_slot`. This prevents a
+valid recognition result from being assigned to the wrong teammate, but it is not the future
+assignment authority.
+
+The future fallback uses `DIRECT_PLAYER_TAG` or explicit user confirmation for participant
+association, then existing participant-bound `DIRECT_OBSERVATION` for the panel strategy. It never
+creates a fifth participant and never automates any click, perspective change, or panel opening.
 
 Do not infer inactivation from one missing frame. Insufficient evidence produces reason `UNKNOWN`
 with confidence and evidence retained.

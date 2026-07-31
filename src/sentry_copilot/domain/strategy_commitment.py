@@ -81,6 +81,7 @@ def derive_strategy_commitments(
     """Derive commitments from ready, entry, or concrete-selection confirmation."""
 
     invalidated_ids = ledger.invalidated_ready_evidence_ids
+    invalidated_entry_ids = ledger.invalidated_battle_entry_evidence_ids
     effective_confirmation = [
         entry
         for entry in ledger.entries
@@ -95,6 +96,10 @@ def derive_strategy_commitments(
                 ),
             )
             and entry.evidence_id not in invalidated_ids
+            and not (
+                isinstance(entry, BattleEntryConfirmed)
+                and entry.evidence_id in invalidated_entry_ids
+            )
         )
     ]
     participant_ids = sorted(

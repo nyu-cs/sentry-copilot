@@ -18,7 +18,7 @@
 The `strategy_id` fields on this runtime-slot model are retained as a legacy cache during M0.1.
 New team strategy queries read `SessionState.strategy_selection`, not this field.
 `PlayerState.status` is also a legacy observation/cache enum. Its `LEFT` and `DISCONNECTED` values
-must not become separate business outcomes in the future runtime model.
+do not become separate business outcomes in the M0.2c.1 participation model.
 
 ## Session ruleset context
 
@@ -374,27 +374,32 @@ Current freshness and compatibility remain query-derived.
 It is a legacy prebattle materialized query, not a commitment, effective-identification,
 uncontested-occupancy, runtime-assignment, or current-active-team query.
 
-## Future runtime participation transition
+## Battle participation history and derived roster
 
-This is a reserved contract, not an M0.1a recognizer or capture loop:
+M0.2c.1 persists immutable participation facts, not a mutable `BattleRoster` mirror:
 
 ```json
 {
+  "type": "battle_participant_inactivated",
+  "evidence_id": "evidence.synthetic.inactivation.1",
+  "session_id": "session.synthetic",
+  "session_player_id": "session-player-1",
   "observed_at": "2026-01-01T00:00:00Z",
   "stage_type": "secret_core",
   "round_number": null,
   "wave_number": 2,
-  "previous_participation_status": "active",
-  "new_participation_status": "inactive",
-  "inactivation_reason": "hp_depleted",
-  "inactive_presentation": "spectating",
+  "previous_status": "active",
+  "new_status": "inactive",
+  "reason": "hp_depleted",
+  "presentation": "spectating",
   "hp": 0,
   "confidence": 0.99,
-  "evidence": ["synthetic.spectating-icon"]
+  "provenance": "observed",
+  "evidence_reference": "private/synthetic/spectating-frame.png"
 }
 ```
 
-The reserved runtime domain has three independent concepts:
+The runtime domain has three independent concepts:
 
 - `PlayerParticipationStatus`: `active` or terminal `inactive`;
 - `PlayerInactivationReason`: `left_or_disconnected`, `hp_depleted`, or `unknown`;
@@ -407,11 +412,22 @@ reason remains `unknown` with evidence and confidence retained. A spectating ico
 evidence of HP depletion. Spectating means the player is still watching, not contributing.
 
 `inactive` is terminal and does not automatically return to `active`. Once inactive, later HP,
-actions, and team contribution are not analyzed. A future current-active-team query will exclude
-all inactive players; M0.1a `TeamStrategyContext` remains a historical strategy query.
+actions, and team contribution are not analyzed. `get_active_battle_participants` excludes all
+inactive players; M0.1a `TeamStrategyContext` remains a historical strategy query.
 
-Runtime stage type must at least distinguish `normal` and `secret_core`. Secret core is not encoded
-as a fixed ordinary round, so `round_number` may be `null`. Future live work should inspect every
+`BattleEntryFalsePositiveCorrected` and `BattleInactivationCorrected` are manual audit entries.
+They preserve the original evidence and change only the assistant's effective interpretation.
+An inactivation correction may remove a false positive or replace its stage, time, reason,
+presentation, and HP. This never represents a game-domain reactivation. Stable evidence IDs make
+exact replay idempotent, and whole-state validation makes failure atomic.
+
+`build_battle_roster(state)` derives only participants with effective `BattleEntryConfirmed`
+evidence. Ready, strategy occupancy, selection outcome, UI presence, and a first stable frame that
+already shows departure cannot create an entrant. Effective inactivation changes that entrant's
+query status but never removes it or releases commitment, identification, or occupancy.
+
+Runtime stage type distinguishes `normal` and `secret_core`. Secret core is not encoded as a fixed
+ordinary round, so `round_number` is `null`. Future live work should inspect every
 player at least once per wave, continue observing the player bar within a wave, emit an event when
 status changes, and optionally save roster checkpoints at wave start or end. These runtime records
 may occur in any normal wave, stage interval, or secret-core wave and must never mutate

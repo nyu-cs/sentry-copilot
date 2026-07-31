@@ -137,18 +137,18 @@ The snapshot is a historical selection record. Runtime health and status are sep
 An entered player always retains `selection_outcome=entered_battle`, whether runtime departure
 occurs during an ordinary round, between ordinary play and secret core, or in any secret-core wave.
 
-Future runtime state separates participation (`active` or terminal `inactive`), inactivation reason
+M0.2c.1 runtime state separates participation (`active` or terminal `inactive`), inactivation reason
 (`left_or_disconnected`, `hp_depleted`, or `unknown`), and inactive presentation (`departed`,
 `spectating`, or `unknown`). Disconnect is not a separate business reason. Departed presentation
 alone does not establish HP depletion; spectating is positive HP-depletion evidence but does not
 mean the player still contributes. Once inactive, later HP, actions, and contribution are ignored.
 
-Future transition records will carry `observed_at`, `stage_type`, optional round and wave,
+Transition records carry `observed_at`, `stage_type`, optional round and wave,
 previous/new participation status, reason, presentation, optional HP, confidence, and evidence.
-Runtime stage type will distinguish at least `normal` and `secret_core`; secret core permits
-`round_number=None`. Per-wave checks, continuous player-bar observation, status-change events,
-wave-boundary roster checkpoints, and an inactive-filtering active-team query are deferred live
-features, not part of M0.1a.
+Runtime stage type distinguishes `normal` and `secret_core`; secret core uses
+`round_number=None`. `BattleRoster` and its active-participant projection are query-derived and do
+not mutate this snapshot. Per-wave checks, continuous player-bar observation, recognition, and
+wave-boundary roster checkpoints remain deferred live features.
 
 ## Legacy runtime strategy fields
 
