@@ -68,10 +68,15 @@
 
 ### M0.2b.2 — Concrete strategy identification and occupancy conflicts
 
-- [ ] Add basis-aware concrete strategy identification with conditional dependency stamps.
-- [ ] Distinguish duplicate occupancy, participant-identification, and catalog-compatibility
-  conflicts.
-- [ ] Enforce permanent unique occupancy across entered and post-selection-exited players.
+- [x] Add basis-aware concrete strategy identification with conditional dependency stamps.
+- [x] Distinguish duplicate-confirmed-claim, participant-identification, and
+  catalog-compatibility conflicts.
+- [x] Derive only uncontested unique occupancy while preserving every claim and explicit
+  supersession for audit.
+- [x] Allow reliable normal battle-entry evidence to establish strategy-unknown commitment without
+  inferring a concrete strategy or constructing a runtime roster.
+- [x] Treat a first stable battle frame that is already inactive as entry-not-confirmed, not as
+  proof that the displayed participant entered battle.
 
 ### M0.2b.3 — Legacy snapshot migration and revision invalidation
 

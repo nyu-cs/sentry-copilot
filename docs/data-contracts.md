@@ -278,7 +278,7 @@ unready action.
 
 ## Ready-confirmed commitment
 
-`StrategyCommitmentState` is the immutable materialization of effective ready evidence:
+`StrategyCommitmentState` is the immutable materialization of effective formal-selection evidence:
 
 ```json
 {
@@ -290,19 +290,47 @@ unready action.
       "ready_evidence_ids": [
         "evidence.synthetic.ready.001",
         "evidence.synthetic.ready.002"
-      ]
+      ],
+      "battle_entry_evidence_ids": [],
+      "strategy_confirmation_evidence_ids": []
     }
   ]
 }
 ```
 
-The earliest effective ready evidence supplies `confirmed_at`. Repeated ready evidence adds its ID
-but does not create another commitment or move that time. If manual correction excludes every
-effective ready observation, the current assistant materialization removes the commitment while
-the append-only game observation history remains intact.
+The earliest effective ready, reliable normal-entry, or direct/manual concrete-selection evidence
+supplies `confirmed_at`. Repeated evidence adds its ID but does not create another commitment or
+move that time. A manual ready correction removes only the targeted ready evidence. The commitment
+is removed only when no independent effective confirmation evidence remains; append-only history
+is always retained.
 
-M0.2b.1 exposes only `observing` and `ready_confirmed_strategy_unknown`. It does not interpret a
-candidate as a strategy, establish concrete occupancy, consult a catalog, or implement release.
+The generic commitment context exposes `observing` and `ready_confirmed_strategy_unknown`; concrete
+identity stays in the separate M0.2b.2 identification read model. It never implements release.
+
+## Concrete strategy identification
+
+`StrategyIdentificationState` is an immutable append-only history of concrete claims. A record has
+a stable record ID, session participant, normalized strategy, basis, timezone-aware time, evidence
+IDs, optional dependency stamp, and optional supersession links. `CATALOG_DERIVED` requires the
+current full dependency stamp and raw candidate evidence. `DIRECT_OBSERVATION` and
+`MANUAL_CONFIRMATION` reject dependency stamps and instead require matching strong evidence.
+
+Catalog-derived records become stale whenever any dependency-stamp field differs. Direct/manual
+records survive generation changes but are rechecked against the current revision catalog.
+Manual correction appends an explicit superseding record; it never deletes the old record or means
+that the player changed strategy in game.
+
+`StrategyOccupancyView` is calculated at query time and is not another persisted authority. Only a
+participant with a current commitment and a fresh, compatible, unsuperseded, unconflicted claim can
+produce occupancy. Duplicate candidates remain valid raw evidence. Duplicate concrete claims for
+one strategy instead produce `duplicate_confirmed_strategy_claim`; the contested strategy has no
+valid occupancy until explicit correction.
+
+Two additional battle evidence types preserve the entrant boundary. `battle_entry_confirmed`
+requires observed normal active participation and can establish only a strategy-unknown
+commitment. `battle_entry_not_confirmed` records that normal participation was not observed, such
+as when the first stable frame already shows departure. Presence in the battle UI alone cannot
+infer entry, a strategy ID, occupancy, a roster, or a follow-up task.
 
 ## Future runtime participation transition
 

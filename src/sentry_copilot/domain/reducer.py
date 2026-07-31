@@ -15,6 +15,7 @@ from .events import (
     SessionRulesetContextSelected,
     SessionRulesetRevisionCorrected,
     StageObserved,
+    StrategyIdentificationRecordsAppended,
     StrategySelectionSnapshotCorrected,
     StrategySelectionSnapshotFrozen,
     StrategySelectionSnapshotObserved,
@@ -22,14 +23,18 @@ from .events import (
 from .identifiers import LocaleId, RulesetId, SessionId, SessionParticipantId
 from .models import SessionState
 from .prebattle import (
+    BattleEntryConfirmed,
+    BattleEntryNotConfirmed,
     PrebattleEvidenceEntry,
     PrebattleEvidenceLedger,
     ReadyCheckObserved,
     ReadyFalsePositiveCorrected,
     StrategyCandidateObserved,
+    StrategySelectionConfirmedEvidence,
 )
 from .rulesets import RevisionSelectionRecord, SessionRulesetContext
 from .strategy_commitment import derive_strategy_commitments
+from .strategy_identification import StrategyIdentificationState
 from .strategy_selection import (
     EvidenceRecord,
     ParticipantField,
@@ -80,10 +85,15 @@ def reduce_session(state: SessionState, event: SessionEvent) -> SessionState:
         (
             StrategyCandidateObserved,
             ReadyCheckObserved,
+            BattleEntryConfirmed,
+            BattleEntryNotConfirmed,
+            StrategySelectionConfirmedEvidence,
             ReadyFalsePositiveCorrected,
         ),
     ):
         return _apply_prebattle_evidence(state, event)
+    if isinstance(event, StrategyIdentificationRecordsAppended):
+        return _apply_strategy_identification_records(state, event)
     if isinstance(event, SessionRulesetContextSelected):
         return _apply_ruleset_context_selection(state, event)
     if isinstance(event, SessionRulesetRevisionCorrected):
@@ -149,6 +159,53 @@ def reduce_session(state: SessionState, event: SessionEvent) -> SessionState:
 
     next_state.updated_at = event.timestamp.astimezone(UTC)
     return next_state
+
+
+def _apply_strategy_identification_records(
+    state: SessionState,
+    event: StrategyIdentificationRecordsAppended,
+) -> SessionState:
+    if event.session_id != state.session_id:
+        raise InvalidObservationError(
+            "strategy identification event session_id does not match SessionState"
+        )
+    current = state.strategy_identifications or StrategyIdentificationState(
+        session_id=state.session_id
+    )
+    records = list(current.records)
+    existing_by_id = {record.record_id: record for record in records}
+    changed = False
+    for record in event.records:
+        existing = existing_by_id.get(record.record_id)
+        if existing is not None:
+            if existing != record:
+                raise InvalidObservationError(
+                    "strategy identification record ID already has different content"
+                )
+            continue
+        records.append(record)
+        existing_by_id[record.record_id] = record
+        changed = True
+    if not changed:
+        return state
+
+    try:
+        identifications = StrategyIdentificationState(
+            session_id=state.session_id,
+            records=tuple(records),
+        )
+        payload = state.model_dump()
+        payload.update(
+            {
+                "strategy_identifications": identifications,
+                "updated_at": event.timestamp.astimezone(UTC),
+            }
+        )
+        return SessionState.model_validate(payload)
+    except ValidationError as exc:
+        raise InvalidObservationError(
+            "strategy identification event violates session invariants"
+        ) from exc
 
 
 def _apply_prebattle_evidence(

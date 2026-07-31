@@ -29,9 +29,16 @@ Recognizers do not edit `SessionState`. The reducer enforces:
 - raw prebattle candidate and ready observations append to an evidence-ID-addressed ledger;
 - applying an identical evidence ID is idempotent, while an ID collision with different evidence
   is rejected;
-- only currently effective ready evidence materializes a ready-confirmed commitment;
+- only effective ready, normal-entry, or concrete-selection confirmation evidence materializes a
+  ready-confirmed commitment;
+- reliable normal battle participation can strengthen the same commitment, but merely being
+  displayed inactive in the battle UI cannot establish entry;
 - false-positive correction preserves the original ready observation and changes only the
   assistant's effective interpretation;
+- concrete strategy claims remain append-only while explicit manual records supersede assistant
+  interpretations without representing an in-game strategy switch;
+- uncontested occupancy is derived from commitment, freshness, compatibility, supersession, and
+  conflict state; it is never persisted as a second authority;
 - `selection_row` never implies a runtime player slot;
 - expected participant count is explicit and never inferred from recognized rows;
 - M0.1a snapshot completeness requires unique entered-player strategy values, without treating
@@ -56,18 +63,18 @@ defines the stamp but does not create future occupancy, assignment, annotation, 
 M0.2b.1 separates three concepts:
 
 ```text
-raw candidate / ready observation
+raw candidate / formal-selection observation
         ↓ append-only, stable evidence ID
 PrebattleEvidenceLedger
-        ↓ exclude manually corrected false positives
+        ↓ exclude corrected ready false positives
 StrategyCommitmentState
         ↓ read-only projection
-OBSERVING or READY_CONFIRMED_STRATEGY_UNKNOWN
+formal-selection commitment, concrete strategy still separate
 ```
 
 Raw candidate records contain frame references, normalized ROI, observed visual cues, observed
 text, confidence, time, and provenance. They deliberately contain no normalized strategy ID.
-Catalog-dependent interpretation and concrete occupancy are deferred to M0.2b.2.
+M0.2b.2 interprets them only in a separate concrete-identification record.
 
 The first effective ready observation determines `confirmed_at`; later ready observations add
 evidence without moving it or creating another commitment. There is no game-domain unready or
@@ -80,6 +87,33 @@ Every prebattle event carries normalized session and participant IDs. The reduce
 cross-session events and participants absent from the session's strategy-selection snapshot.
 Ledger and commitment aggregates are frozen; the reducer constructs and validates a complete new
 `SessionState`, so a failed correction cannot partially change the input.
+
+## Concrete identification and effective occupancy
+
+Concrete claims use one of three bases. `CATALOG_DERIVED` requires raw candidate evidence and an
+exact `RulesetDependencyStamp`; any ruleset, revision, locale, catalog-version, or generation
+change makes it stale. `DIRECT_OBSERVATION` and `MANUAL_CONFIRMATION` carry strong evidence rather
+than a dependency stamp. They survive generation changes but are checked against the current
+revision catalog on every query.
+
+Identification history is append-only. Manual correction adds a record with explicit
+`supersedes_record_ids`; the replaced record remains available for audit. Current identification
+is derived only from fresh, compatible, unsuperseded claims for a participant with a current
+commitment. Occupancy is then derived from those identifications and is not stored in
+`SessionState`.
+
+The game invariant is one formal occupant per strategy. Candidate duplicates remain legal because
+candidates are not occupancy. Two participants making the same concrete confirmed claim produce
+`DUPLICATE_CONFIRMED_STRATEGY_CLAIM`, no winner and no occupancy for that strategy. Distinct strong
+claims for one participant produce `PARTICIPANT_STRATEGY_IDENTIFICATION_CONFLICT`; a direct/manual
+claim outside the current catalog produces `STRATEGY_CATALOG_COMPATIBILITY_CONFLICT`.
+
+Minimal battle reconciliation records only whether normal active participation was reliably
+observed. `BATTLE_ENTRY_CONFIRMED` can establish or strengthen a strategy-unknown commitment, but
+contains no strategy ID. `BATTLE_ENTRY_NOT_CONFIRMED` is used when the first stable frame is already
+inactive or normal participation was never observed. A participant remaining visible as a departed
+row is not thereby a battle entrant. This milestone creates no `BattleRoster`, runtime slot,
+follow-up queue, or annotation.
 
 ## Strategy catalog subsystem
 

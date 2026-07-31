@@ -21,11 +21,15 @@ from .identifiers import (
     SessionId,
 )
 from .prebattle import (
+    BattleEntryConfirmed,
+    BattleEntryNotConfirmed,
     ReadyCheckObserved,
     ReadyFalsePositiveCorrected,
     StrategyCandidateObserved,
+    StrategySelectionConfirmedEvidence,
 )
 from .rulesets import RevisionSelectionMethod
+from .strategy_identification import StrategyIdentificationRecord
 from .strategy_selection import StrategySelectionParticipant, StrategySelectionSnapshot
 
 
@@ -143,6 +147,19 @@ class SessionRulesetRevisionCorrected(AcceptedRulesetContextEvent):
     )
 
 
+class StrategyIdentificationRecordsAppended(BaseModel):
+    """Structurally validated concrete claims accepted by the catalog-aware service."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    type: Literal["strategy_identification_records_appended"] = (
+        "strategy_identification_records_appended"
+    )
+    session_id: SessionId
+    records: tuple[StrategyIdentificationRecord, ...] = Field(min_length=1)
+    timestamp: AwareDatetime
+
+
 SessionEvent = (
     PlayerAvatarObserved
     | PlayerHealthObserved
@@ -154,7 +171,11 @@ SessionEvent = (
     | StrategySelectionSnapshotCorrected
     | StrategyCandidateObserved
     | ReadyCheckObserved
+    | BattleEntryConfirmed
+    | BattleEntryNotConfirmed
+    | StrategySelectionConfirmedEvidence
     | ReadyFalsePositiveCorrected
+    | StrategyIdentificationRecordsAppended
     | SessionRulesetContextSelected
     | SessionRulesetRevisionCorrected
 )

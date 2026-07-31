@@ -37,6 +37,23 @@ class PrebattleObservationKind(StrEnum):
     STRATEGY_CANDIDATE = "strategy_candidate"
     READY_CHECK = "ready_check"
     READY_FALSE_POSITIVE_CORRECTION = "ready_false_positive_correction"
+    BATTLE_ENTRY_CONFIRMED = "battle_entry_confirmed"
+    BATTLE_ENTRY_NOT_CONFIRMED = "battle_entry_not_confirmed"
+    STRATEGY_SELECTION_CONFIRMED = "strategy_selection_confirmed"
+
+
+class BattleEntryNotConfirmedReason(StrEnum):
+    """Why battle entry cannot be established from the available frame history."""
+
+    FIRST_STABLE_FRAME_ALREADY_INACTIVE = "first_stable_frame_already_inactive"
+    NORMAL_PARTICIPATION_NOT_OBSERVED = "normal_participation_not_observed"
+
+
+class StrategySelectionConfirmationSource(StrEnum):
+    """Strong concrete evidence that also proves some strategy was selected."""
+
+    DIRECT_STRATEGY_OBSERVATION = "direct_strategy_observation"
+    MANUAL_STRATEGY_CONFIRMATION = "manual_strategy_confirmation"
 
 
 class PrebattleObservationBase(BaseModel):
@@ -55,12 +72,14 @@ class PrebattleObservationBase(BaseModel):
     roi: NormalizedRoi | None = None
     observed_visual_cue: str | None = None
     observed_text: str | None = None
+    manual_note: str | None = None
 
     @field_validator(
         "source_detail",
         "frame_reference",
         "observed_visual_cue",
         "observed_text",
+        "manual_note",
     )
     @classmethod
     def optional_text_must_not_be_blank(cls, value: str | None) -> str | None:
@@ -76,6 +95,7 @@ class PrebattleObservationBase(BaseModel):
                 self.roi,
                 self.observed_visual_cue,
                 self.observed_text,
+                self.manual_note,
             )
         ):
             raise ValueError(
@@ -103,6 +123,55 @@ class ReadyCheckObserved(PrebattleObservationBase):
         PrebattleObservationKind.READY_CHECK
     )
     ready_check_visible: Literal[True] = True
+
+
+class BattleEntryConfirmed(PrebattleObservationBase):
+    """Evidence that normal active participation was actually observed in battle."""
+
+    type: Literal["battle_entry_confirmed"] = "battle_entry_confirmed"
+    kind: Literal[PrebattleObservationKind.BATTLE_ENTRY_CONFIRMED] = (
+        PrebattleObservationKind.BATTLE_ENTRY_CONFIRMED
+    )
+    normal_participation_visible: Literal[True] = True
+
+
+class BattleEntryNotConfirmed(PrebattleObservationBase):
+    """Conservative evidence that displayed-in-UI does not prove battle entry."""
+
+    type: Literal["battle_entry_not_confirmed"] = "battle_entry_not_confirmed"
+    kind: Literal[PrebattleObservationKind.BATTLE_ENTRY_NOT_CONFIRMED] = (
+        PrebattleObservationKind.BATTLE_ENTRY_NOT_CONFIRMED
+    )
+    reason: BattleEntryNotConfirmedReason
+
+
+class StrategySelectionConfirmedEvidence(PrebattleObservationBase):
+    """Direct/manual concrete evidence that also confirms a formal selection."""
+
+    type: Literal["strategy_selection_confirmed_evidence"] = (
+        "strategy_selection_confirmed_evidence"
+    )
+    kind: Literal[PrebattleObservationKind.STRATEGY_SELECTION_CONFIRMED] = (
+        PrebattleObservationKind.STRATEGY_SELECTION_CONFIRMED
+    )
+    confirmation_source: StrategySelectionConfirmationSource
+    manual_reason: str | None = None
+
+    @model_validator(mode="after")
+    def confirmation_source_matches_provenance(
+        self,
+    ) -> StrategySelectionConfirmedEvidence:
+        if (
+            self.confirmation_source
+            == StrategySelectionConfirmationSource.MANUAL_STRATEGY_CONFIRMATION
+        ):
+            if self.provenance != EvidenceKind.MANUAL:
+                raise ValueError("manual strategy confirmation requires manual provenance")
+            if self.manual_reason is None or not self.manual_reason.strip():
+                raise ValueError("manual strategy confirmation requires a reason")
+        elif self.provenance == EvidenceKind.MANUAL:
+            raise ValueError("direct strategy observation cannot use manual provenance")
+        return self
 
 
 class ReadyFalsePositiveCorrected(BaseModel):
@@ -147,7 +216,12 @@ class ReadyFalsePositiveCorrected(BaseModel):
 
 
 PrebattleEvidenceEntry = Annotated[
-    StrategyCandidateObserved | ReadyCheckObserved | ReadyFalsePositiveCorrected,
+    StrategyCandidateObserved
+    | ReadyCheckObserved
+    | BattleEntryConfirmed
+    | BattleEntryNotConfirmed
+    | StrategySelectionConfirmedEvidence
+    | ReadyFalsePositiveCorrected,
     Field(discriminator="type"),
 ]
 

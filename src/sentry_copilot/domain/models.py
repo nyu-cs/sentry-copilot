@@ -14,6 +14,7 @@ from .strategy_commitment import (
     StrategyCommitmentState,
     derive_strategy_commitments,
 )
+from .strategy_identification import StrategyIdentificationState
 from .strategy_selection import StrategySelectionSnapshot
 
 
@@ -59,6 +60,7 @@ class SessionState(BaseModel):
     strategy_selection: StrategySelectionSnapshot | None = None
     prebattle_evidence: PrebattleEvidenceLedger | None = None
     strategy_commitments: StrategyCommitmentState | None = None
+    strategy_identifications: StrategyIdentificationState | None = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @model_validator(mode="before")
@@ -106,6 +108,7 @@ class SessionState(BaseModel):
                 "strategy selection session_id does not match SessionState"
             )
         self._validate_prebattle_state()
+        self._validate_strategy_identifications()
         return self
 
     def _validate_prebattle_state(self) -> None:
@@ -143,8 +146,43 @@ class SessionState(BaseModel):
         derived = derive_strategy_commitments(self.prebattle_evidence)
         if self.strategy_commitments != derived:
             raise ValueError(
-                "strategy commitments must match currently effective ready evidence"
+                "strategy commitments must match effective confirmation evidence"
             )
+
+    def _validate_strategy_identifications(self) -> None:
+        identifications = self.strategy_identifications
+        if identifications is None:
+            return
+        if identifications.session_id != self.session_id:
+            raise ValueError(
+                "strategy identification session_id does not match SessionState"
+            )
+        if self.strategy_selection is None or self.prebattle_evidence is None:
+            raise ValueError(
+                "strategy identifications require participant and evidence history"
+            )
+        participant_ids = {
+            participant.session_player_id
+            for participant in self.strategy_selection.participants
+        }
+        evidence_by_id = {
+            entry.evidence_id: entry for entry in self.prebattle_evidence.entries
+        }
+        for record in identifications.records:
+            if record.session_player_id not in participant_ids:
+                raise ValueError(
+                    "strategy identification participant must belong to the session"
+                )
+            for evidence_id in record.evidence_ids:
+                evidence = evidence_by_id.get(evidence_id)
+                if evidence is None:
+                    raise ValueError(
+                        "strategy identification evidence must exist in the ledger"
+                    )
+                if evidence.session_player_id != record.session_player_id:
+                    raise ValueError(
+                        "strategy identification evidence cannot cross participants"
+                    )
 
     @property
     def effective_ruleset_id(self) -> RulesetId:

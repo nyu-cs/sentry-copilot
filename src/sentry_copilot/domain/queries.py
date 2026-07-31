@@ -39,7 +39,7 @@ class TeamStrategyContext(BaseModel):
 
 
 class ParticipantCommitmentContext(BaseModel):
-    """Read-only current ready interpretation for one prebattle participant."""
+    """Read-only formal-selection interpretation for one session participant."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -48,6 +48,8 @@ class ParticipantCommitmentContext(BaseModel):
     level: ParticipantCommitmentLevel
     confirmed_at: AwareDatetime | None = None
     ready_evidence_ids: tuple[EvidenceId, ...] = ()
+    battle_entry_evidence_ids: tuple[EvidenceId, ...] = ()
+    strategy_confirmation_evidence_ids: tuple[EvidenceId, ...] = ()
 
 
 class PrebattleCommitmentContext(BaseModel):
@@ -71,7 +73,7 @@ def get_ready_confirmed_commitment(
     state: SessionState,
     session_player_id: SessionParticipantId,
 ) -> ReadyConfirmedCommitment | None:
-    """Return one current commitment interpretation, if effective ready evidence exists."""
+    """Return one commitment when effective formal-selection evidence exists."""
 
     if state.strategy_commitments is None:
         return None
@@ -112,6 +114,18 @@ def build_prebattle_commitment_context(
                     if commitments is not None
                     else None
                 ),
+                battle_entry_evidence_ids=_battle_entry_evidence_ids(
+                    commitments.for_participant(participant.session_player_id)
+                    if commitments is not None
+                    else None
+                ),
+                strategy_confirmation_evidence_ids=(
+                    _strategy_confirmation_evidence_ids(
+                        commitments.for_participant(participant.session_player_id)
+                        if commitments is not None
+                        else None
+                    )
+                ),
             )
             for participant in sorted(
                 snapshot.participants,
@@ -131,6 +145,22 @@ def _commitment_evidence_ids(
     commitment: ReadyConfirmedCommitment | None,
 ) -> tuple[EvidenceId, ...]:
     return commitment.ready_evidence_ids if commitment is not None else ()
+
+
+def _battle_entry_evidence_ids(
+    commitment: ReadyConfirmedCommitment | None,
+) -> tuple[EvidenceId, ...]:
+    return commitment.battle_entry_evidence_ids if commitment is not None else ()
+
+
+def _strategy_confirmation_evidence_ids(
+    commitment: ReadyConfirmedCommitment | None,
+) -> tuple[EvidenceId, ...]:
+    return (
+        commitment.strategy_confirmation_evidence_ids
+        if commitment is not None
+        else ()
+    )
 
 
 def get_session_ruleset_context(

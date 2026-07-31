@@ -57,6 +57,17 @@ The repository must remain useful and testable while the game mode is unavailabl
 23. False-positive ready recognition is a correctable assistant interpretation. Manual correction
     preserves the original observation and excludes it from the effective evidence set; it never
     claims that the player cancelled ready in the game.
+24. Concrete strategy identification is separate from raw evidence and commitment. Catalog-derived
+    identification requires raw candidate evidence and the current dependency stamp; direct and
+    manual identification remain generation-independent but must be checked against the current
+    catalog.
+25. A confirmed strategy has at most one valid occupant. Duplicate concrete claims are an
+    assistant interpretation conflict, never a valid duplicate game occupancy. Keep every claim
+    and its evidence, expose no contested occupancy, and require explicit correction.
+26. Displayed in the battle UI does not mean entered battle. Only reliable observation of normal
+    active participation may produce `BATTLE_ENTRY_CONFIRMED`. A first stable frame that already
+    shows departure cannot create a commitment, concrete identification, or occupancy; prior ready
+    evidence remains authoritative if it exists.
 
 ## Module boundaries
 
@@ -71,6 +82,10 @@ The repository must remain useful and testable while the game mode is unavailabl
 - `domain/prebattle.py`: owns typed, immutable, evidence-ID-addressed raw prebattle history.
 - `domain/strategy_commitment.py`: derives current ready-confirmed commitments from effective
   ready evidence without assigning a concrete strategy.
+- `domain/strategy_identification.py`: owns immutable concrete claim history, supersession,
+  conflict read models, and query-derived uncontested occupancy.
+- `services/strategy_identification_service.py`: validates concrete claims against commitment and
+  the current catalog before dispatching accepted immutable facts.
 - `player/`: owns user-guided fallback inspection workflows.
 - `routes/`: owns map/route schemas, selection, projection, and rendering.
 - `services/`: orchestrates modules without embedding recognition heuristics.

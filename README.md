@@ -102,6 +102,18 @@ M0.2b.1 的 commitment 尚不包含 concrete strategy occupancy。重复准备�
 false positive，原 observation 仍留在 ledger 中，仅从当前有效证据集合排除；其他仍
 有效的准备勾证据继续维持 commitment。
 
+M0.2b.2 将具体策略识别保存为独立、不可变且可审计的 claim history。catalog-derived
+记录必须同时引用原始候选证据和当前 dependency stamp；direct/manual 记录不因
+generation 改变自动失效，但会在当前 revision catalog 下重新检查兼容性。occupancy
+只从未被 supersede、fresh、compatible、已有 commitment 且无冲突的 claim 查询派生，
+不会再持久化第二份镜像。同一策略的两名正式 claim 属于
+`DUPLICATE_CONFIRMED_STRATEGY_CLAIM`，不会产生两个有效 occupancy。
+
+可靠观察到玩家以正常参与状态进入战斗，可以补建或强化“已正式选择、具体策略未知”
+的 commitment，但不能推断 `strategy_id`。玩家只是显示在局内栏不等于已经入场；若
+首个可靠稳定画面已经显示其退出，且之前没有 ready 或其他正式选择证据，则保持
+`BATTLE_ENTRY_NOT_CONFIRMED`，不建立 commitment、具体 occupancy 或补查任务。
+
 ## 路径功能
 
 ```text

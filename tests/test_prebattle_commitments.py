@@ -431,7 +431,7 @@ def test_session_state_rejects_forged_commitment_materialization() -> None:
     payload["strategy_commitments"] = StrategyCommitmentState(
         session_id=SESSION_ID
     )
-    with pytest.raises(ValidationError, match="currently effective ready evidence"):
+    with pytest.raises(ValidationError, match="effective confirmation evidence"):
         SessionState.model_validate(payload)
 
 
@@ -447,10 +447,9 @@ def test_ledger_and_session_state_round_trip_through_json() -> None:
 
 
 def test_m0_2b_1_has_no_game_unready_or_release_state() -> None:
-    assert set(ParticipantCommitmentLevel) == {
-        ParticipantCommitmentLevel.OBSERVING,
-        ParticipantCommitmentLevel.READY_CONFIRMED_STRATEGY_UNKNOWN,
-    }
+    values = {level.value for level in ParticipantCommitmentLevel}
+    assert "unready" not in values
+    assert "released" not in values
 
 
 def test_new_identifiers_reject_non_normalized_or_non_string_values() -> None:

@@ -154,13 +154,11 @@ until runtime association is implemented and reviewed separately.
 
 `StrategySelectionParticipant.strategy_id` is also a legacy boundary for revision-aware work. It
 may already be a normalized catalog interpretation rather than revision-independent raw evidence.
-M0.2a preserves the value and evidence but does not use it to build occupancy, assignment, or
-catalog-dependent confirmation. That split belongs to M0.2b.
+M0.2a preserves the value and evidence. M0.2b.2 adds a separate identification history but does
+not automatically promote this legacy field; explicit, idempotent migration remains M0.2b.3.
 
 ## Deferred to M0.2b or later
 
-- concrete strategy identification and permanent occupancy;
-- catalog dependency and identification conflict classification;
 - legacy snapshot evidence migration;
 - fallback panel observation models;
 - runtime-slot association;

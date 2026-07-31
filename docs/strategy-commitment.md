@@ -3,8 +3,9 @@
 ## Scope
 
 M0.2b.1 records typed prebattle candidate and ready-check evidence, then derives whether each known
-session participant has a currently valid ready-confirmed commitment. It does not identify a
-concrete strategy, reserve a normalized strategy ID, consult a catalog, or bind a runtime slot.
+session participant has a currently valid ready-confirmed commitment. M0.2b.2 adds minimal battle
+entry and concrete-confirmation evidence plus a separate identification layer. Commitment itself
+still does not assign a normalized strategy or bind a runtime slot.
 
 ## Identity and ownership
 
@@ -20,7 +21,9 @@ independent from future runtime slot identity.
 
 ## Raw evidence
 
-`StrategyCandidateObserved` and `ReadyCheckObserved` are immutable, typed ledger entries. They
+`StrategyCandidateObserved`, `ReadyCheckObserved`, `BattleEntryConfirmed`,
+`BattleEntryNotConfirmed`, and `StrategySelectionConfirmedEvidence` are immutable, typed ledger
+entries. They
 retain raw references such as:
 
 - replay frame or screenshot reference;
@@ -54,8 +57,20 @@ Later ready observations add evidence IDs but:
 - do not move `confirmed_at`;
 - do not imply another strategy selection.
 
-M0.2b.1 knows no concrete strategy identity, so the committed read state is
-`READY_CONFIRMED_STRATEGY_UNKNOWN`. A participant without effective ready evidence is `OBSERVING`.
+The commitment read state contains no concrete strategy identity, so it remains
+`READY_CONFIRMED_STRATEGY_UNKNOWN`. A participant without any effective formal-selection evidence
+is `OBSERVING`.
+
+Reliable observation of normal active battle participation is also proof that the player had
+formally selected some strategy. Its first effective time may establish a commitment; later ready
+or entry evidence only strengthens that same commitment. A participant merely appearing in the
+battle UI is insufficient. If the first stable frame is already inactive and normal participation
+was never observed, `BATTLE_ENTRY_NOT_CONFIRMED` records the conservative result and creates no
+commitment. Existing ready evidence is never removed by that result.
+
+Direct panel observation or explicit manual confirmation can atomically establish/strengthen the
+commitment and add a separate concrete identification. Battle-entry evidence can never be used as
+catalog-derived strategy evidence.
 
 There is no normal game transition to unready or released. Later selection-stage exit, battle
 entry, runtime departure, disconnect, elimination, or HP depletion cannot release a real
@@ -75,16 +90,17 @@ The reducer:
 4. rebuilds the current commitment materialization;
 5. validates the entire candidate `SessionState` before returning it.
 
-If another effective ready observation remains, the commitment remains. If none remains, the
-assistant's commitment materialization is removed. This corrects a false interpretation; it does
-not claim that the player cancelled ready in the game. Any failure leaves the original state
-unchanged.
+If another effective ready observation remains, the commitment remains. Independent reliable
+battle-entry or concrete-selection confirmation also keeps the commitment valid. Only when no
+effective confirmation evidence remains is the assistant materialization removed. This corrects a
+false interpretation; it does not claim that the player cancelled ready in the game. Any failure
+leaves the original state unchanged.
 
 ## Immutability and queries
 
 The ledger, entries, ROI, commitment aggregate, and commitment records are frozen. Collections use
 tuples or frozensets. `SessionState` validates that the materialized commitments exactly equal the
-currently effective ready evidence.
+currently effective ready, reliable normal-entry, and concrete-selection confirmation evidence.
 
 Read-only APIs:
 
@@ -97,8 +113,6 @@ and contains no concrete strategy ID.
 
 ## Deferred
 
-M0.2b.2 will add basis-aware concrete identification, conditional ruleset dependency stamps, and
-separate duplicate-occupancy, participant-identification, and catalog-compatibility conflicts.
 M0.2b.3 will explicitly and idempotently migrate legacy snapshot evidence and revise old snapshot
 completeness/uniqueness semantics.
 

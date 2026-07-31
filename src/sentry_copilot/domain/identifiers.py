@@ -35,6 +35,10 @@ EvidenceId = Annotated[
     str,
     StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
 ]
+StrategyIdentificationRecordId = Annotated[
+    str,
+    StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
+]
 
 
 class LocaleId(StrEnum):
