@@ -146,6 +146,13 @@
 - [x] Add normalized content-relative ROI to pixel conversion and safe immutable cropping.
 - [x] Export caller-directed debug images without changing source frames or adding recognition.
 
+### M0.3a.3 — Offline validation runner
+
+- [x] Run an explicitly supplied image sequence or local video through the frame/viewport pipeline.
+- [x] Support explicit full-frame or pixel viewport configuration, named normalized ROIs, and
+  frame-index sampling.
+- [x] Export selected frame/ROI debug PNGs and a compact JSONL manifest without private-data scans.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.

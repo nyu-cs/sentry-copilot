@@ -36,6 +36,11 @@ resolution, or that black bars are absent. Normalized ROIs resolve only inside t
 the crop/debug helpers create copies so the source frame remains unchanged. Automatic viewport
 detection and all game recognition remain out of scope.
 
+The offline validation runner accepts only a caller-supplied image directory or local video path.
+It applies optional frame-index sampling, explicit viewport geometry, and named normalized ROIs,
+then writes copied debug PNGs plus a JSONL manifest. It does not scan private data, mutate frames,
+or emit domain observations.
+
 ## State ownership
 
 Recognizers do not edit `SessionState`. The reducer enforces:
