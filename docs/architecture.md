@@ -46,6 +46,10 @@ an explicit MSS physical-monitor index, emits the same immutable frames as offli
 records the actual captured pixel dimensions. It has no window-title tracking, viewport detection,
 or recognition responsibility.
 
+M0.3b.1 adds a source-neutral template-matching primitive in `vision/`. It consumes an explicit
+frame, content viewport, ROI, and caller-owned template, then returns immutable geometric result
+data only. It does not encode Sentry Protocol screen semantics or mutate domain state.
+
 ## State ownership
 
 Recognizers do not edit `SessionState`. The reducer enforces:

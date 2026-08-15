@@ -159,6 +159,14 @@
 - [x] Preserve physical pixel dimensions and immutable frames across configurable target FPS capture.
 - [x] Export caller-directed sampled PNGs and a minimal JSONL manifest without window tracking or recognition.
 
+## M0.3b — Vision foundations
+
+### M0.3b.1 — Template matching
+
+- [x] Add source-neutral OpenCV matching against explicit frame, content viewport, ROI, and template inputs.
+- [x] Return immutable score, threshold, bounds, and frame/source provenance with opt-in debug output.
+- [x] Keep tests and interfaces synthetic and free of game-specific screen rules or assets.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.
