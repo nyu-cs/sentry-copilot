@@ -59,3 +59,12 @@ mypy_path = "src"
 [[tool.mypy.overrides]]
 module = ["cv2", "yaml"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+  "winrt.windows.globalization",
+  "winrt.windows.graphics.imaging",
+  "winrt.windows.media.ocr",
+  "winrt.windows.storage.streams",
+]
+ignore_missing_imports = true
