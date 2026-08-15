@@ -27,6 +27,15 @@ videos. The capture layer performs only media I/O and raw dumping; it does not i
 geometry, derive ROI, recognize game UI, or mutate domain state. Future Windows capture will
 implement the same `FrameSource` contract.
 
+## Content viewport boundary
+
+M0.3a.2 adds immutable, caller-calibrated `ContentViewport` and `NormalizedRoi` geometry in the
+vision layer. A viewport is bound to one source frame and can represent either an arbitrary game
+content rectangle or the explicit full frame; it never assumes desktop coordinates, a fixed
+resolution, or that black bars are absent. Normalized ROIs resolve only inside that viewport, and
+the crop/debug helpers create copies so the source frame remains unchanged. Automatic viewport
+detection and all game recognition remain out of scope.
+
 ## State ownership
 
 Recognizers do not edit `SessionState`. The reducer enforces:

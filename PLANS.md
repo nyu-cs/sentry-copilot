@@ -140,6 +140,12 @@
 - [x] Export caller-directed raw PNG dumps with minimal source/session metadata.
 - [x] Keep capture input independent of domain, vision, viewport, and recognition logic.
 
+### M0.3a.2 — Content viewport and ROI debug
+
+- [x] Add immutable caller-calibrated game-content viewports bound to individual frames.
+- [x] Add normalized content-relative ROI to pixel conversion and safe immutable cropping.
+- [x] Export caller-directed debug images without changing source frames or adding recognition.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.
