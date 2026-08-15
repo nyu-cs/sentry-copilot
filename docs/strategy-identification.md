@@ -97,3 +97,21 @@ no occupancy for the affected strategy. No latest-write-wins or silent revision 
 
 Legacy `build_team_strategy_context` remains a separate snapshot projection and is intentionally
 not used by any of these authority queries.
+
+## Slot assignment boundary
+
+M0.2c.3 uses the occupancy view only as one link in the query-derived chain:
+
+```text
+current runtime slot
+-> uncontested participant association
+-> confirmed battle entrant
+-> effective participant identification
+-> uncontested occupancy
+-> slot-strategy assignment
+```
+
+An identification conflict, stale catalog-derived record, or unavailable strategy in the current
+revision prevents assignment. Direct/manual identification is evaluated for current catalog
+compatibility on every query; it is not made stale merely by a context-generation change. This
+does not add a slot-only panel authority or persist a second assignment state.

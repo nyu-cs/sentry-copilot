@@ -29,10 +29,15 @@ from .runtime_slots import (
     derive_runtime_slot_view,
     derive_slot_association_view,
 )
+from .slot_strategy_assignments import (
+    SlotStrategyAssignmentView,
+    derive_slot_strategy_assignment_view,
+)
 from .strategy_commitment import (
     ParticipantCommitmentLevel,
     ReadyConfirmedCommitment,
 )
+from .strategy_identification import StrategyOccupancyView
 from .strategy_selection import SelectionOutcome, SnapshotCompleteness
 
 
@@ -206,6 +211,30 @@ def get_unresolved_runtime_slots(
         slot
         for slot in build_current_runtime_slots(state).slots
         if not slot.has_effective_association
+    )
+
+
+def derive_current_slot_strategy_assignment_view(
+    state: SessionState,
+    *,
+    occupancy_view: StrategyOccupancyView,
+    catalog_available: bool,
+) -> SlotStrategyAssignmentView:
+    """Compose assignment inputs without persisting or inferring a strategy label.
+
+    Callers supply the exact revision-aware occupancy view; the catalog repository boundary lives
+    in ``SlotStrategyAssignmentService``.
+    """
+
+    return derive_slot_strategy_assignment_view(
+        session_id=state.session_id,
+        slot_view=build_current_runtime_slots(state),
+        association_view=get_slot_association_view(state),
+        roster=build_battle_roster(state),
+        occupancy_view=occupancy_view,
+        identification_state=state.strategy_identifications,
+        dependency_stamp=state.ruleset_dependency_stamp,
+        catalog_available=catalog_available,
     )
 
 

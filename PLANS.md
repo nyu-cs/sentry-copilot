@@ -117,11 +117,11 @@
 
 ### M0.2c.3 — Slot-strategy assignment
 
-- [ ] Derive assignment only through uncontested slot-participant association, confirmed entry,
+- [x] Derive assignment only through uncontested slot-participant association, confirmed entry,
   effective participant identification, and uncontested occupancy.
-- [ ] Bind manual strategy-panel evidence to an already associated participant through existing
+- [x] Bind manual strategy-panel evidence to an already associated participant through existing
   direct-observation identification.
-- [ ] Do not create `DIRECT_SLOT_STRATEGY_PANEL` or any slot-only strategy authority.
+- [x] Do not create `DIRECT_SLOT_STRATEGY_PANEL` or any slot-only strategy authority.
 
 ## M0.2d — Manual fallback and conflict resolution
 

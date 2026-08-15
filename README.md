@@ -138,7 +138,11 @@ slot-participant association 只允许指向 `BattleRoster` confirmed entrants�
 `DIRECT_PLAYER_TAG`、`DIRECT_SELF_MARKER` 和 `MANUAL_CONFIRMATION`。同一 slot 声称多个
 participant，或同一 participant 被多个 current slots 声称，都会保留全部证据并形成
 显式 conflict，不按最新记录或最高置信度选胜者。association 不依赖 strategy catalog
-revision；M0.2c.2 尚未实现任何 slot-strategy assignment 或策略面板识别流程。
+revision。M0.2c.3 在不持久化 assignment 的前提下，通过 current slot、无冲突
+association、confirmed entrant、effective identification 与 uncontested occupancy 查询派生
+slot-strategy assignment。链上任一步未知、过期或冲突都会返回带原因的 unresolved；不使用
+selection row、legacy strategy、display name、头像、HP、initial HP 或候选置信度补全。策略面板
+仍必须先绑定已关联 participant，且所有视角切换和面板操作仍由用户手动完成。
 
 `StrategySelectionSnapshot.frozen` 只关闭普通 legacy snapshot 合并，不关闭独立的
 prebattle evidence、ready correction、commitment、direct/manual identification 或迁移。

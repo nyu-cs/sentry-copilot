@@ -90,9 +90,9 @@ Observation/association history has no ruleset dependency stamp and survives rev
 It never reads legacy strategy fields, legacy slot position, selection row, avatar, current HP, or
 initial HP.
 
-## Deferred participant-bound panel chain
+## Derived slot-strategy assignment
 
-M0.2c.3 may derive strategy assignment only through:
+M0.2c.3 derives a query-only `SlotStrategyAssignmentView` only through:
 
 ```text
 current runtime slot
@@ -107,3 +107,20 @@ The manual panel flow first reads bottom `name#XXXX` to establish participant as
 tag cannot be read, association stays unresolved or the user confirms it. Panel evidence must bind
 the associated participant through existing direct-observation identification. There is no
 `DIRECT_SLOT_STRATEGY_PANEL` authority.
+
+`SlotStrategyAssignmentService` supplies the current assignment, all assignments, and unresolved
+slots. It composes the current runtime layout, association view, confirmed-entry roster, and exact
+revision-aware occupancy view at read time. No assignment cache is stored in `SessionState`.
+
+An unresolved slot carries one explicit first unmet link: missing or conflicted association,
+non-entrant participant, missing or stale identification, participant identification conflict,
+duplicate confirmed strategy claim, catalog compatibility conflict, or absent uncontested
+occupancy. The implementation never uses selection row, legacy snapshot strategy, legacy runtime
+strategy cache, display name alone, avatar, current HP, initial HP, or candidate confidence to
+fill that gap.
+
+When a reliably assigned entrant later becomes `INACTIVE`, the assignment remains historical and
+reports `participation_status=inactive`; no occupancy is released. An inactive entrant with no
+effective concrete strategy remains unresolved. Ruleset revision correction leaves slot evidence
+and associations intact, but assignment is re-derived: stale catalog-derived records cannot label
+a slot, while compatible direct/manual records remain eligible.
