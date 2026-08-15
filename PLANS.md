@@ -131,6 +131,15 @@
   panel evidence to that participant.
 - [ ] Do not create selection participants from fallback observations.
 
+## M0.3a — Offline frame input foundation
+
+### M0.3a.1 — FrameSource and raw frame dump
+
+- [x] Add immutable `Frame` and source-neutral `FrameSource` contracts.
+- [x] Read caller-provided image sequences and local videos with OpenCV I/O only.
+- [x] Export caller-directed raw PNG dumps with minimal source/session metadata.
+- [x] Keep capture input independent of domain, vision, viewport, and recognition logic.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.

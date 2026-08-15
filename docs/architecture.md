@@ -20,6 +20,13 @@ recording / image folder / live capture later
  strategy context  knowledge UI  route overlay service
 ```
 
+## Frame input boundary
+
+M0.3a.1 provides source-neutral immutable `Frame` objects from local image sequences and local
+videos. The capture layer performs only media I/O and raw dumping; it does not identify viewport
+geometry, derive ROI, recognize game UI, or mutate domain state. Future Windows capture will
+implement the same `FrameSource` contract.
+
 ## State ownership
 
 Recognizers do not edit `SessionState`. The reducer enforces:
