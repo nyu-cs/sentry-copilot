@@ -10,6 +10,7 @@ from .frame_source import (
     RawFrameDump,
     dump_raw_frames,
 )
+from .windows_display import WindowsDisplayCaptureError, WindowsDisplayFrameSource
 
 __all__ = [
     "Frame",
@@ -20,4 +21,6 @@ __all__ = [
     "LocalVideoFrameSource",
     "RawFrameDump",
     "dump_raw_frames",
+    "WindowsDisplayCaptureError",
+    "WindowsDisplayFrameSource",
 ]

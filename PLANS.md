@@ -153,6 +153,12 @@
   frame-index sampling.
 - [x] Export selected frame/ROI debug PNGs and a compact JSONL manifest without private-data scans.
 
+### M0.3a.4 — Windows live display capture
+
+- [x] Add an explicit physical-monitor Windows `FrameSource` with bounded read-only smoke capture.
+- [x] Preserve physical pixel dimensions and immutable frames across configurable target FPS capture.
+- [x] Export caller-directed sampled PNGs and a minimal JSONL manifest without window tracking or recognition.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.

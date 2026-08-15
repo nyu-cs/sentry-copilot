@@ -41,6 +41,11 @@ It applies optional frame-index sampling, explicit viewport geometry, and named 
 then writes copied debug PNGs plus a JSONL manifest. It does not scan private data, mutate frames,
 or emit domain observations.
 
+M0.3a.4 adds a read-only Windows physical-display `FrameSource` for manual smoke testing. It uses
+an explicit MSS physical-monitor index, emits the same immutable frames as offline sources, and
+records the actual captured pixel dimensions. It has no window-title tracking, viewport detection,
+or recognition responsibility.
+
 ## State ownership
 
 Recognizers do not edit `SessionState`. The reducer enforces:

@@ -6,6 +6,11 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from sentry_copilot.capture.display_smoke import (
+    DisplayCaptureSmokeConfig,
+    run_display_capture_smoke_test,
+)
+from sentry_copilot.capture.windows_display import WindowsDisplayFrameSource
 from sentry_copilot.domain.enums import StageType
 from sentry_copilot.routes.models import (
     ActorType,
@@ -50,6 +55,19 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="NAME=X,Y,W,H",
         help="normalized ROI; may be repeated",
     )
+    capture_display = commands.add_parser(
+        "capture-display", help="Run a bounded read-only Windows physical-display capture"
+    )
+    capture_display.add_argument("--monitor", type=int, default=1, metavar="INDEX")
+    capture_display.add_argument("--target-fps", type=float, default=5.0, metavar="FPS")
+    limit = capture_display.add_mutually_exclusive_group(required=True)
+    limit.add_argument("--duration-seconds", type=float, metavar="SECONDS")
+    limit.add_argument("--frame-limit", type=int, metavar="COUNT")
+    capture_display.add_argument(
+        "--start-delay-seconds", type=float, default=0.0, metavar="SECONDS"
+    )
+    capture_display.add_argument("--output", type=Path, required=True)
+    capture_display.add_argument("--dump-every", type=int, metavar="N")
     return parser
 
 
@@ -70,8 +88,30 @@ def main() -> None:
             rois=tuple(parse_named_roi(value) for value in args.roi),
             sample_every_n=args.sample_every,
         )
-        result = run_offline_validation(config)
-        print(f"wrote {result.manifest_path} ({result.selected_frame_count} frame(s))")
+        validation_result = run_offline_validation(config)
+        print(
+            f"wrote {validation_result.manifest_path} "
+            f"({validation_result.selected_frame_count} frame(s))"
+        )
+    elif args.command == "capture-display":
+        source = WindowsDisplayFrameSource(
+            monitor_index=args.monitor,
+            target_fps=args.target_fps,
+        )
+        capture_result = run_display_capture_smoke_test(
+            source,
+            DisplayCaptureSmokeConfig(
+                output_directory=args.output,
+                duration_seconds=args.duration_seconds,
+                frame_limit=args.frame_limit,
+                start_delay_seconds=args.start_delay_seconds,
+                dump_every_n=args.dump_every,
+            ),
+        )
+        print(
+            f"wrote {capture_result.manifest_path} "
+            f"({capture_result.captured_frame_count} frame(s))"
+        )
     else:  # pragma: no cover
         raise AssertionError("unreachable")
 

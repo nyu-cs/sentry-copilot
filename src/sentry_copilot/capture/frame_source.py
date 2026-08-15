@@ -26,6 +26,7 @@ ImageArray = npt.NDArray[np.uint8]
 class FrameSourceType(StrEnum):
     IMAGE_SEQUENCE = "image_sequence"
     LOCAL_VIDEO = "local_video"
+    WINDOWS_DISPLAY = "windows_display"
 
 
 @dataclass(frozen=True)
