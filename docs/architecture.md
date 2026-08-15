@@ -50,6 +50,15 @@ M0.3b.1 adds a source-neutral template-matching primitive in `vision/`. It consu
 frame, content viewport, ROI, and caller-owned template, then returns immutable geometric result
 data only. It does not encode Sentry Protocol screen semantics or mutate domain state.
 
+M0.3b.2 adds source-neutral OCR over one caller-supplied ROI. `recognize_text` copies only the
+resolved BGR crop, passes that immutable crop to an async backend, and returns immutable raw and
+NFKC/whitespace-normalized text, optional backend confidence, geometry, and frame/source
+provenance (including processing and optional source timestamps). Unknown and empty outputs remain
+distinct. The Windows adapter uses the OS OCR
+component through Python/WinRT rather than a separate executable or model download; it raises a
+typed unavailable error when the requested OCR language capability (such as `ja-JP`) is absent.
+It performs no game-specific parsing, page detection, or domain mutation.
+
 ## State ownership
 
 Recognizers do not edit `SessionState`. The reducer enforces:

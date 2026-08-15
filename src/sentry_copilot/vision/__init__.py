@@ -1,5 +1,17 @@
 """Vision-side geometry and provider interfaces with no domain-state mutation."""
 
+from .ocr import (
+    OcrBackend,
+    OcrBackendError,
+    OcrBackendReading,
+    OcrBackendUnavailableError,
+    OcrResult,
+    OcrStatus,
+    WindowsOcrBackend,
+    WindowsOcrRuntime,
+    WinRtWindowsOcrRuntime,
+    recognize_text,
+)
 from .template_matching import (
     TemplateImage,
     TemplateMatchResult,
@@ -24,6 +36,16 @@ from .viewport import (
 )
 
 __all__ = [
+    "OcrBackend",
+    "OcrBackendError",
+    "OcrBackendReading",
+    "OcrBackendUnavailableError",
+    "OcrResult",
+    "OcrStatus",
+    "WinRtWindowsOcrRuntime",
+    "WindowsOcrBackend",
+    "WindowsOcrRuntime",
+    "recognize_text",
     "ContentViewport",
     "NormalizedRoi",
     "PixelRoi",

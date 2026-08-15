@@ -167,6 +167,14 @@
 - [x] Return immutable score, threshold, bounds, and frame/source provenance with opt-in debug output.
 - [x] Keep tests and interfaces synthetic and free of game-specific screen rules or assets.
 
+### M0.3b.2 — OCR foundation
+
+- [x] Add source-neutral OCR over caller-supplied content-relative regions only.
+- [x] Return immutable raw/normalized text, optional confidence, pixel geometry, and frame/source
+  provenance while preserving explicit unknown and empty outcomes.
+- [x] Use Windows built-in OCR through Python/WinRT without external OCR executables or models;
+  report unavailable system language capabilities explicitly.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.
