@@ -59,6 +59,12 @@ component through Python/WinRT rather than a separate executable or model downlo
 typed unavailable error when the requested OCR language capability (such as `ja-JP`) is absent.
 It performs no game-specific parsing, page detection, or domain mutation.
 
+M0.3b.3 adds a bounded developer probe around the existing physical-display source and OCR
+primitive. The caller explicitly chooses a monitor, language, output directory, and normalized or
+pixel ROI. It captures only one frame, writes an unannotated copy and unannotated ROI crop, and
+records a compact JSON result. Missing system OCR language support is a typed `ocr_unavailable`
+outcome after the capture artifacts are written; the probe never installs Windows features.
+
 ## State ownership
 
 Recognizers do not edit `SessionState`. The reducer enforces:

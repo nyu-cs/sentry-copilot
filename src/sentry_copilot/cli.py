@@ -21,12 +21,14 @@ from sentry_copilot.routes.models import (
 from sentry_copilot.routes.overlay import RouteOverlayRenderer
 from sentry_copilot.routes.repository import MapRepository, load_map_definition
 from sentry_copilot.routes.selector import RouteSelector
+from sentry_copilot.vision.live_ocr_probe import LiveOcrProbeConfig, run_live_ocr_probe
+from sentry_copilot.vision.ocr import check_windows_ocr_language
 from sentry_copilot.vision.validation_runner import (
     OfflineValidationConfig,
     parse_named_roi,
     run_offline_validation,
 )
-from sentry_copilot.vision.viewport import PixelRoi
+from sentry_copilot.vision.viewport import NormalizedRoi, PixelRoi
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -68,6 +70,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     capture_display.add_argument("--output", type=Path, required=True)
     capture_display.add_argument("--dump-every", type=int, metavar="N")
+    check_ocr_language = commands.add_parser(
+        "check-ocr-language",
+        help="Check a local Windows OCR language capability without installing it",
+    )
+    check_ocr_language.add_argument("--language", required=True, metavar="BCP47")
+    live_ocr_probe = commands.add_parser(
+        "live-ocr-probe", help="Capture one display frame and OCR one explicit ROI"
+    )
+    live_ocr_probe.add_argument("--monitor", type=int, required=True, metavar="INDEX")
+    live_ocr_probe.add_argument("--language", required=True, metavar="BCP47")
+    live_ocr_probe.add_argument(
+        "--start-delay-seconds", type=float, default=0.0, metavar="SECONDS"
+    )
+    live_ocr_probe.add_argument("--output", type=Path, required=True)
+    roi = live_ocr_probe.add_mutually_exclusive_group(required=True)
+    roi.add_argument("--normalized-roi", nargs=4, type=float, metavar=("X", "Y", "W", "H"))
+    roi.add_argument("--pixel-roi", nargs=4, type=int, metavar=("X", "Y", "W", "H"))
     return parser
 
 
@@ -112,6 +131,28 @@ def main() -> None:
             f"wrote {capture_result.manifest_path} "
             f"({capture_result.captured_frame_count} frame(s))"
         )
+    elif args.command == "check-ocr-language":
+        capability = check_windows_ocr_language(args.language)
+        print(
+            f"{capability.language_tag}: {capability.status.value}"
+            + (f" ({capability.reason})" if capability.reason is not None else "")
+        )
+    elif args.command == "live-ocr-probe":
+        roi = (
+            NormalizedRoi(*args.normalized_roi)
+            if args.normalized_roi is not None
+            else PixelRoi(*args.pixel_roi)
+        )
+        probe_result = run_live_ocr_probe(
+            WindowsDisplayFrameSource(monitor_index=args.monitor),
+            LiveOcrProbeConfig(
+                output_directory=args.output,
+                roi=roi,
+                language_tag=args.language,
+                start_delay_seconds=args.start_delay_seconds,
+            ),
+        )
+        print(f"wrote {probe_result.result_path} ({probe_result.outcome.value})")
     else:  # pragma: no cover
         raise AssertionError("unreachable")
 

@@ -29,12 +29,78 @@ class OcrStatus(StrEnum):
     UNKNOWN = "unknown"
 
 
+class WindowsOcrCapabilityStatus(StrEnum):
+    """Availability of a requested Windows OCR language capability."""
+
+    AVAILABLE = "available"
+    UNAVAILABLE = "unavailable"
+
+
 class OcrBackendError(RuntimeError):
     """A typed failure from an explicitly selected OCR backend."""
 
 
 class OcrBackendUnavailableError(OcrBackendError):
     """The selected backend or requested language is unavailable on this machine."""
+
+
+@dataclass(frozen=True)
+class WindowsOcrLanguageCapability:
+    """Immutable local capability check without installing or changing Windows features."""
+
+    language_tag: str
+    status: WindowsOcrCapabilityStatus
+    reason: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.language_tag.strip():
+            raise ValueError("language_tag must not be blank")
+        if self.status is WindowsOcrCapabilityStatus.AVAILABLE and self.reason is not None:
+            raise ValueError("available Windows OCR capability must not contain a reason")
+        if self.status is WindowsOcrCapabilityStatus.UNAVAILABLE and not self.reason:
+            raise ValueError("unavailable Windows OCR capability must contain a reason")
+
+    @property
+    def available(self) -> bool:
+        """Whether the requested system OCR capability is ready for use."""
+
+        return self.status is WindowsOcrCapabilityStatus.AVAILABLE
+
+
+def check_windows_ocr_language(language_tag: str) -> WindowsOcrLanguageCapability:
+    """Check one local Windows OCR language without installing any language capability."""
+
+    if not language_tag.strip():
+        raise ValueError("language_tag must not be blank")
+    if sys.platform != "win32":
+        return WindowsOcrLanguageCapability(
+            language_tag=language_tag,
+            status=WindowsOcrCapabilityStatus.UNAVAILABLE,
+            reason="Windows OCR is available only on Windows",
+        )
+    try:
+        from winrt.windows.globalization import Language
+        from winrt.windows.media.ocr import OcrEngine
+    except ModuleNotFoundError:
+        return WindowsOcrLanguageCapability(
+            language_tag=language_tag,
+            status=WindowsOcrCapabilityStatus.UNAVAILABLE,
+            reason="Windows OCR Python/WinRT bindings are not installed",
+        )
+
+    if OcrEngine.is_language_supported(Language(language_tag)):
+        return WindowsOcrLanguageCapability(
+            language_tag=language_tag,
+            status=WindowsOcrCapabilityStatus.AVAILABLE,
+        )
+    return WindowsOcrLanguageCapability(
+        language_tag=language_tag,
+        status=WindowsOcrCapabilityStatus.UNAVAILABLE,
+        reason=(
+            f"Windows OCR language is unavailable: {language_tag}. "
+            "Install the matching Windows OCR language capability."
+        ),
+    )
 
 
 @dataclass(frozen=True)
@@ -209,12 +275,11 @@ class WinRtWindowsOcrRuntime:
                 "Windows OCR Python/WinRT bindings are not installed"
             ) from error
 
+        capability = check_windows_ocr_language(language_tag)
+        if not capability.available:
+            assert capability.reason is not None
+            raise OcrBackendUnavailableError(capability.reason)
         language = Language(language_tag)
-        if not OcrEngine.is_language_supported(language):
-            raise OcrBackendUnavailableError(
-                f"Windows OCR language is unavailable: {language_tag}. "
-                "Install the matching Windows OCR language capability."
-            )
         engine = OcrEngine.try_create_from_language(language)
         if engine is None:
             raise OcrBackendUnavailableError(f"Windows OCR engine is unavailable: {language_tag}")

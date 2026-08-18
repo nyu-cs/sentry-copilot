@@ -1,5 +1,11 @@
 """Vision-side geometry and provider interfaces with no domain-state mutation."""
 
+from .live_ocr_probe import (
+    LiveOcrProbeConfig,
+    LiveOcrProbeOutcome,
+    LiveOcrProbeResult,
+    run_live_ocr_probe,
+)
 from .ocr import (
     OcrBackend,
     OcrBackendError,
@@ -8,8 +14,11 @@ from .ocr import (
     OcrResult,
     OcrStatus,
     WindowsOcrBackend,
+    WindowsOcrCapabilityStatus,
+    WindowsOcrLanguageCapability,
     WindowsOcrRuntime,
     WinRtWindowsOcrRuntime,
+    check_windows_ocr_language,
     recognize_text,
 )
 from .template_matching import (
@@ -36,15 +45,22 @@ from .viewport import (
 )
 
 __all__ = [
+    "LiveOcrProbeConfig",
+    "LiveOcrProbeOutcome",
+    "LiveOcrProbeResult",
+    "run_live_ocr_probe",
     "OcrBackend",
     "OcrBackendError",
     "OcrBackendReading",
     "OcrBackendUnavailableError",
     "OcrResult",
     "OcrStatus",
+    "WindowsOcrCapabilityStatus",
     "WinRtWindowsOcrRuntime",
     "WindowsOcrBackend",
+    "WindowsOcrLanguageCapability",
     "WindowsOcrRuntime",
+    "check_windows_ocr_language",
     "recognize_text",
     "ContentViewport",
     "NormalizedRoi",

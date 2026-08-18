@@ -175,6 +175,14 @@
 - [x] Use Windows built-in OCR through Python/WinRT without external OCR executables or models;
   report unavailable system language capabilities explicitly.
 
+### M0.3b.3 — Live OCR probe
+
+- [x] Add an explicit one-frame Windows-display probe with one normalized or pixel ROI and no
+  game-specific interpretation.
+- [x] Export a caller-owned frame, unannotated ROI crop, and compact OCR/provenance JSON result.
+- [x] Check local OCR language capabilities without installing Windows features, and preserve a
+  typed unavailable probe result when a capability such as `ja-JP` is absent.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.
