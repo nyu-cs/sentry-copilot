@@ -65,6 +65,11 @@ pixel ROI. It captures only one frame, writes an unannotated copy and unannotate
 records a compact JSON result. Missing system OCR language support is a typed `ocr_unavailable`
 outcome after the capture artifacts are written; the probe never installs Windows features.
 
+M0.3c adds a one-frame, caller-driven recognition probe harness. It reuses the existing frame,
+viewport, OCR, and template interfaces for one or more explicit normalized or pixel ROIs. The
+harness writes only caller-owned source/crop/optional diagnostic/report artifacts; it has no
+automatic ROI discovery, game semantics, domain-state mutation, or UI interaction.
+
 ## State ownership
 
 Recognizers do not edit `SessionState`. The reducer enforces:

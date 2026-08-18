@@ -1,9 +1,8 @@
 # 下一条 Codex 任务门禁
 
-M0.3a.1“FrameSource + raw frame dump”已形成独立本地提交后，先等待用户
-审查提交和全部质量检查结果。
+M0.3c“Recognition Probe Harness”形成独立本地提交后，先等待用户审查提交和全部质量检查结果。
 
-未经明确批准，不要继续 M0.3a.2、M0.2d 或路线 M1。
+未经明确批准，不要继续 M0.2d、游戏特定识别或路线 M1。
 
 M0.2c.2 与 M0.2c.3 已完成的边界：
 
@@ -19,5 +18,5 @@ M0.2c.2 与 M0.2c.3 已完成的边界：
 - assignment 不持久化，链路未满足时返回 explicit unresolved reason；
 - 不存在 `DIRECT_SLOT_STRATEGY_PANEL` 或任何 slot-only 策略权威。
 
-M0.3a.1 仅建立 image sequence/local video I/O、不可变 FrameSource 与 caller-owned raw dump；
-不得擅自实现 Windows capture、viewport、ROI、OCR、识别、桌面 UI、自动点击、真实 catalog 或路线 M1。
+M0.3c 仅组合既有单帧 FrameSource、显式 ROI、OCR 与模板匹配为 caller-owned 调试工具；
+不得擅自实现自动 ROI 检测、游戏页面/玩家/策略识别、桌面 UI、自动点击、真实 catalog 或路线 M1。

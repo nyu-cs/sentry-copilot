@@ -10,6 +10,7 @@ from sentry_copilot.capture.display_smoke import (
     DisplayCaptureSmokeConfig,
     run_display_capture_smoke_test,
 )
+from sentry_copilot.capture.frame_source import ImageSequenceFrameSource
 from sentry_copilot.capture.windows_display import WindowsDisplayFrameSource
 from sentry_copilot.domain.enums import StageType
 from sentry_copilot.routes.models import (
@@ -23,6 +24,14 @@ from sentry_copilot.routes.repository import MapRepository, load_map_definition
 from sentry_copilot.routes.selector import RouteSelector
 from sentry_copilot.vision.live_ocr_probe import LiveOcrProbeConfig, run_live_ocr_probe
 from sentry_copilot.vision.ocr import check_windows_ocr_language
+from sentry_copilot.vision.recognition_probe import (
+    OcrProbeOperation,
+    RecognitionProbeConfig,
+    RecognitionProbeConfigurationError,
+    TemplateProbeOperation,
+    load_template_image,
+    run_recognition_probe,
+)
 from sentry_copilot.vision.validation_runner import (
     OfflineValidationConfig,
     parse_named_roi,
@@ -87,11 +96,53 @@ def build_parser() -> argparse.ArgumentParser:
     roi = live_ocr_probe.add_mutually_exclusive_group(required=True)
     roi.add_argument("--normalized-roi", nargs=4, type=float, metavar=("X", "Y", "W", "H"))
     roi.add_argument("--pixel-roi", nargs=4, type=int, metavar=("X", "Y", "W", "H"))
+    recognition_probe = commands.add_parser(
+        "recognition-probe", help="Run explicit generic OCR/template operations over one frame"
+    )
+    source = recognition_probe.add_mutually_exclusive_group(required=True)
+    source.add_argument("--image", type=Path, metavar="PATH")
+    source.add_argument("--monitor", type=int, metavar="INDEX")
+    recognition_probe.add_argument("--output", type=Path, required=True)
+    recognition_probe.add_argument("--language", metavar="BCP47")
+    recognition_probe.add_argument(
+        "--start-delay-seconds", type=float, default=0.0, metavar="SECONDS"
+    )
+    recognition_probe.add_argument("--annotated-diagnostic", action="store_true")
+    recognition_probe.add_argument("--template-threshold", type=float, default=0.9)
+    recognition_probe.add_argument(
+        "--ocr-normalized-roi",
+        action="append",
+        default=[],
+        nargs=5,
+        metavar=("NAME", "X", "Y", "W", "H"),
+    )
+    recognition_probe.add_argument(
+        "--ocr-pixel-roi",
+        action="append",
+        default=[],
+        nargs=5,
+        metavar=("NAME", "X", "Y", "W", "H"),
+    )
+    recognition_probe.add_argument(
+        "--template-normalized-roi",
+        action="append",
+        default=[],
+        nargs=6,
+        metavar=("NAME", "X", "Y", "W", "H", "TEMPLATE"),
+    )
+    recognition_probe.add_argument(
+        "--template-pixel-roi",
+        action="append",
+        default=[],
+        nargs=6,
+        metavar=("NAME", "X", "Y", "W", "H", "TEMPLATE"),
+    )
     return parser
 
 
 def main() -> None:
-    args = build_parser().parse_args()
+    parser = build_parser()
+    args = parser.parse_args()
     if args.command == "validate-data":
         repository = MapRepository.from_directory(args.maps)
         print(f"validated {len(repository.list_ids())} map(s): {', '.join(repository.list_ids())}")
@@ -153,8 +204,87 @@ def main() -> None:
             ),
         )
         print(f"wrote {probe_result.result_path} ({probe_result.outcome.value})")
+    elif args.command == "recognition-probe":
+        try:
+            operations = _recognition_probe_operations(args)
+            if args.image is not None and args.start_delay_seconds:
+                raise RecognitionProbeConfigurationError(
+                    "start-delay-seconds is available only with a live --monitor source"
+                )
+            recognition_source = (
+                ImageSequenceFrameSource((args.image,), source_id=f"local-image:{args.image.name}")
+                if args.image is not None
+                else WindowsDisplayFrameSource(monitor_index=args.monitor)
+            )
+            recognition_probe_result = run_recognition_probe(
+                recognition_source,
+                RecognitionProbeConfig(
+                    output_directory=args.output,
+                    operations=operations,
+                    start_delay_seconds=args.start_delay_seconds,
+                    write_annotated_diagnostic=args.annotated_diagnostic,
+                ),
+            )
+        except RecognitionProbeConfigurationError as error:
+            parser.error(str(error))
+        print(
+            "wrote "
+            f"{recognition_probe_result.report_path} "
+            f"({len(recognition_probe_result.operations)} operation(s))"
+        )
     else:  # pragma: no cover
         raise AssertionError("unreachable")
+
+
+def _recognition_probe_operations(args: argparse.Namespace) -> tuple[
+    OcrProbeOperation | TemplateProbeOperation, ...
+]:
+    operations: list[OcrProbeOperation | TemplateProbeOperation] = []
+    if (args.ocr_normalized_roi or args.ocr_pixel_roi) and args.language is None:
+        raise RecognitionProbeConfigurationError("--language is required for OCR probe operations")
+    for values in args.ocr_normalized_roi:
+        name, x, y, width, height = values
+        operations.append(
+            OcrProbeOperation(
+                name=name,
+                roi=NormalizedRoi(float(x), float(y), float(width), float(height)),
+                language_tag=args.language,
+            )
+        )
+    for values in args.ocr_pixel_roi:
+        name, x, y, width, height = values
+        operations.append(
+            OcrProbeOperation(
+                name=name,
+                roi=PixelRoi(int(x), int(y), int(width), int(height)),
+                language_tag=args.language,
+            )
+        )
+    for values in args.template_normalized_roi:
+        name, x, y, width, height, template_path = values
+        template = load_template_image(template_path)
+        operations.append(
+            TemplateProbeOperation(
+                name=name,
+                roi=NormalizedRoi(float(x), float(y), float(width), float(height)),
+                template=template,
+                template_reference=template_path,
+                threshold=args.template_threshold,
+            )
+        )
+    for values in args.template_pixel_roi:
+        name, x, y, width, height, template_path = values
+        template = load_template_image(template_path)
+        operations.append(
+            TemplateProbeOperation(
+                name=name,
+                roi=PixelRoi(int(x), int(y), int(width), int(height)),
+                template=template,
+                template_reference=template_path,
+                threshold=args.template_threshold,
+            )
+        )
+    return tuple(operations)
 
 
 def demo_route_overlay(map_file: Path, output: Path) -> None:

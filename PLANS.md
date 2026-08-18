@@ -183,6 +183,15 @@
 - [x] Check local OCR language capabilities without installing Windows features, and preserve a
   typed unavailable probe result when a capability such as `ja-JP` is absent.
 
+## M0.3c — Recognition probe harness
+
+- [x] Run explicit OCR and template-matching operations over one caller-selected local image or
+  one explicitly selected Windows display frame.
+- [x] Preserve caller-defined normalized or pixel ROIs, source/template/language provenance, and
+  typed per-operation failures in caller-owned diagnostic artifacts.
+- [x] Keep the harness game-agnostic: it does not discover ROIs, inspect private inputs, mutate
+  domain state, or add game recognition rules.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.
