@@ -13,6 +13,7 @@ from typing import cast
 import cv2
 
 from sentry_copilot.capture.frame_source import ImageArray
+from sentry_copilot.image_io import ImageEncodeError, write_bgr_png
 
 _TIMESTAMP = re.compile(
     r"(?P<hours>\d{2}):(?P<minutes>\d{2}):(?P<seconds>\d{2})(?:\.(?P<milliseconds>\d{3}))?\Z"
@@ -196,7 +197,9 @@ def _extract_one(
     decoded_timestamp = _decoded_timestamp_seconds(capture, frame_index, frame_rate)
     payload = cast(ImageArray, image)
     output_path = output_directory / request.output_filename
-    if not cv2.imwrite(str(output_path), payload):
+    try:
+        write_bgr_png(output_path, payload)
+    except ImageEncodeError:
         return _failed_record(request, "FrameWriteError", f"cannot write PNG: {output_path}")
     height, width = payload.shape[:2]
     return VideoFrameExtractionRecord(

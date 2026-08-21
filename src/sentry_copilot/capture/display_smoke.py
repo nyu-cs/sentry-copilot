@@ -8,10 +8,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from time import monotonic, sleep
 
-import cv2
-
 from sentry_copilot.capture.frame_source import FrameSource
 from sentry_copilot.capture.windows_display import WindowsDisplayFrameSource
+from sentry_copilot.image_io import ImageEncodeError, write_bgr_png
 
 
 @dataclass(frozen=True)
@@ -77,8 +76,10 @@ def run_display_capture_smoke_test(
                 output_path: Path | None = None
                 if config.dump_every_n is not None and captured % config.dump_every_n == 0:
                     output_path = dump_directory / f"frame_{frame.frame_index:06d}.png"
-                    if not cv2.imwrite(str(output_path), frame.image):
-                        raise OSError(f"cannot write display smoke frame: {output_path}")
+                    try:
+                        write_bgr_png(output_path, frame.image)
+                    except ImageEncodeError as error:
+                        raise OSError(f"cannot write display smoke frame: {output_path}") from error
                     dumped += 1
                 manifest.write(
                     json.dumps(

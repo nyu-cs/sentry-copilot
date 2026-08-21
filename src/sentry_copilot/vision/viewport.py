@@ -15,6 +15,7 @@ import cv2
 import numpy as np
 
 from sentry_copilot.capture.frame_source import Frame, ImageArray
+from sentry_copilot.image_io import ImageEncodeError, write_bgr_png
 
 
 @dataclass(frozen=True)
@@ -185,8 +186,10 @@ def save_roi_debug_image(
     debug_image = np.array(frame.image, dtype=np.uint8, copy=True)
     _draw_rectangle(debug_image, crop.viewport.pixel_roi, color=(0, 200, 0))
     _draw_rectangle(debug_image, crop.pixel_roi, color=(255, 0, 255))
-    if not cv2.imwrite(str(destination), debug_image):
-        raise OSError(f"cannot write ROI debug image: {destination}")
+    try:
+        write_bgr_png(destination, debug_image)
+    except ImageEncodeError as error:
+        raise OSError(f"cannot write ROI debug image: {destination}") from error
     return destination
 
 

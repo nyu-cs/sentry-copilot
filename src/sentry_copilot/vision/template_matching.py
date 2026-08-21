@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 
 from sentry_copilot.capture.frame_source import Frame, ImageArray
+from sentry_copilot.image_io import ImageEncodeError, write_bgr_png
 from sentry_copilot.vision.viewport import ContentViewport, NormalizedRoi, PixelRoi
 
 type SearchRoi = NormalizedRoi | PixelRoi
@@ -117,8 +118,10 @@ def save_template_match_debug(
     if result.match_bounds is not None:
         color = (0, 255, 0) if result.matched else (0, 0, 255)
         _draw_rectangle(image, result.match_bounds, color=color)
-    if not cv2.imwrite(str(destination), image):
-        raise OSError(f"cannot write template-match debug image: {destination}")
+    try:
+        write_bgr_png(destination, image)
+    except ImageEncodeError as error:
+        raise OSError(f"cannot write template-match debug image: {destination}") from error
     return destination
 
 

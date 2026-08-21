@@ -7,7 +7,12 @@ import numpy as np
 import pytest
 
 from sentry_copilot.capture.frame_source import ImageSequenceFrameSource
-from sentry_copilot.image_io import ImageDecodeError, load_bgr_image
+from sentry_copilot.image_io import (
+    ImageDecodeError,
+    ImageEncodeError,
+    load_bgr_image,
+    write_bgr_png,
+)
 
 
 def _image() -> np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]:
@@ -50,3 +55,29 @@ def test_ascii_path_decoding_remains_supported(tmp_path: Path) -> None:
     _write_png(path, expected)
 
     assert np.array_equal(load_bgr_image(path), expected)
+
+
+def test_unicode_path_writes_png_that_the_shared_loader_reads_back(tmp_path: Path) -> None:
+    path = tmp_path / "卫戍协议" / "策略截图.png"
+    path.parent.mkdir()
+    expected = _image()
+
+    assert write_bgr_png(path, expected) == path
+
+    assert np.array_equal(load_bgr_image(path), expected)
+
+
+def test_ascii_path_png_output_remains_supported(tmp_path: Path) -> None:
+    path = tmp_path / "ascii" / "output.png"
+    path.parent.mkdir()
+
+    write_bgr_png(path, _image())
+
+    assert path.is_file()
+
+
+def test_png_writer_rejects_unsupported_suffix_and_missing_parent(tmp_path: Path) -> None:
+    with pytest.raises(ImageEncodeError, match=".png suffix"):
+        write_bgr_png(tmp_path / "output.jpg", _image())
+    with pytest.raises(ImageEncodeError, match="cannot write PNG"):
+        write_bgr_png(tmp_path / "missing" / "output.png", _image())

@@ -21,6 +21,7 @@ from sentry_copilot.capture.frame_source import (
     ImageSequenceFrameSource,
     LocalVideoFrameSource,
 )
+from sentry_copilot.image_io import ImageEncodeError, write_bgr_png
 from sentry_copilot.vision.viewport import (
     ContentViewport,
     NormalizedRoi,
@@ -101,8 +102,10 @@ def run_offline_validation(config: OfflineValidationConfig) -> OfflineValidation
                     roi_path = roi_directory / (
                         f"frame_{frame.frame_index:06d}_{_safe_name(named_roi.name)}.png"
                     )
-                    if not cv2.imwrite(str(roi_path), crop.image):
-                        raise OSError(f"cannot write ROI image: {roi_path}")
+                    try:
+                        write_bgr_png(roi_path, crop.image)
+                    except ImageEncodeError as error:
+                        raise OSError(f"cannot write ROI image: {roi_path}") from error
                     manifest.write(
                         _manifest_line(
                             frame,
@@ -171,8 +174,10 @@ def _write_frame_debug(
     _draw_rectangle(image, viewport.pixel_roi, (0, 200, 0))
     for named_roi in rois:
         _draw_rectangle(image, named_roi.roi.resolve(viewport), (255, 0, 255))
-    if not cv2.imwrite(str(output_path), image):
-        raise OSError(f"cannot write frame debug image: {output_path}")
+    try:
+        write_bgr_png(output_path, image)
+    except ImageEncodeError as error:
+        raise OSError(f"cannot write frame debug image: {output_path}") from error
 
 
 def _draw_rectangle(image: np.ndarray, roi: PixelRoi, color: tuple[int, int, int]) -> None:

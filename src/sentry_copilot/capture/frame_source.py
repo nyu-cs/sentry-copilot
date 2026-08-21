@@ -20,7 +20,12 @@ import cv2
 import numpy as np
 import numpy.typing as npt
 
-from sentry_copilot.image_io import ImageDecodeError, load_bgr_image
+from sentry_copilot.image_io import (
+    ImageDecodeError,
+    ImageEncodeError,
+    load_bgr_image,
+    write_bgr_png,
+)
 
 ImageArray = npt.NDArray[np.uint8]
 
@@ -269,8 +274,10 @@ def dump_raw_frames(
     frame_metadata: list[dict[str, object]] = []
     for frame in source.frames():
         frame_path = destination / f"frame_{frame.frame_index:06d}.png"
-        if not cv2.imwrite(str(frame_path), frame.image):
-            raise OSError(f"cannot write raw frame dump: {frame_path}")
+        try:
+            write_bgr_png(frame_path, frame.image)
+        except ImageEncodeError as error:
+            raise OSError(f"cannot write raw frame dump: {frame_path}") from error
         frame_paths.append(frame_path)
         frame_metadata.append(
             {

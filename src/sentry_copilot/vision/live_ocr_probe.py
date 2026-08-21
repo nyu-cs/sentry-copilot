@@ -11,11 +11,11 @@ from enum import StrEnum
 from pathlib import Path
 from time import sleep
 
-import cv2
 import numpy as np
 
 from sentry_copilot.capture.frame_source import Frame, FrameSource, ImageArray
 from sentry_copilot.capture.windows_display import WindowsDisplayFrameSource
+from sentry_copilot.image_io import ImageEncodeError, write_bgr_png
 from sentry_copilot.vision.ocr import (
     OcrBackend,
     OcrBackendUnavailableError,
@@ -179,8 +179,10 @@ def _copy_crop(frame: Frame, pixel_roi: PixelRoi) -> ImageArray:
 
 
 def _write_png(path: Path, image: ImageArray, description: str) -> None:
-    if not cv2.imwrite(str(path), image):
-        raise OSError(f"cannot write {description}: {path}")
+    try:
+        write_bgr_png(path, image)
+    except ImageEncodeError as error:
+        raise OSError(f"cannot write {description}: {path}") from error
 
 
 def _result_json(
