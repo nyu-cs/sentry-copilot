@@ -43,6 +43,14 @@ from sentry_copilot.vision.validation_runner import (
     run_offline_validation,
 )
 from sentry_copilot.vision.viewport import NormalizedRoi, PixelRoi
+from sentry_copilot.vision.visual_references import (
+    VisualCatalogKind,
+    VisualCatalogLoadError,
+    VisualCatalogValidationError,
+    load_visual_reference_catalog,
+    match_visual_catalog,
+    write_visual_match_report,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -145,6 +153,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="Extract explicit full-resolution PNG frames from one local video",
     )
     extract_video_frames.add_argument("--video", type=Path, required=True, metavar="PATH")
+    visual_catalog_match = commands.add_parser(
+        "visual-catalog-match",
+        help="Match one explicit image against an explicit visual reference catalog",
+    )
+    visual_catalog_match.add_argument(
+        "--kind", choices=[kind.value for kind in VisualCatalogKind], required=True
+    )
+    visual_catalog_match.add_argument("--catalog", type=Path, required=True)
+    visual_catalog_match.add_argument("--image", type=Path, required=True)
+    visual_catalog_match.add_argument("--output", type=Path, required=True)
+    visual_catalog_match.add_argument("--minimum-score", type=float, default=0.9)
+    visual_catalog_match.add_argument("--ambiguity-margin", type=float, default=0.02)
     extract_video_frames.add_argument("--output", type=Path, required=True, metavar="PATH")
     extract_video_frames.add_argument(
         "--at",
@@ -247,6 +267,24 @@ def main() -> None:
             f"{recognition_probe_result.report_path} "
             f"({len(recognition_probe_result.operations)} operation(s))"
         )
+    elif args.command == "visual-catalog-match":
+        try:
+            visual_catalog = load_visual_reference_catalog(args.catalog)
+            actual_kind = visual_catalog.kind.value
+            if actual_kind != args.kind:
+                raise ValueError(
+                    f"requested kind {args.kind} does not match catalog kind {actual_kind}"
+                )
+            visual_match = match_visual_catalog(
+                catalog=visual_catalog,
+                query_path=args.image,
+                minimum_score=args.minimum_score,
+                ambiguity_margin=args.ambiguity_margin,
+            )
+            report_path = write_visual_match_report(visual_match, args.output)
+        except (VisualCatalogLoadError, VisualCatalogValidationError, ValueError) as error:
+            parser.error(str(error))
+        print(f"wrote {report_path} ({visual_match.status.value})")
     elif args.command == "extract-video-frames":
         try:
             extraction_result = extract_video_frames(
