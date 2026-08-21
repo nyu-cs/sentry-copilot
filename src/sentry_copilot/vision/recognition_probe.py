@@ -11,13 +11,13 @@ from datetime import UTC
 from enum import StrEnum
 from pathlib import Path
 from time import sleep
-from typing import cast
 
 import cv2
 import numpy as np
 
 from sentry_copilot.capture.frame_source import Frame, FrameSource, ImageArray
 from sentry_copilot.capture.windows_display import WindowsDisplayFrameSource
+from sentry_copilot.image_io import ImageDecodeError, load_bgr_image
 from sentry_copilot.vision.ocr import (
     OcrBackend,
     OcrBackendUnavailableError,
@@ -185,10 +185,11 @@ def load_template_image(path: str | Path, *, template_id: str | None = None) -> 
     """Load one caller-specified BGR template; no template discovery or directory scan occurs."""
 
     source = Path(path)
-    image = cv2.imread(str(source), cv2.IMREAD_COLOR)
-    if image is None:
-        raise RecognitionProbeConfigurationError(f"cannot read template image: {source}")
-    return TemplateImage(template_id or str(source), cast(ImageArray, image))
+    try:
+        image = load_bgr_image(source)
+    except ImageDecodeError as error:
+        raise RecognitionProbeConfigurationError(f"cannot read template image: {source}") from error
+    return TemplateImage(template_id or str(source), image)
 
 
 def run_recognition_probe(

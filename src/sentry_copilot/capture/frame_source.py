@@ -20,6 +20,8 @@ import cv2
 import numpy as np
 import numpy.typing as npt
 
+from sentry_copilot.image_io import ImageDecodeError, load_bgr_image
+
 ImageArray = npt.NDArray[np.uint8]
 
 
@@ -157,11 +159,12 @@ class ImageSequenceFrameSource(FrameSource):
 
     def frames(self) -> Iterator[Frame]:
         for index, path in enumerate(self._paths):
-            image = cv2.imread(str(path), cv2.IMREAD_COLOR)
-            if image is None:
-                raise FileNotFoundError(f"cannot read image frame: {path}")
+            try:
+                image = load_bgr_image(path)
+            except ImageDecodeError as error:
+                raise FileNotFoundError(f"cannot read image frame: {path}") from error
             yield _frame(
-                image=cast(ImageArray, image),
+                image=image,
                 source=self.metadata,
                 frame_index=index,
                 source_timestamp=None,

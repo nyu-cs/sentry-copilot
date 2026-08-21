@@ -9,9 +9,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Any, cast
+from typing import Any
 
-import cv2
 import numpy as np
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
@@ -19,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 from sentry_copilot.capture.frame_source import Frame, FrameSourceType, ImageArray
 from sentry_copilot.domain.identifiers import RulesetRevisionId, StrategyId
 from sentry_copilot.domain.strategy import StrategyCatalog
+from sentry_copilot.image_io import ImageDecodeError, load_bgr_image
 from sentry_copilot.vision.template_matching import TemplateImage, match_template
 from sentry_copilot.vision.viewport import ContentViewport, PixelRoi
 
@@ -393,10 +393,10 @@ def _resolve_asset_path(root: Path, reference: str) -> Path:
 
 
 def _load_bgr_image(path: Path, label: str) -> ImageArray:
-    image = cv2.imread(str(path), cv2.IMREAD_COLOR)
-    if image is None:
-        raise VisualCatalogValidationError(f"cannot decode {label}: {path}")
-    return cast(ImageArray, image)
+    try:
+        return load_bgr_image(path)
+    except ImageDecodeError as error:
+        raise VisualCatalogValidationError(f"cannot decode {label}: {path}") from error
 
 
 def _file_sha256(path: Path) -> str:
