@@ -29,6 +29,12 @@ from sentry_copilot.routes.overlay import RouteOverlayRenderer
 from sentry_copilot.routes.repository import MapRepository, load_map_definition
 from sentry_copilot.routes.selector import RouteSelector
 from sentry_copilot.vision.live_ocr_probe import LiveOcrProbeConfig, run_live_ocr_probe
+from sentry_copilot.vision.local_feature_matching import (
+    LocalFeatureMatcherConfig,
+    LocalFeatureMatchError,
+    LocalFeatureVisualMatcher,
+    write_local_feature_match_report,
+)
 from sentry_copilot.vision.ocr import check_windows_ocr_language
 from sentry_copilot.vision.recognition_probe import (
     OcrProbeOperation,
@@ -172,6 +178,37 @@ def build_parser() -> argparse.ArgumentParser:
     visual_catalog_match.add_argument("--output", type=Path, required=True)
     visual_catalog_match.add_argument("--minimum-score", type=float, default=0.9)
     visual_catalog_match.add_argument("--ambiguity-margin", type=float, default=0.02)
+    visual_local_feature_match = commands.add_parser(
+        "visual-local-feature-match",
+        help="Match one explicit image using catalog-backed SIFT and similarity RANSAC",
+    )
+    visual_local_feature_match.add_argument(
+        "--kind", choices=[kind.value for kind in VisualCatalogKind], required=True
+    )
+    visual_local_feature_match.add_argument("--catalog", type=Path, required=True)
+    visual_local_feature_match.add_argument(
+        "--strategy-catalog",
+        type=Path,
+        metavar="PATH",
+        help="optional exact strategy catalog used to validate strategy references",
+    )
+    visual_local_feature_match.add_argument("--image", type=Path, required=True)
+    visual_local_feature_match.add_argument("--output", type=Path, required=True)
+    visual_local_feature_match.add_argument("--sift-nfeatures", type=int, default=300)
+    visual_local_feature_match.add_argument(
+        "--sift-contrast-threshold", type=float, default=0.02
+    )
+    visual_local_feature_match.add_argument("--sift-edge-threshold", type=float, default=10.0)
+    visual_local_feature_match.add_argument("--lowe-ratio", type=float, default=0.75)
+    visual_local_feature_match.add_argument(
+        "--ransac-reprojection-threshold", type=float, default=3.0
+    )
+    visual_local_feature_match.add_argument("--minimum-scale", type=float, default=0.80)
+    visual_local_feature_match.add_argument("--maximum-scale", type=float, default=1.60)
+    visual_local_feature_match.add_argument("--maximum-rotation-degrees", type=float, default=5.0)
+    visual_local_feature_match.add_argument("--minimum-inliers", type=int, default=3)
+    visual_local_feature_match.add_argument("--minimum-inlier-ratio", type=float, default=0.0)
+    visual_local_feature_match.add_argument("--ambiguity-margin", type=float, default=0.0)
     extract_video_frames.add_argument("--output", type=Path, required=True, metavar="PATH")
     extract_video_frames.add_argument(
         "--at",
@@ -300,6 +337,48 @@ def main() -> None:
         except (VisualCatalogLoadError, VisualCatalogValidationError, ValueError) as error:
             parser.error(str(error))
         print(f"wrote {report_path} ({visual_match.status.value})")
+    elif args.command == "visual-local-feature-match":
+        try:
+            strategy_catalog = (
+                load_catalog(args.strategy_catalog).catalog
+                if args.strategy_catalog is not None
+                else None
+            )
+            visual_catalog = load_visual_reference_catalog(
+                args.catalog,
+                strategy_catalog=strategy_catalog,
+            )
+            actual_kind = visual_catalog.kind.value
+            if actual_kind != args.kind:
+                raise ValueError(
+                    f"requested kind {args.kind} does not match catalog kind {actual_kind}"
+                )
+            local_feature_matcher = LocalFeatureVisualMatcher(
+                visual_catalog,
+                LocalFeatureMatcherConfig(
+                    sift_nfeatures=args.sift_nfeatures,
+                    sift_contrast_threshold=args.sift_contrast_threshold,
+                    sift_edge_threshold=args.sift_edge_threshold,
+                    lowe_ratio=args.lowe_ratio,
+                    ransac_reprojection_threshold=args.ransac_reprojection_threshold,
+                    minimum_scale=args.minimum_scale,
+                    maximum_scale=args.maximum_scale,
+                    maximum_abs_rotation_degrees=args.maximum_rotation_degrees,
+                    minimum_inliers=args.minimum_inliers,
+                    minimum_inlier_ratio=args.minimum_inlier_ratio,
+                    ambiguity_margin=args.ambiguity_margin,
+                ),
+            )
+            local_feature_match = local_feature_matcher.match_path(args.image)
+            report_path = write_local_feature_match_report(local_feature_match, args.output)
+        except (
+            LocalFeatureMatchError,
+            VisualCatalogLoadError,
+            VisualCatalogValidationError,
+            ValueError,
+        ) as error:
+            parser.error(str(error))
+        print(f"wrote {report_path} ({local_feature_match.status.value})")
     elif args.command == "extract-video-frames":
         try:
             extraction_result = extract_video_frames(

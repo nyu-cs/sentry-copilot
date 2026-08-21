@@ -46,3 +46,8 @@ output directory. The report preserves that schema version and fingerprint, cata
 and hashes, dimensions, thresholds, ranked reference assets, match bounds, and the typed match
 status. It writes no annotated image and performs no page, slot,
 tag, player, or strategy-selection recognition.
+
+For cross-layout references whose portrait geometry differs, use the independent
+`visual-local-feature-match` command documented in
+[Local-feature visual matching](local-feature-visual-matching.md). It consumes this same catalog
+and identity model; it does not replace or change the same-layout template matcher.

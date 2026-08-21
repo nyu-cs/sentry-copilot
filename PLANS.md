@@ -192,6 +192,27 @@
 - [x] Keep the harness game-agnostic: it does not discover ROIs, inspect private inputs, mutate
   domain state, or add game recognition rules.
 
+## M0.4 — Visual identity references and matching
+
+### M0.4a — Visual reference catalog foundation
+
+- [x] Load caller-declared strategy or avatar references without directory scanning.
+- [x] Preserve stable identity, render context, asset provenance, and deterministic catalog
+  fingerprints independently from player identity or strategy occupancy.
+
+### M0.4b — JP strategy catalog bootstrap
+
+- [x] Bootstrap revision-aware JP strategy metadata and private visual-reference workflows without
+  committing real assets or claiming full live validation.
+
+### M0.4c — Local-feature visual matcher foundation
+
+- [x] Add catalog-backed SIFT, Lowe-ratio, and similarity-RANSAC matching as an independent
+  cross-layout option while retaining exact template matching for same-layout renders.
+- [x] Aggregate multiple references per stable identity, expose transform/inlier evidence, and
+  return typed unresolved or ambiguous results without identity-specific tuning.
+- [x] Cache reference descriptors in memory and provide an explicit, non-scanning JSON probe CLI.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.
