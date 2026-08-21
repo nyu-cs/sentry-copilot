@@ -11,6 +11,11 @@ from sentry_copilot.capture.display_smoke import (
     run_display_capture_smoke_test,
 )
 from sentry_copilot.capture.frame_source import ImageSequenceFrameSource
+from sentry_copilot.capture.video_frame_extraction import (
+    VideoFrameExtractionConfig,
+    VideoFrameRequest,
+    extract_video_frames,
+)
 from sentry_copilot.capture.windows_display import WindowsDisplayFrameSource
 from sentry_copilot.domain.enums import StageType
 from sentry_copilot.routes.models import (
@@ -89,9 +94,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     live_ocr_probe.add_argument("--monitor", type=int, required=True, metavar="INDEX")
     live_ocr_probe.add_argument("--language", required=True, metavar="BCP47")
-    live_ocr_probe.add_argument(
-        "--start-delay-seconds", type=float, default=0.0, metavar="SECONDS"
-    )
+    live_ocr_probe.add_argument("--start-delay-seconds", type=float, default=0.0, metavar="SECONDS")
     live_ocr_probe.add_argument("--output", type=Path, required=True)
     roi = live_ocr_probe.add_mutually_exclusive_group(required=True)
     roi.add_argument("--normalized-roi", nargs=4, type=float, metavar=("X", "Y", "W", "H"))
@@ -137,6 +140,19 @@ def build_parser() -> argparse.ArgumentParser:
         nargs=6,
         metavar=("NAME", "X", "Y", "W", "H", "TEMPLATE"),
     )
+    extract_video_frames = commands.add_parser(
+        "extract-video-frames",
+        help="Extract explicit full-resolution PNG frames from one local video",
+    )
+    extract_video_frames.add_argument("--video", type=Path, required=True, metavar="PATH")
+    extract_video_frames.add_argument("--output", type=Path, required=True, metavar="PATH")
+    extract_video_frames.add_argument(
+        "--at",
+        action="append",
+        required=True,
+        nargs=2,
+        metavar=("HH:MM:SS[.mmm]", "LABEL"),
+    )
     return parser
 
 
@@ -179,8 +195,7 @@ def main() -> None:
             ),
         )
         print(
-            f"wrote {capture_result.manifest_path} "
-            f"({capture_result.captured_frame_count} frame(s))"
+            f"wrote {capture_result.manifest_path} ({capture_result.captured_frame_count} frame(s))"
         )
     elif args.command == "check-ocr-language":
         capability = check_windows_ocr_language(args.language)
@@ -232,13 +247,29 @@ def main() -> None:
             f"{recognition_probe_result.report_path} "
             f"({len(recognition_probe_result.operations)} operation(s))"
         )
+    elif args.command == "extract-video-frames":
+        try:
+            extraction_result = extract_video_frames(
+                VideoFrameExtractionConfig(
+                    video_path=args.video,
+                    output_directory=args.output,
+                    requests=tuple(
+                        VideoFrameRequest(timestamp_text=timestamp, label=label)
+                        for timestamp, label in args.at
+                    ),
+                )
+            )
+        except ValueError as error:
+            parser.error(str(error))
+        successful = sum(record.status.value == "success" for record in extraction_result.records)
+        print(f"wrote {extraction_result.manifest_path} ({successful} frame(s) extracted)")
     else:  # pragma: no cover
         raise AssertionError("unreachable")
 
 
-def _recognition_probe_operations(args: argparse.Namespace) -> tuple[
-    OcrProbeOperation | TemplateProbeOperation, ...
-]:
+def _recognition_probe_operations(
+    args: argparse.Namespace,
+) -> tuple[OcrProbeOperation | TemplateProbeOperation, ...]:
     operations: list[OcrProbeOperation | TemplateProbeOperation] = []
     if (args.ocr_normalized_roi or args.ocr_pixel_roi) and args.language is None:
         raise RecognitionProbeConfigurationError("--language is required for OCR probe operations")
