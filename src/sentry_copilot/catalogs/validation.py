@@ -5,6 +5,7 @@ from collections.abc import Hashable, Iterable
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from sentry_copilot.domain.strategy import (
+    IconAssetMaterialization,
     StrategyAvailability,
     StrategyCatalog,
 )
@@ -113,6 +114,10 @@ def validate_catalog(catalog: StrategyCatalog, *, asset_root: Path) -> None:
                 asset_root=asset_root,
                 strategy_id=profile.strategy_id,
                 revision_id=profile.ruleset_revision_id,
+                require_materialized_asset=(
+                    catalog.icon_asset_materialization
+                    is IconAssetMaterialization.PACKAGED
+                ),
             )
         )
 
@@ -147,6 +152,19 @@ def validate_catalog(catalog: StrategyCatalog, *, asset_root: Path) -> None:
                 "locale resource uses a locale not declared by its ruleset: "
                 f"{resource.ruleset_revision_id}/{resource.strategy_id}/"
                 f"{resource.locale_id}"
+            )
+
+    phase_keys = [
+        (phase.phase_id, phase.ruleset_revision_id, phase.strategy_id)
+        for phase in catalog.phase_availabilities
+    ]
+    issues.extend(_duplicates_as_issues(phase_keys, "strategy phase availability"))
+    for phase in catalog.phase_availabilities:
+        profile_key = (phase.ruleset_revision_id, phase.strategy_id)
+        if profile_key not in profile_key_set:
+            issues.append(
+                "phase availability references a strategy without a profile in the same "
+                f"revision: {profile_key}"
             )
 
     for profile in catalog.profiles:
@@ -204,6 +222,7 @@ def _validate_asset_reference(
     asset_root: Path,
     strategy_id: str,
     revision_id: str,
+    require_materialized_asset: bool,
 ) -> list[str]:
     label = f"{revision_id}/{strategy_id}"
     posix_path = PurePosixPath(reference)
@@ -220,7 +239,7 @@ def _validate_asset_reference(
     resolved_asset = asset_root.joinpath(*posix_path.parts).resolve()
     if not resolved_asset.is_relative_to(resolved_root):
         return [f"icon asset reference for {label} escapes the catalog root"]
-    if not resolved_asset.is_file():
+    if require_materialized_asset and not resolved_asset.is_file():
         return [f"icon asset reference for {label} does not resolve to a file"]
     return []
 

@@ -1,0 +1,149 @@
+# JP bootstrap metadata. It contains no game image assets and makes no VALIDATED_SUPPORT claim.
+# Values are sourced as marked below; see docs/jp-strategy-catalog-bootstrap.md.
+catalog_version: catalog.sentry_protocol.covenant_latter.jp.bootstrap.v1
+is_synthetic: false
+icon_asset_materialization: private_local
+
+rulesets:
+  - ruleset_id: sentry_protocol.covenant_latter
+    revision_ids: [sentry_protocol.covenant_latter.post_update]
+    # zh_CN reference strings are transcribed from PRTS. ja_JP remains a target, not a catalog-complete locale.
+    supported_locales: [zh_CN]
+
+revisions:
+  - ruleset_revision_id: sentry_protocol.covenant_latter.post_update
+    ruleset_id: sentry_protocol.covenant_latter
+    revision_order: 1
+
+strategy_identities:
+  - {strategy_id: strategy.covenant_latter.focused_care}
+  - {strategy_id: strategy.covenant_latter.united_purpose}
+  - {strategy_id: strategy.covenant_latter.social_connection}
+  - {strategy_id: strategy.covenant_latter.immovable}
+  - {strategy_id: strategy.covenant_latter.headhunting_consultant}
+  - {strategy_id: strategy.covenant_latter.private_equity}
+  - {strategy_id: strategy.covenant_latter.secret_of_fate}
+  - {strategy_id: strategy.covenant_latter.leisure_tea}
+  - {strategy_id: strategy.covenant_latter.clearance_reward}
+  - {strategy_id: strategy.covenant_latter.well_rounded}
+  - {strategy_id: strategy.covenant_latter.talent_blind_box}
+  - {strategy_id: strategy.covenant_latter.snowland_gift}
+  - {strategy_id: strategy.covenant_latter.custom_firearms}
+  - {strategy_id: strategy.covenant_latter.noble_sacrifice}
+  - {strategy_id: strategy.covenant_latter.expedited_deployment}
+  - {strategy_id: strategy.covenant_latter.medicine_experiment}
+  - {strategy_id: strategy.covenant_latter.recycling}
+  - {strategy_id: strategy.covenant_latter.unstable_element}
+  - {strategy_id: strategy.covenant_latter.slow_simmer}
+  - {strategy_id: strategy.covenant_latter.extra_training}
+  - {strategy_id: strategy.covenant_latter.targeted_delivery}
+  - {strategy_id: strategy.covenant_latter.commercial_packaging}
+  - {strategy_id: strategy.covenant_latter.carrion_butterfly}
+  - {strategy_id: strategy.covenant_latter.strength_of_self}
+  - {strategy_id: strategy.covenant_latter.metamorphic_isomorphism}
+  - {strategy_id: strategy.covenant_latter.model_student}
+  - {strategy_id: strategy.covenant_latter.true_ink_portrait}
+  - {strategy_id: strategy.covenant_latter.rolling_profit}
+  - {strategy_id: strategy.covenant_latter.mysterious_customer}
+  - {strategy_id: strategy.covenant_latter.substitute_doll}
+  - {strategy_id: strategy.covenant_latter.command_authority}
+  - {strategy_id: strategy.covenant_latter.nine_streams_bond}
+  - {strategy_id: strategy.covenant_latter.business_metrics}
+  - {strategy_id: strategy.covenant_latter.gang_action}
+  - {strategy_id: strategy.covenant_latter.share_for_all}
+  - {strategy_id: strategy.covenant_latter.field_medic}
+  - {strategy_id: strategy.covenant_latter.guardian_power}
+  - {strategy_id: strategy.covenant_latter.assembly_directive}
+  - {strategy_id: strategy.covenant_latter.pure_condensation}
+  - {strategy_id: strategy.covenant_latter.cooperative_advancement}
+
+profiles:
+  - &profile {ruleset_revision_id: sentry_protocol.covenant_latter.post_update, strategy_id: strategy.covenant_latter.focused_care, availability: available, initial_hp: 28, initial_hp_provenance: external_reference, initial_hp_source_reference: "https://prts.wiki/w/卫戍协议：盟约_下半", icon_visual_key: strategy.covenant_latter.focused_care.initiator_portrait, icon_asset_reference: private_assets/focused_care.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.united_purpose, initial_hp: 25, icon_visual_key: strategy.covenant_latter.united_purpose.initiator_portrait, icon_asset_reference: private_assets/united_purpose.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.social_connection, initial_hp: 29, icon_visual_key: strategy.covenant_latter.social_connection.initiator_portrait, icon_asset_reference: private_assets/social_connection.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.immovable, initial_hp: 45, icon_visual_key: strategy.covenant_latter.immovable.initiator_portrait, icon_asset_reference: private_assets/immovable.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.headhunting_consultant, initial_hp: 30, icon_visual_key: strategy.covenant_latter.headhunting_consultant.initiator_portrait, icon_asset_reference: private_assets/headhunting_consultant.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.private_equity, initial_hp: 23, icon_visual_key: strategy.covenant_latter.private_equity.initiator_portrait, icon_asset_reference: private_assets/private_equity.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.secret_of_fate, initial_hp: 27, icon_visual_key: strategy.covenant_latter.secret_of_fate.initiator_portrait, icon_asset_reference: private_assets/secret_of_fate.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.leisure_tea, initial_hp: 27, icon_visual_key: strategy.covenant_latter.leisure_tea.initiator_portrait, icon_asset_reference: private_assets/leisure_tea.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.clearance_reward, initial_hp: 26, icon_visual_key: strategy.covenant_latter.clearance_reward.initiator_portrait, icon_asset_reference: private_assets/clearance_reward.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.well_rounded, initial_hp: 23, icon_visual_key: strategy.covenant_latter.well_rounded.initiator_portrait, icon_asset_reference: private_assets/well_rounded.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.talent_blind_box, initial_hp: 23, icon_visual_key: strategy.covenant_latter.talent_blind_box.initiator_portrait, icon_asset_reference: private_assets/talent_blind_box.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.snowland_gift, initial_hp: 24, icon_visual_key: strategy.covenant_latter.snowland_gift.initiator_portrait, icon_asset_reference: private_assets/snowland_gift.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.custom_firearms, initial_hp: 24, icon_visual_key: strategy.covenant_latter.custom_firearms.initiator_portrait, icon_asset_reference: private_assets/custom_firearms.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.noble_sacrifice, initial_hp: 26, icon_visual_key: strategy.covenant_latter.noble_sacrifice.initiator_portrait, icon_asset_reference: private_assets/noble_sacrifice.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.expedited_deployment, initial_hp: 26, icon_visual_key: strategy.covenant_latter.expedited_deployment.initiator_portrait, icon_asset_reference: private_assets/expedited_deployment.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.medicine_experiment, initial_hp: 28, icon_visual_key: strategy.covenant_latter.medicine_experiment.initiator_portrait, icon_asset_reference: private_assets/medicine_experiment.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.recycling, initial_hp: 24, icon_visual_key: strategy.covenant_latter.recycling.initiator_portrait, icon_asset_reference: private_assets/recycling.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.unstable_element, initial_hp: 31, icon_visual_key: strategy.covenant_latter.unstable_element.initiator_portrait, icon_asset_reference: private_assets/unstable_element.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.slow_simmer, initial_hp: 27, initial_hp_provenance: live_confirmed, initial_hp_source_reference: "operator-provided-jp-live-observation", icon_visual_key: strategy.covenant_latter.slow_simmer.initiator_portrait, icon_asset_reference: private_assets/slow_simmer.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.extra_training, initial_hp: 30, icon_visual_key: strategy.covenant_latter.extra_training.initiator_portrait, icon_asset_reference: private_assets/extra_training.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.targeted_delivery, initial_hp: 26, icon_visual_key: strategy.covenant_latter.targeted_delivery.initiator_portrait, icon_asset_reference: private_assets/targeted_delivery.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.commercial_packaging, initial_hp: 28, icon_visual_key: strategy.covenant_latter.commercial_packaging.initiator_portrait, icon_asset_reference: private_assets/commercial_packaging.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.carrion_butterfly, initial_hp: 26, icon_visual_key: strategy.covenant_latter.carrion_butterfly.initiator_portrait, icon_asset_reference: private_assets/carrion_butterfly.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.strength_of_self, initial_hp: 22, icon_visual_key: strategy.covenant_latter.strength_of_self.initiator_portrait, icon_asset_reference: private_assets/strength_of_self.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.metamorphic_isomorphism, initial_hp: 29, icon_visual_key: strategy.covenant_latter.metamorphic_isomorphism.initiator_portrait, icon_asset_reference: private_assets/metamorphic_isomorphism.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.model_student, initial_hp: 24, icon_visual_key: strategy.covenant_latter.model_student.initiator_portrait, icon_asset_reference: private_assets/model_student.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.true_ink_portrait, initial_hp: 28, icon_visual_key: strategy.covenant_latter.true_ink_portrait.initiator_portrait, icon_asset_reference: private_assets/true_ink_portrait.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.rolling_profit, initial_hp: 27, icon_visual_key: strategy.covenant_latter.rolling_profit.initiator_portrait, icon_asset_reference: private_assets/rolling_profit.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.mysterious_customer, initial_hp: 29, icon_visual_key: strategy.covenant_latter.mysterious_customer.initiator_portrait, icon_asset_reference: private_assets/mysterious_customer.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.substitute_doll, initial_hp: 22, icon_visual_key: strategy.covenant_latter.substitute_doll.initiator_portrait, icon_asset_reference: private_assets/substitute_doll.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.command_authority, initial_hp: 29, icon_visual_key: strategy.covenant_latter.command_authority.initiator_portrait, icon_asset_reference: private_assets/command_authority.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.nine_streams_bond, initial_hp: 24, icon_visual_key: strategy.covenant_latter.nine_streams_bond.initiator_portrait, icon_asset_reference: private_assets/nine_streams_bond.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.business_metrics, initial_hp: 24, icon_visual_key: strategy.covenant_latter.business_metrics.initiator_portrait, icon_asset_reference: private_assets/business_metrics.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.gang_action, initial_hp: 23, icon_visual_key: strategy.covenant_latter.gang_action.initiator_portrait, icon_asset_reference: private_assets/gang_action.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.share_for_all, initial_hp: 26, icon_visual_key: strategy.covenant_latter.share_for_all.initiator_portrait, icon_asset_reference: private_assets/share_for_all.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.field_medic, initial_hp: 28, icon_visual_key: strategy.covenant_latter.field_medic.initiator_portrait, icon_asset_reference: private_assets/field_medic.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.guardian_power, initial_hp: 20, icon_visual_key: strategy.covenant_latter.guardian_power.initiator_portrait, icon_asset_reference: private_assets/guardian_power.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.assembly_directive, initial_hp: 22, icon_visual_key: strategy.covenant_latter.assembly_directive.initiator_portrait, icon_asset_reference: private_assets/assembly_directive.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.pure_condensation, initial_hp: 28, icon_visual_key: strategy.covenant_latter.pure_condensation.initiator_portrait, icon_asset_reference: private_assets/pure_condensation.canonical.png}
+  - {<<: *profile, strategy_id: strategy.covenant_latter.cooperative_advancement, initial_hp: 24, icon_visual_key: strategy.covenant_latter.cooperative_advancement.initiator_portrait, icon_asset_reference: private_assets/cooperative_advancement.canonical.png}
+
+locale_resources:
+  - &resource {ruleset_revision_id: sentry_protocol.covenant_latter.post_update, strategy_id: strategy.covenant_latter.focused_care, locale_id: zh_CN, name: 重点监护, description: "外部参考元数据引导记录；策略效果文本尚未作为已验证 JP 本地化数据录入。", initiator_display_name: 华法琳, ocr_aliases: [], visible_text_variants: []}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.united_purpose, name: 众志合一, initiator_display_name: 阿米娅}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.social_connection, name: 广交豪杰, initiator_display_name: 杜遥夜}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.immovable, name: 坚不可摧, initiator_display_name: 歌利亚}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.headhunting_consultant, name: 猎头顾问, initiator_display_name: 梓兰}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.private_equity, name: 私募基金, initiator_display_name: 小贾斯汀}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.secret_of_fate, name: 命结之秘, initiator_display_name: 埃芒加德}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.leisure_tea, name: 得闲饮茶, initiator_display_name: 老鲤}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.clearance_reward, name: 通关奖励, initiator_display_name: 绮良}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.well_rounded, name: 博学多通, initiator_display_name: 佩佩}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.talent_blind_box, name: 人才盲盒, initiator_display_name: 哈洛德}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.snowland_gift, name: 雪域礼赠, initiator_display_name: 休露丝}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.custom_firearms, name: 定制铳械, initiator_display_name: 潘格尼尼}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.noble_sacrifice, name: 崇高牺牲, initiator_display_name: 克莱门莎}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.expedited_deployment, name: 加急调派, initiator_display_name: 大帝}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.medicine_experiment, name: 药枚实验, initiator_display_name: 桑葚}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.recycling, name: 回收利用, initiator_display_name: 休谟斯}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.unstable_element, name: 不稳定要素, initiator_display_name: 昆图斯}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.slow_simmer, name: 文火慢炖, initiator_display_name: 余}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.extra_training, name: 加练！, initiator_display_name: 杜宾}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.targeted_delivery, name: 定向投放, initiator_display_name: 凯瑟琳}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.commercial_packaging, name: 商业包装, initiator_display_name: 马克维茨}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.carrion_butterfly, name: 食腐之蝶, initiator_display_name: 卡莱莎}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.strength_of_self, name: 以己之长, initiator_display_name: 陈}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.metamorphic_isomorphism, name: 变形同构, initiator_display_name: "变形者集群"}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.model_student, name: 优等生, initiator_display_name: Pith}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.true_ink_portrait, name: 墨色真颜, initiator_display_name: 夕, visible_text_variants: [幻画为真]}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.rolling_profit, name: 利滚利, initiator_display_name: 坎诺特}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.mysterious_customer, name: "神秘顾客", initiator_display_name: 鸭爵}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.substitute_doll, name: 替身娃娃, initiator_display_name: 巫恋}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.command_authority, name: 统御号令, initiator_display_name: 伊奥莱塔·罗素}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.nine_streams_bond, name: 九流之缘, initiator_display_name: 松桐}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.business_metrics, name: 业务指标, initiator_display_name: 玛恩纳}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.gang_action, name: 团伙行动, initiator_display_name: 贾维}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.share_for_all, name: 见者有份, initiator_display_name: 娜仁图亚}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.field_medic, name: 外勤医疗, initiator_display_name: Touch}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.guardian_power, name: 御守之力, initiator_display_name: 铃兰}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.assembly_directive, name: 集结指示, initiator_display_name: 杰西卡}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.pure_condensation, name: 至纯凝结, initiator_display_name: 缪尔赛思}
+  - {<<: *resource, strategy_id: strategy.covenant_latter.cooperative_advancement, name: 协力共进, initiator_display_name: 芬}
+
+# Absence means unobserved, not globally available. These are only the current JP locks confirmed live.
+phase_availabilities:
+  - &locked {phase_id: jp.live.pre_ultimate_simulation, ruleset_revision_id: sentry_protocol.covenant_latter.post_update, strategy_id: strategy.covenant_latter.guardian_power, availability: unavailable, provenance: live_confirmed, source_reference: operator-provided-jp-live-observation}
+  - {<<: *locked, strategy_id: strategy.covenant_latter.assembly_directive}
+  - {<<: *locked, strategy_id: strategy.covenant_latter.pure_condensation}
+  - {<<: *locked, strategy_id: strategy.covenant_latter.cooperative_advancement}

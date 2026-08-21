@@ -1,5 +1,6 @@
 from sentry_copilot.catalogs.repository import (
     StrategyCatalogRepository,
+    load_catalog,
     load_support_registry,
 )
 from sentry_copilot.routes.repository import MapRepository
@@ -14,6 +15,11 @@ if __name__ == "__main__":
     )
     for catalog_version in catalog_repository.list_catalog_versions():
         print(catalog_version)
+
+    jp_bootstrap = load_catalog(
+        "data/strategy_catalog_bootstrap/sentry_protocol.covenant_latter.jp/catalog.yaml"
+    )
+    print(jp_bootstrap.catalog.catalog_version)
 
     support_registry = load_support_registry(
         "data/strategy_catalogs/support-targets.yaml"

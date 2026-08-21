@@ -17,6 +17,7 @@ from sentry_copilot.capture.video_frame_extraction import (
     extract_video_frames,
 )
 from sentry_copilot.capture.windows_display import WindowsDisplayFrameSource
+from sentry_copilot.catalogs.repository import load_catalog
 from sentry_copilot.domain.enums import StageType
 from sentry_copilot.routes.models import (
     ActorType,
@@ -161,6 +162,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--kind", choices=[kind.value for kind in VisualCatalogKind], required=True
     )
     visual_catalog_match.add_argument("--catalog", type=Path, required=True)
+    visual_catalog_match.add_argument(
+        "--strategy-catalog",
+        type=Path,
+        metavar="PATH",
+        help="optional exact strategy catalog used to validate strategy references",
+    )
     visual_catalog_match.add_argument("--image", type=Path, required=True)
     visual_catalog_match.add_argument("--output", type=Path, required=True)
     visual_catalog_match.add_argument("--minimum-score", type=float, default=0.9)
@@ -269,7 +276,15 @@ def main() -> None:
         )
     elif args.command == "visual-catalog-match":
         try:
-            visual_catalog = load_visual_reference_catalog(args.catalog)
+            strategy_catalog = (
+                load_catalog(args.strategy_catalog).catalog
+                if args.strategy_catalog is not None
+                else None
+            )
+            visual_catalog = load_visual_reference_catalog(
+                args.catalog,
+                strategy_catalog=strategy_catalog,
+            )
             actual_kind = visual_catalog.kind.value
             if actual_kind != args.kind:
                 raise ValueError(

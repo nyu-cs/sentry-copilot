@@ -13,6 +13,7 @@ from sentry_copilot.domain.identifiers import (
     RulesetId,
     RulesetRevisionId,
     StrategyId,
+    StrategyPhaseId,
 )
 from sentry_copilot.domain.strategy import (
     LocaleStrategyResource,
@@ -21,6 +22,7 @@ from sentry_copilot.domain.strategy import (
     RulesetStrategyProfile,
     StrategyAvailability,
     StrategyCatalog,
+    StrategyPhaseAvailability,
 )
 from sentry_copilot.domain.support import SupportRegistry
 
@@ -137,6 +139,28 @@ class StrategyCatalogRepository:
                 return resource
         raise CatalogLookupError(
             "locale resource not found for exact catalog/revision/strategy/locale key"
+        )
+
+    def get_phase_availability(
+        self,
+        *,
+        catalog_version: CatalogVersion,
+        phase_id: StrategyPhaseId,
+        ruleset_revision_id: RulesetRevisionId,
+        strategy_id: StrategyId,
+    ) -> StrategyPhaseAvailability | None:
+        """Return one explicit global phase fact, or None when that fact is unobserved."""
+
+        catalog = self.catalog(catalog_version)
+        return next(
+            (
+                phase
+                for phase in catalog.phase_availabilities
+                if phase.phase_id == phase_id
+                and phase.ruleset_revision_id == ruleset_revision_id
+                and phase.strategy_id == strategy_id
+            ),
+            None,
         )
 
     def available_strategy_ids(

@@ -15,6 +15,10 @@ RulesetRevisionId = Annotated[
     str,
     StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
 ]
+StrategyPhaseId = Annotated[
+    str,
+    StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
+]
 StrategyId = Annotated[
     str,
     StringConstraints(strict=True, pattern=_NORMALIZED_ID_PATTERN),
