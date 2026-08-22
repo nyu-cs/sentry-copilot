@@ -44,6 +44,10 @@ from sentry_copilot.vision.recognition_probe import (
     load_template_image,
     run_recognition_probe,
 )
+from sentry_copilot.vision.strategy_selection_probe import (
+    probe_strategy_selection_image,
+    write_strategy_selection_probe_result,
+)
 from sentry_copilot.vision.validation_runner import (
     OfflineValidationConfig,
     parse_named_roi,
@@ -195,9 +199,7 @@ def build_parser() -> argparse.ArgumentParser:
     visual_local_feature_match.add_argument("--image", type=Path, required=True)
     visual_local_feature_match.add_argument("--output", type=Path, required=True)
     visual_local_feature_match.add_argument("--sift-nfeatures", type=int, default=300)
-    visual_local_feature_match.add_argument(
-        "--sift-contrast-threshold", type=float, default=0.02
-    )
+    visual_local_feature_match.add_argument("--sift-contrast-threshold", type=float, default=0.02)
     visual_local_feature_match.add_argument("--sift-edge-threshold", type=float, default=10.0)
     visual_local_feature_match.add_argument("--lowe-ratio", type=float, default=0.75)
     visual_local_feature_match.add_argument(
@@ -209,6 +211,14 @@ def build_parser() -> argparse.ArgumentParser:
     visual_local_feature_match.add_argument("--minimum-inliers", type=int, default=3)
     visual_local_feature_match.add_argument("--minimum-inlier-ratio", type=float, default=0.0)
     visual_local_feature_match.add_argument("--ambiguity-margin", type=float, default=0.0)
+    strategy_selection_probe = commands.add_parser(
+        "strategy-selection-probe",
+        help="Recognize four fixed strategy-selection portrait crops from one 1920x1080 image",
+    )
+    strategy_selection_probe.add_argument("--image", type=Path, required=True)
+    strategy_selection_probe.add_argument("--catalog", type=Path, required=True)
+    strategy_selection_probe.add_argument("--output-json", type=Path, required=True)
+    strategy_selection_probe.add_argument("--output-debug-dir", type=Path)
     extract_video_frames.add_argument("--output", type=Path, required=True, metavar="PATH")
     extract_video_frames.add_argument(
         "--at",
@@ -379,6 +389,25 @@ def main() -> None:
         ) as error:
             parser.error(str(error))
         print(f"wrote {report_path} ({local_feature_match.status.value})")
+    elif args.command == "strategy-selection-probe":
+        try:
+            visual_catalog = load_visual_reference_catalog(args.catalog)
+            if visual_catalog.kind is not VisualCatalogKind.STRATEGY:
+                raise ValueError("strategy-selection probe requires a strategy visual catalog")
+            strategy_selection_result = probe_strategy_selection_image(
+                args.image, visual_catalog, output_debug_directory=args.output_debug_dir
+            )
+            report_path = write_strategy_selection_probe_result(
+                strategy_selection_result, args.output_json
+            )
+        except (
+            LocalFeatureMatchError,
+            VisualCatalogLoadError,
+            VisualCatalogValidationError,
+            ValueError,
+        ) as error:
+            parser.error(str(error))
+        print(f"wrote {report_path} ({len(strategy_selection_result.rows)} row(s))")
     elif args.command == "extract-video-frames":
         try:
             extraction_result = extract_video_frames(
