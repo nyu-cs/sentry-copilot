@@ -18,7 +18,7 @@ directories. Real game assets and footage belong in private, untracked locations
 
 Each `strategy` reference contains an existing stable `strategy_id`, one asset ID, an optional
 `ruleset_revision_id`, and a render-context metadata value: `canonical_web`, `selection_render`,
-`battle_render`, or `other_explicit_render_context`. The context is provenance only; it never
+`selection_grid_render`, `battle_render`, or `other_explicit_render_context`. The context is provenance only; it never
 creates another strategy identity. It has no `initial_hp`: that value remains revision-profile data
 in the existing strategy catalog. A strategy may have multiple reference assets, whose borders,
 masks, brightness, transparency, and size may legitimately differ. This visual catalog does not

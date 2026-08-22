@@ -28,6 +28,70 @@ from sentry_copilot.vision.visual_references import (
 FloatArray = npt.NDArray[np.float32]
 
 
+@dataclass(frozen=True)
+class FeatureExclusionRegion:
+    """One pixel-space rectangle excluded from feature extraction, never image pixels."""
+
+    x: int
+    y: int
+    width: int
+    height: int
+
+    def __post_init__(self) -> None:
+        values = (self.x, self.y, self.width, self.height)
+        if any(not isinstance(value, int) or isinstance(value, bool) for value in values):
+            raise TypeError("feature exclusion geometry must use integer pixels")
+        if self.x < 0 or self.y < 0:
+            raise ValueError("feature exclusion origin must be non-negative")
+        if self.width <= 0 or self.height <= 0:
+            raise ValueError("feature exclusion dimensions must be positive")
+
+    def validate_for_image(self, *, width: int, height: int) -> None:
+        """Reject an exclusion that does not fit exactly within one image."""
+
+        if self.x + self.width > width or self.y + self.height > height:
+            raise ValueError(
+                "feature exclusion region exceeds image bounds: "
+                f"{self.x},{self.y},{self.width},{self.height} for {width}x{height}"
+            )
+
+
+@dataclass(frozen=True)
+class FeatureExclusionPolicy:
+    """Presentation-only exclusions shared by one declared render context."""
+
+    render_context: VisualReferenceKind
+    regions: tuple[FeatureExclusionRegion, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.render_context, VisualReferenceKind):
+            raise TypeError("feature exclusion policy render_context must be a VisualReferenceKind")
+        if not isinstance(self.regions, tuple):
+            raise TypeError("feature exclusion policy regions must be an immutable tuple")
+        if not self.regions:
+            raise ValueError("feature exclusion policy requires at least one region")
+        if any(not isinstance(region, FeatureExclusionRegion) for region in self.regions):
+            raise TypeError(
+                "feature exclusion policy regions must be FeatureExclusionRegion values"
+            )
+
+
+SELECTION_GRID_RENDER_BADGE_EXCLUSION = FeatureExclusionRegion(
+    x=124,
+    y=0,
+    width=28,
+    height=28,
+)
+"""Validated top-right completion-badge exclusion for a 152x128 selection-grid crop."""
+
+
+SELECTION_GRID_RENDER_FEATURE_EXCLUSION_POLICY = FeatureExclusionPolicy(
+    render_context=VisualReferenceKind.SELECTION_GRID_RENDER,
+    regions=(SELECTION_GRID_RENDER_BADGE_EXCLUSION,),
+)
+"""Opt-in policy for the validated selection-grid render context."""
+
+
 class LocalFeatureCandidateStatus(StrEnum):
     """Whether one reference produced accepted geometric identity evidence."""
 
@@ -66,6 +130,7 @@ class LocalFeatureMatcherConfig:
     minimum_inliers: int = 3
     minimum_inlier_ratio: float = 0.0
     ambiguity_margin: float = 0.0
+    feature_exclusion_policies: tuple[FeatureExclusionPolicy, ...] = ()
 
     def __post_init__(self) -> None:
         if self.sift_nfeatures <= 0:
@@ -86,6 +151,16 @@ class LocalFeatureMatcherConfig:
             raise ValueError("minimum_inlier_ratio must be between 0 and 1")
         if self.ambiguity_margin < 0:
             raise ValueError("ambiguity_margin must be non-negative")
+        if not isinstance(self.feature_exclusion_policies, tuple):
+            raise TypeError("feature exclusion policies must be an immutable tuple")
+        if any(
+            not isinstance(policy, FeatureExclusionPolicy)
+            for policy in self.feature_exclusion_policies
+        ):
+            raise TypeError("feature exclusion policies must contain FeatureExclusionPolicy values")
+        contexts = tuple(policy.render_context for policy in self.feature_exclusion_policies)
+        if len(contexts) != len(set(contexts)):
+            raise ValueError("feature exclusion policies must not repeat a render context")
 
 
 @dataclass(frozen=True)
@@ -140,6 +215,7 @@ class LocalFeatureVisualMatchResult:
     query_sha256: str
     query_width: int
     query_height: int
+    query_feature_exclusions: tuple[FeatureExclusionRegion, ...]
     config: LocalFeatureMatcherConfig
     status: VisualMatchStatus
     identity_candidates: tuple[LocalFeatureIdentityCandidate, ...]
@@ -207,16 +283,29 @@ class LocalFeatureVisualMatcher:
         except cv2.error as error:
             raise LocalFeatureMatchError("OpenCV SIFT support is unavailable") from error
         self._descriptor_matcher = cv2.BFMatcher(cv2.NORM_L2)
-        cache = {asset.asset_id: self._detect(asset.image) for asset in catalog.assets}
+        self._policies = {
+            policy.render_context: policy.regions
+            for policy in self.config.feature_exclusion_policies
+        }
+        cache = {
+            (reference.asset_id, reference.reference_kind): self._detect(
+                catalog.asset(reference.asset_id).image,
+                self._exclusions_for_context(reference.reference_kind),
+            )
+            for reference in catalog.references
+        }
         self._prepared_references = tuple(
             _PreparedReference(
                 reference=reference,
                 asset=catalog.asset(reference.asset_id),
-                features=cache[reference.asset_id],
+                features=cache[(reference.asset_id, reference.reference_kind)],
             )
             for reference in catalog.references
         )
-        self._cached_reference_asset_ids = tuple(sorted(cache))
+        self._cached_reference_asset_ids = tuple(sorted({asset_id for asset_id, _ in cache}))
+        self._cached_reference_feature_keys = tuple(
+            sorted((asset_id, context.value) for asset_id, context in cache)
+        )
 
     @property
     def cached_reference_asset_ids(self) -> tuple[str, ...]:
@@ -224,8 +313,20 @@ class LocalFeatureVisualMatcher:
 
         return self._cached_reference_asset_ids
 
-    def match_path(self, path: str | Path) -> LocalFeatureVisualMatchResult:
-        """Load exactly one caller-supplied query path through shared Unicode-safe image I/O."""
+    @property
+    def cached_reference_feature_keys(self) -> tuple[tuple[str, str], ...]:
+        """Expose context-sensitive in-memory descriptor cache keys for diagnostics."""
+
+        return self._cached_reference_feature_keys
+
+    def match_path(
+        self,
+        path: str | Path,
+        *,
+        query_render_context: VisualReferenceKind | None = None,
+        query_feature_exclusions: tuple[FeatureExclusionRegion, ...] = (),
+    ) -> LocalFeatureVisualMatchResult:
+        """Load one explicit query with optional context or caller-supplied exclusions."""
 
         query_path = Path(path)
         try:
@@ -239,6 +340,8 @@ class LocalFeatureVisualMatcher:
             image,
             query_reference=str(query_path),
             query_sha256=digest,
+            query_render_context=query_render_context,
+            query_feature_exclusions=query_feature_exclusions,
         )
 
     def match(
@@ -247,6 +350,8 @@ class LocalFeatureVisualMatcher:
         *,
         query_reference: str,
         query_sha256: str | None = None,
+        query_render_context: VisualReferenceKind | None = None,
+        query_feature_exclusions: tuple[FeatureExclusionRegion, ...] = (),
     ) -> LocalFeatureVisualMatchResult:
         """Match one explicit BGR crop without resizing or mutating its payload."""
 
@@ -255,7 +360,10 @@ class LocalFeatureVisualMatcher:
             raise ValueError("query_reference must not be blank")
         payload = np.array(query_image, dtype=np.uint8, copy=True)
         digest = query_sha256 or hashlib.sha256(payload.tobytes()).hexdigest()
-        query_features = self._detect(payload)
+        query_exclusions = (
+            self._exclusions_for_context(query_render_context) + query_feature_exclusions
+        )
+        query_features = self._detect(payload, query_exclusions)
         reference_candidates = tuple(
             self._compare(query_features, prepared)
             for prepared in self._prepared_references
@@ -272,6 +380,7 @@ class LocalFeatureVisualMatcher:
             query_sha256=digest,
             query_width=width,
             query_height=height,
+            query_feature_exclusions=query_exclusions,
             config=self.config,
             status=status,
             identity_candidates=identity_candidates,
@@ -279,9 +388,21 @@ class LocalFeatureVisualMatcher:
             selected_identity=selected,
         )
 
-    def _detect(self, image: ImageArray) -> _FeatureSet:
+    def _exclusions_for_context(
+        self, context: VisualReferenceKind | None
+    ) -> tuple[FeatureExclusionRegion, ...]:
+        if context is None:
+            return ()
+        return self._policies.get(context, ())
+
+    def _detect(
+        self,
+        image: ImageArray,
+        exclusions: tuple[FeatureExclusionRegion, ...] = (),
+    ) -> _FeatureSet:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        keypoints, descriptors = self._sift.detectAndCompute(gray, None)
+        mask = _feature_mask(gray.shape[1], gray.shape[0], exclusions)
+        keypoints, descriptors = self._sift.detectAndCompute(gray, mask)
         points = np.asarray(
             [keypoint.pt for keypoint in keypoints], dtype=np.float32
         ).reshape(-1, 2)
@@ -379,6 +500,22 @@ def write_local_feature_match_report(
         encoding="utf-8",
     )
     return output_path
+
+
+def _feature_mask(
+    width: int,
+    height: int,
+    exclusions: tuple[FeatureExclusionRegion, ...],
+) -> npt.NDArray[np.uint8] | None:
+    """Return a SIFT-accepted uint8 mask without changing the supplied image."""
+
+    if not exclusions:
+        return None
+    mask = np.full((height, width), 255, dtype=np.uint8)
+    for region in exclusions:
+        region.validate_for_image(width=width, height=height)
+        mask[region.y : region.y + region.height, region.x : region.x + region.width] = 0
+    return mask
 
 
 def _candidate_base(
@@ -534,11 +671,14 @@ def _result_json(result: LocalFeatureVisualMatchResult) -> dict[str, object]:
             "sha256": result.query_sha256,
             "width": result.query_width,
             "height": result.query_height,
+            "feature_exclusions": [
+                _region_json(region) for region in result.query_feature_exclusions
+            ],
         },
         "matcher": {
             "type": "sift_similarity_ransac",
             "transform_direction": "query_to_reference",
-            "configuration": asdict(result.config),
+            "configuration": _config_json(result.config),
             "score_semantics": "ransac_inliers_divided_by_query_keypoints",
         },
         "status": result.status.value,
@@ -550,6 +690,22 @@ def _result_json(result: LocalFeatureVisualMatchResult) -> dict[str, object]:
             _reference_candidate_json(candidate) for candidate in result.reference_candidates
         ],
     }
+
+
+def _region_json(region: FeatureExclusionRegion) -> dict[str, int]:
+    return {"x": region.x, "y": region.y, "width": region.width, "height": region.height}
+
+
+def _config_json(config: LocalFeatureMatcherConfig) -> dict[str, object]:
+    values = asdict(config)
+    values["feature_exclusion_policies"] = [
+        {
+            "render_context": policy.render_context.value,
+            "regions": [_region_json(region) for region in policy.regions],
+        }
+        for policy in config.feature_exclusion_policies
+    ]
+    return values
 
 
 def _identity_candidate_json(

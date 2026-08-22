@@ -4,6 +4,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+from typing import cast
 
 import cv2
 import numpy as np
@@ -13,6 +14,9 @@ import yaml
 from sentry_copilot.cli import build_parser
 from sentry_copilot.image_io import write_bgr_png
 from sentry_copilot.vision.local_feature_matching import (
+    SELECTION_GRID_RENDER_BADGE_EXCLUSION,
+    SELECTION_GRID_RENDER_FEATURE_EXCLUSION_POLICY,
+    FeatureExclusionRegion,
     LocalFeatureMatcherConfig,
     LocalFeatureRejectionReason,
     LocalFeatureVisualMatcher,
@@ -20,6 +24,7 @@ from sentry_copilot.vision.local_feature_matching import (
 )
 from sentry_copilot.vision.visual_references import (
     VisualMatchStatus,
+    VisualReferenceKind,
     load_visual_reference_catalog,
 )
 
@@ -67,18 +72,21 @@ def _write_catalog(
 ) -> Path:
     assets: list[dict[str, str]] = []
     references: list[dict[str, str]] = []
+    declared_asset_ids: set[str] = set()
     for identity_id, asset_id, image, reference_kind in entries:
         path = root / "assets" / f"{asset_id}.png"
         path.parent.mkdir(parents=True, exist_ok=True)
-        write_bgr_png(path, image)
-        assets.append(
-            {
-                "asset_id": asset_id,
-                "asset_reference": f"assets/{asset_id}.png",
-                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-                "provenance": "synthetic-generated",
-            }
-        )
+        if asset_id not in declared_asset_ids:
+            write_bgr_png(path, image)
+            assets.append(
+                {
+                    "asset_id": asset_id,
+                    "asset_reference": f"assets/{asset_id}.png",
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                    "provenance": "synthetic-generated",
+                }
+            )
+            declared_asset_ids.add(asset_id)
         identity_key = "strategy_id" if kind == "strategy" else "avatar_id"
         references.append(
             {
@@ -396,3 +404,253 @@ def test_unicode_query_path_report_and_cli_configuration(tmp_path: Path) -> None
     assert args.command == "visual-local-feature-match"
     assert args.minimum_inliers == 4
     assert args.ambiguity_margin == 0.05
+
+
+def _selection_grid_image(seed: int, *, badge: tuple[int, int, int] | None = None) -> np.ndarray:
+    image = _textured_image(seed, width=152, height=128)
+    if badge is not None:
+        image[0:28, 124:152] = badge
+        cv2.putText(image, "B", (127, 21), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+    return image
+
+
+def _selection_grid_config() -> LocalFeatureMatcherConfig:
+    return LocalFeatureMatcherConfig(
+        feature_exclusion_policies=(SELECTION_GRID_RENDER_FEATURE_EXCLUSION_POLICY,)
+    )
+
+
+def test_no_mask_configuration_preserves_existing_local_feature_behavior(tmp_path: Path) -> None:
+    query = _textured_image(101)
+    entries = [
+        (
+            "strategy.synthetic.compatible",
+            "asset.synthetic.compatible",
+            _transformed_reference(query),
+            "selection_render",
+        )
+    ]
+
+    implicit = _matcher(tmp_path / "implicit", entries)
+    explicit = _matcher(tmp_path / "explicit", entries, config=LocalFeatureMatcherConfig())
+
+    implicit_result = implicit.match(query, query_reference="implicit")
+    explicit_result = explicit.match(query, query_reference="explicit")
+
+    assert implicit_result.status is explicit_result.status is VisualMatchStatus.MATCHED
+    assert implicit_result.query_feature_exclusions == ()
+    assert explicit_result.query_feature_exclusions == ()
+    assert implicit_result.reference_candidates[0].ransac_inlier_count == (
+        explicit_result.reference_candidates[0].ransac_inlier_count
+    )
+
+
+def test_feature_exclusion_removes_badge_only_features_without_touching_pixels(
+    tmp_path: Path,
+) -> None:
+    badge_only = np.zeros((128, 152, 3), dtype=np.uint8)
+    badge_only[0:28, 124:152] = _textured_image(102, width=28, height=28)
+    original = badge_only.copy()
+    matcher = _matcher(
+        tmp_path,
+        [
+            (
+                "strategy.synthetic.badge-only",
+                "asset.synthetic.badge-only",
+                badge_only,
+                "selection_grid_render",
+            )
+        ],
+        config=_selection_grid_config(),
+    )
+
+    result = matcher.match(
+        badge_only,
+        query_reference="badge-only",
+        query_render_context=VisualReferenceKind.SELECTION_GRID_RENDER,
+    )
+
+    assert np.array_equal(badge_only, original)
+    assert result.status is VisualMatchStatus.UNRESOLVED
+    assert result.query_feature_exclusions == (SELECTION_GRID_RENDER_BADGE_EXCLUSION,)
+    assert result.reference_candidates[0].rejection_reason is (
+        LocalFeatureRejectionReason.QUERY_NO_DESCRIPTORS
+    )
+
+
+def test_selection_grid_badge_mask_preserves_identity_evidence_outside_overlay(
+    tmp_path: Path,
+) -> None:
+    reference = _selection_grid_image(103, badge=(0, 140, 255))
+    query = _selection_grid_image(103, badge=(255, 0, 0))
+    matcher = _matcher(
+        tmp_path,
+        [
+            (
+                "strategy.synthetic.grid",
+                "asset.synthetic.grid",
+                reference,
+                "selection_grid_render",
+            ),
+            (
+                "strategy.synthetic.wrong",
+                "asset.synthetic.wrong",
+                _selection_grid_image(104, badge=(0, 0, 0)),
+                "selection_grid_render",
+            ),
+        ],
+        config=_selection_grid_config(),
+    )
+
+    result = matcher.match(
+        query,
+        query_reference="grid-query",
+        query_render_context=VisualReferenceKind.SELECTION_GRID_RENDER,
+    )
+
+    assert result.status is VisualMatchStatus.MATCHED
+    assert result.selected_identity is not None
+    assert result.selected_identity.identity_id == "strategy.synthetic.grid"
+    assert result.query_feature_exclusions == (SELECTION_GRID_RENDER_BADGE_EXCLUSION,)
+
+
+def test_reference_and_query_exclusions_are_independent(tmp_path: Path) -> None:
+    image = _selection_grid_image(105, badge=(0, 140, 255))
+    matcher = _matcher(
+        tmp_path,
+        [
+            (
+                "strategy.synthetic.reference-mask-only",
+                "asset.synthetic.reference-mask-only",
+                image,
+                "selection_grid_render",
+            )
+        ],
+        config=_selection_grid_config(),
+    )
+
+    unmasked_query = matcher.match(image, query_reference="unmasked-query")
+    masked_query = matcher.match(
+        image,
+        query_reference="masked-query",
+        query_feature_exclusions=(SELECTION_GRID_RENDER_BADGE_EXCLUSION,),
+    )
+
+    assert unmasked_query.query_feature_exclusions == ()
+    assert masked_query.query_feature_exclusions == (SELECTION_GRID_RENDER_BADGE_EXCLUSION,)
+    assert unmasked_query.status is VisualMatchStatus.MATCHED
+    assert masked_query.status is VisualMatchStatus.MATCHED
+
+
+def test_feature_exclusion_geometry_is_validated(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="positive"):
+        FeatureExclusionRegion(x=0, y=0, width=0, height=1)
+    with pytest.raises(ValueError, match="non-negative"):
+        FeatureExclusionRegion(x=-1, y=0, width=1, height=1)
+    with pytest.raises(TypeError, match="integer pixels"):
+        FeatureExclusionRegion(x=cast(int, 0.0), y=0, width=1, height=1)
+
+    matcher = _matcher(
+        tmp_path,
+        [
+            (
+                "strategy.synthetic.bounds",
+                "asset.synthetic.bounds",
+                _selection_grid_image(106),
+                "selection_render",
+            )
+        ],
+    )
+    with pytest.raises(ValueError, match="exceeds image bounds"):
+        matcher.match(
+            _selection_grid_image(106),
+            query_reference="invalid-bounds",
+            query_feature_exclusions=(FeatureExclusionRegion(x=151, y=0, width=2, height=1),),
+        )
+
+
+def test_reference_cache_is_scoped_by_asset_and_render_context(tmp_path: Path) -> None:
+    image = _selection_grid_image(107, badge=(0, 140, 255))
+    matcher = _matcher(
+        tmp_path,
+        [
+            (
+                "strategy.synthetic.grid-context",
+                "asset.synthetic.shared",
+                image,
+                "selection_grid_render",
+            ),
+            (
+                "strategy.synthetic.plain-context",
+                "asset.synthetic.shared",
+                image,
+                "selection_render",
+            ),
+        ],
+        config=_selection_grid_config(),
+    )
+
+    assert matcher.cached_reference_asset_ids == ("asset.synthetic.shared",)
+    assert matcher.cached_reference_feature_keys == (
+        ("asset.synthetic.shared", "selection_grid_render"),
+        ("asset.synthetic.shared", "selection_render"),
+    )
+
+
+def test_feature_exclusion_configuration_is_serialized(tmp_path: Path) -> None:
+    image = _selection_grid_image(108, badge=(0, 140, 255))
+    matcher = _matcher(
+        tmp_path,
+        [
+            (
+                "strategy.synthetic.serialized",
+                "asset.synthetic.serialized",
+                image,
+                "selection_grid_render",
+            )
+        ],
+        config=_selection_grid_config(),
+    )
+
+    result = matcher.match(
+        image,
+        query_reference="serialized",
+        query_render_context=VisualReferenceKind.SELECTION_GRID_RENDER,
+    )
+    report_path = write_local_feature_match_report(result, tmp_path / "report")
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+
+    assert payload["query"]["feature_exclusions"] == [
+        {"x": 124, "y": 0, "width": 28, "height": 28}
+    ]
+    assert payload["matcher"]["configuration"]["feature_exclusion_policies"] == [
+        {
+            "render_context": "selection_grid_render",
+            "regions": [{"x": 124, "y": 0, "width": 28, "height": 28}],
+        }
+    ]
+
+
+def test_same_identity_with_different_presentation_overlay_remains_recognizable(
+    tmp_path: Path,
+) -> None:
+    reference = _selection_grid_image(109, badge=(0, 140, 255))
+    query = _selection_grid_image(109, badge=(255, 0, 0))
+    matcher = _matcher(
+        tmp_path,
+        [
+            (
+                "strategy.synthetic.overlay-stable",
+                "asset.synthetic.overlay-stable",
+                reference,
+                "selection_render",
+            )
+        ],
+    )
+
+    result = matcher.match(query, query_reference="overlay-different")
+
+    assert result.status is VisualMatchStatus.MATCHED
+    assert result.selected_identity is not None
+    assert result.selected_identity.identity_id == "strategy.synthetic.overlay-stable"
+    assert result.query_feature_exclusions == ()

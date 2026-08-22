@@ -48,8 +48,26 @@ valid geometric consensus, the result is `unresolved`. If different identities f
 configured ambiguity margin, the result is `ambiguous` and no identity is selected.
 
 Reference SIFT descriptors are computed once when a matcher instance loads a catalog and remain an
-in-memory cache for subsequent queries. The catalog and its declared assets remain authoritative;
-M0.4c does not add a persistent descriptor database.
+in-memory cache for subsequent queries. The cache key includes both the asset ID and declared
+render context, because an exclusion mask changes the descriptors. The catalog and its declared
+assets remain authoritative; M0.4c does not add a persistent descriptor database.
+
+## Presentation-only feature exclusions
+
+`FeatureExclusionRegion` is an immutable pixel rectangle. It produces an OpenCV feature mask: its
+pixels are unavailable to SIFT, while the original BGR image remains unchanged. Invalid or
+out-of-bounds rectangles are rejected; a feature-poor masked image is simply unresolved.
+
+`LocalFeatureMatcherConfig.feature_exclusion_policies` maps a declared `VisualReferenceKind` to
+one or more exclusions. References use their catalog render context; queries independently opt in
+with `query_render_context` or provide `query_feature_exclusions` directly. No policy is enabled by
+default, so callers that do not select one keep M0.4c behavior exactly.
+
+The only validated policy currently supplied is
+`SELECTION_GRID_RENDER_FEATURE_EXCLUSION_POLICY`: for an explicit
+`selection_grid_render` portrait crop of 152x128 pixels, it excludes the top-right `(124, 0, 28,
+28)` completion badge. It is shared render-context metadata, not an identity-specific rule, and it
+does not create badge/no-badge strategy identities.
 
 ## Developer CLI
 

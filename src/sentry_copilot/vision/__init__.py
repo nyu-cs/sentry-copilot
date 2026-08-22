@@ -7,6 +7,10 @@ from .live_ocr_probe import (
     run_live_ocr_probe,
 )
 from .local_feature_matching import (
+    SELECTION_GRID_RENDER_BADGE_EXCLUSION,
+    SELECTION_GRID_RENDER_FEATURE_EXCLUSION_POLICY,
+    FeatureExclusionPolicy,
+    FeatureExclusionRegion,
     LocalFeatureCandidateStatus,
     LocalFeatureIdentityCandidate,
     LocalFeatureMatcherConfig,
@@ -71,6 +75,8 @@ __all__ = [
     "LiveOcrProbeOutcome",
     "LiveOcrProbeResult",
     "run_live_ocr_probe",
+    "FeatureExclusionPolicy",
+    "FeatureExclusionRegion",
     "LocalFeatureCandidateStatus",
     "LocalFeatureIdentityCandidate",
     "LocalFeatureMatcherConfig",
@@ -78,6 +84,8 @@ __all__ = [
     "LocalFeatureRejectionReason",
     "LocalFeatureVisualMatcher",
     "LocalFeatureVisualMatchResult",
+    "SELECTION_GRID_RENDER_BADGE_EXCLUSION",
+    "SELECTION_GRID_RENDER_FEATURE_EXCLUSION_POLICY",
     "write_local_feature_match_report",
     "OcrBackend",
     "OcrBackendError",

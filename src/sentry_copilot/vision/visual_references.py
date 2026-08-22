@@ -39,6 +39,7 @@ class VisualReferenceKind(StrEnum):
 
     CANONICAL_WEB = "canonical_web"
     SELECTION_RENDER = "selection_render"
+    SELECTION_GRID_RENDER = "selection_grid_render"
     BATTLE_RENDER = "battle_render"
     OTHER_EXPLICIT_RENDER_CONTEXT = "other_explicit_render_context"
 
