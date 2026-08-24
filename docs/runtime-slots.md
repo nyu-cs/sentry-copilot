@@ -90,6 +90,11 @@ Observation/association history has no ruleset dependency stamp and survives rev
 It never reads legacy strategy fields, legacy slot position, selection row, avatar, current HP, or
 initial HP.
 
+M0.6b1a separately introduces a pure deterministic association core for future normalized
+selection-profile-avatar and pre-loss initial-HP evidence. It does not change these M0.2c.2
+auditable direct bases, persist a new association record, or bypass their authority chain; see
+[`runtime-association-core.md`](runtime-association-core.md).
+
 ## Derived slot-strategy assignment
 
 M0.2c.3 derives a query-only `SlotStrategyAssignmentView` only through:

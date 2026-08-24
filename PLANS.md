@@ -213,6 +213,18 @@
   return typed unresolved or ambiguous results without identity-specific tuning.
 - [x] Cache reference descriptors in memory and provide an explicit, non-scanning JSON probe CLI.
 
+## M0.6b — Runtime participant association
+
+### M0.6b1a — Deterministic normalized-evidence core
+
+- [x] Add a pure, bounded exhaustive association query for up to four active runtime slots.
+- [x] Keep selection profile-avatar compatibility, self markers, and explicitly pre-loss initial
+  HP as supporting normalized evidence, never standalone identities or scorers.
+- [x] Return deterministic confirmed, unresolved/manual-confirmation-needed, inactive, or
+  conflict results without persisting a second association authority.
+- [x] Preserve previous confirmed mappings across later inactive runtime states and surface later
+  contradiction rather than silently remapping.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.
