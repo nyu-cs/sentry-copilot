@@ -225,6 +225,15 @@
 - [x] Preserve previous confirmed mappings across later inactive runtime states and surface later
   contradiction rather than silently remapping.
 
+### M0.6b1b1 — Session-local profile-avatar evidence
+
+- [x] Compare explicitly supplied selection and ACTIVE runtime profile-avatar crops only within
+  the current session, without a global avatar database or selection-row/slot binding.
+- [x] Reuse local-feature geometric validation to return every compatible session participant as
+  unique, ambiguous, or unresolved supporting evidence, never a score-selected identity.
+- [x] Calibrate an opt-in mask for the fixed lower HP/presentation area of the known 1920x1080 JP
+  MuMu runtime card; do not resize profile crops or infer runtime state.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.
