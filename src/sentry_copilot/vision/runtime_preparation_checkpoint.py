@@ -275,7 +275,12 @@ class PreparationCheckpoint:
 
 @dataclass(frozen=True)
 class RuntimeInitialHpEvidence:
-    """Historical round-one baseline plus latest observed checkpoint HP for one runtime slot."""
+    """Historical round-one baseline plus the latest checkpoint's HP observation for one slot.
+
+    ``current_hp`` is deliberately ``None`` when that slot's most recent explicit checkpoint
+    observation is unresolved or invalid.  A prior successful reading remains historical evidence,
+    but must not be represented as the current value of a later failed checkpoint.
+    """
 
     runtime_slot_id: RuntimeSlotId
     known_initial_hp: int | None
@@ -433,8 +438,9 @@ def derive_runtime_initial_hp_evidence(
 ) -> tuple[RuntimeInitialHpEvidence, ...]:
     """Derive immutable HP history without ever backfilling a missed round-one baseline.
 
-    Callers provide chronological checkpoints from one session.  A later checkpoint updates only
-    ``current_hp``.  It cannot establish or overwrite ``known_initial_hp``.
+    Callers provide chronological checkpoints from one session.  Every later explicit checkpoint
+    replaces ``current_hp`` with its own result, including ``None`` for an unresolved or invalid
+    result.  It cannot establish or overwrite ``known_initial_hp``.
     """
 
     if not checkpoints:
@@ -458,13 +464,16 @@ def derive_runtime_initial_hp_evidence(
                     hp_loss_observed=False,
                 ),
             )
-            current_hp = previous.current_hp
             initial_hp = previous.known_initial_hp
             if hp.status is RuntimeHpStatus.OBSERVED:
                 assert hp.observed_current_hp is not None
                 current_hp = hp.observed_current_hp
                 if eligible_baseline and initial_hp is None:
                     initial_hp = hp.observed_current_hp
+            else:
+                # Do not present an older successful reading as the current HP of this explicit
+                # unresolved/invalid checkpoint.  The historical baseline remains intact.
+                current_hp = None
             values[hp.runtime_slot_id] = RuntimeInitialHpEvidence(
                 runtime_slot_id=hp.runtime_slot_id,
                 known_initial_hp=initial_hp,
@@ -571,6 +580,7 @@ async def _observe_runtime_hp(
     readings: list[OcrEvidence] = []
     strong_values: list[int] = []
     weak_values: list[int] = []
+    one_digit_values: list[int] = []
     has_out_of_range_value = False
     for index, relative in enumerate(JP_MUMU_HP_RELATIVE_ROIS):
         roi = PixelRoi(
@@ -591,13 +601,37 @@ async def _observe_runtime_hp(
         readings.append(reading)
         normalized = reading.normalized_text
         if normalized is not None and re.fullmatch(r"\d+", normalized) is not None:
-            has_out_of_range_value = int(normalized) > 999
+            has_out_of_range_value |= int(normalized) > 999
+            if re.fullmatch(r"[1-9]", normalized) is not None:
+                one_digit_values.append(int(normalized))
         parsed = _parse_hp_candidate(reading.normalized_text)
         if parsed is not None:
             value, exact = parsed
             (strong_values if exact else weak_values).append(value)
     strong_distinct = set(strong_values)
     weak_distinct = set(weak_values)
+    one_digit_distinct = set(one_digit_values)
+    repeated_one_digit = (
+        len(one_digit_distinct) == 1 and len(one_digit_values) >= 2
+    )
+    # A repeated one-digit result is valid runtime evidence, but it may never compete with a
+    # two-/three-digit candidate.  An isolated digit is a clipped-overlay risk, not a sufficiently
+    # supported candidate to override or conflict with a stronger reading.
+    one_digit_conflicts_with_other_candidate = repeated_one_digit and bool(
+        strong_distinct or weak_distinct
+    )
+    if (
+        has_out_of_range_value
+        or len(strong_distinct) > 1
+        or len(weak_distinct) > 1
+        or one_digit_conflicts_with_other_candidate
+    ):
+        return RuntimeHpObservation(
+            runtime_slot_id=position.runtime_slot_id,
+            status=RuntimeHpStatus.INVALID,
+            observed_current_hp=None,
+            evidence=tuple(readings),
+        )
     if len(strong_distinct) == 1:
         return RuntimeHpObservation(
             runtime_slot_id=position.runtime_slot_id,
@@ -612,14 +646,16 @@ async def _observe_runtime_hp(
             observed_current_hp=next(iter(weak_distinct)),
             evidence=tuple(readings),
         )
-    status = (
-        RuntimeHpStatus.INVALID
-        if has_out_of_range_value or len(strong_distinct) > 1 or len(weak_distinct) > 1
-        else RuntimeHpStatus.UNRESOLVED
-    )
+    if not strong_distinct and not weak_distinct and repeated_one_digit:
+        return RuntimeHpObservation(
+            runtime_slot_id=position.runtime_slot_id,
+            status=RuntimeHpStatus.OBSERVED,
+            observed_current_hp=next(iter(one_digit_distinct)),
+            evidence=tuple(readings),
+        )
     return RuntimeHpObservation(
         runtime_slot_id=position.runtime_slot_id,
-        status=status,
+        status=RuntimeHpStatus.UNRESOLVED,
         observed_current_hp=None,
         evidence=tuple(readings),
     )

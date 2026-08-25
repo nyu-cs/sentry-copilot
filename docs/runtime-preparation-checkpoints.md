@@ -31,8 +31,12 @@ conflict; no score or display order chooses a winner.
 
 The bottom-card HP ROI is OCR-only current-state evidence.  It records `OBSERVED`, `UNRESOLVED`,
 or `INVALID` with all fixed crop/evidence variants and does not label the raw value as initial
-HP.  A strict exact result wins over incidental one-digit clipping artefacts; inconsistent
-two-/three-digit results remain invalid rather than being ranked.
+HP.  Exact two-/three-digit readings and zero remain valid.  A non-zero one-digit reading is
+accepted only when at least two fixed ROI/preprocessing observations agree; one isolated reading
+remains unresolved because it can be a clipped two-digit overlay.  A repeated one-digit value and
+any two-/three-digit candidate form an explicit invalid conflict rather than choosing by score.
+Any out-of-range numeric reading invalidates the ensemble even if another variant later reads a
+plausible value.
 
 Runtime profile avatars remain a separate signal.  They are player-profile imagery, not strategy
 initiator portraits, and are not compared to a strategy visual by this feature.
@@ -46,8 +50,10 @@ session.  A value establishes `known_initial_hp` **only** when both conditions h
 - its independently observed `round_number` is exactly `1`.
 
 Round-one preparation is pre-loss.  A later checkpoint can update `current_hp` and expose
-`hp_loss_observed`, but can never backfill or overwrite the historical baseline.  If round-one
-preparation was missed, `known_initial_hp` stays unknown.
+`hp_loss_observed`, but can never backfill or overwrite the historical baseline.  If its explicit
+HP observation is unresolved or invalid, `current_hp` is `None`: an older successful value is not
+silently presented as current for that checkpoint.  If round-one preparation was missed,
+`known_initial_hp` stays unknown.
 
 `RuntimeInitialHpEvidence.project_to_association_core` supplies only that historical baseline to
 M0.6b1a's existing `hp_is_known_initial` filter.  It never feeds a reduced later current HP into

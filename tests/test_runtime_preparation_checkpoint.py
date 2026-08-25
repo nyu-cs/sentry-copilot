@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import deque
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from datetime import UTC, datetime
 from typing import cast
 
@@ -175,14 +175,36 @@ def test_later_checkpoint_without_round_one_baseline_does_not_backfill_initial_h
     assert not evidence[0].hp_loss_observed
 
 
-def test_unresolved_later_hp_preserves_baseline_without_inventing_current_value() -> None:
+def test_unresolved_later_hp_preserves_baseline_without_presenting_stale_current_value() -> None:
     baseline = _checkpoint(round_number=1, hp_by_slot={"slot.1": 26})
     unresolved = _checkpoint(round_number=2, hp_by_slot={"slot.1": None})
 
     evidence = derive_runtime_initial_hp_evidence((baseline, unresolved))
 
     assert evidence[0].known_initial_hp == 26
-    assert evidence[0].current_hp == 26
+    assert evidence[0].current_hp is None
+    assert not evidence[0].hp_loss_observed
+
+
+def test_invalid_later_hp_preserves_baseline_without_presenting_stale_current_value() -> None:
+    baseline = _checkpoint(round_number=1, hp_by_slot={"slot.1": 26})
+    invalid = _checkpoint(round_number=2, hp_by_slot={"slot.1": None})
+    invalid = replace(
+        invalid,
+        slot_hp=(
+            RuntimeHpObservation(
+                runtime_slot_id="slot.1",
+                status=RuntimeHpStatus.INVALID,
+                observed_current_hp=None,
+                evidence=(_ocr_evidence(),),
+            ),
+        ),
+    )
+
+    evidence = derive_runtime_initial_hp_evidence((baseline, invalid))
+
+    assert evidence[0].known_initial_hp == 26
+    assert evidence[0].current_hp is None
     assert not evidence[0].hp_loss_observed
 
 
@@ -205,6 +227,38 @@ def test_observer_uses_primary_label_without_shop_or_exclamation_requirements() 
     assert checkpoint.slot_self_markers[0].status is RuntimeSelfMarkerStatus.SELF_MARKER_ABSENT
     assert checkpoint.slot_hp[0].observed_current_hp == 26
     assert not frame.image.any()
+
+
+@pytest.mark.parametrize(
+    ("hp_readings", "expected_status", "expected_hp"),
+    (
+        (["5", "5", None, None, None, None], RuntimeHpStatus.OBSERVED, 5),
+        (["5", None, None, None, None, None], RuntimeHpStatus.UNRESOLVED, None),
+        (["0", None, None, None, None, None], RuntimeHpStatus.OBSERVED, 0),
+        (["5", "5", "26", "26", None, None], RuntimeHpStatus.INVALID, None),
+        (["1000", "26", "26", None, None, None], RuntimeHpStatus.INVALID, None),
+    ),
+)
+def test_runtime_hp_ensemble_handles_one_digit_and_out_of_range_evidence_conservatively(
+    hp_readings: list[str | None],
+    expected_status: RuntimeHpStatus,
+    expected_hp: int | None,
+) -> None:
+    backend = _QueuedBackend(["休憩タイム", None, *hp_readings])
+    frame = _frame()
+
+    checkpoint = asyncio.run(
+        observe_jp_mumu_preparation_checkpoint(
+            frame,
+            ContentViewport.full_frame(frame),
+            _request("slot.1"),
+            backend,
+        )
+    )
+
+    hp = checkpoint.slot_hp[0]
+    assert hp.status is expected_status
+    assert hp.observed_current_hp == expected_hp
 
 
 def test_battle_enemy_count_is_explicit_not_preparation_evidence() -> None:
