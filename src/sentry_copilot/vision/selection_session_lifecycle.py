@@ -58,17 +58,22 @@ class SelectionScreenObservation:
 
 @dataclass(frozen=True)
 class SelectionTerminalObservation:
-    """A fixed-layout generic OPERATION terminal observation with its cue."""
+    """A fixed-layout generic OPERATION terminal observation with its cues."""
 
     state: OperationTerminalState
     frame_id: str
     title_bright_pixel_count: int | None
+    background_dark_pixel_fraction: float | None
 
     def __post_init__(self) -> None:
         if not self.frame_id.strip():
             raise ValueError("selection terminal observation frame_id must not be blank")
         if self.title_bright_pixel_count is not None and self.title_bright_pixel_count < 0:
             raise ValueError("operation title bright pixel count must be non-negative")
+        if self.background_dark_pixel_fraction is not None and not (
+            0.0 <= self.background_dark_pixel_fraction <= 1.0
+        ):
+            raise ValueError("operation background dark pixel fraction must be between 0 and 1")
 
 
 @dataclass(frozen=True)
@@ -144,8 +149,10 @@ JP_MUMU_SELECTION_LIFECYCLE_PROFILE_ID = "jp_mumu_fullscreen_1920x1080.lifecycle
 _JP_MUMU_VIEWPORT = PixelRoi(x=0, y=0, width=1920, height=1080)
 _SELECTION_HEADER_ROI = PixelRoi(x=540, y=35, width=280, height=80)
 _OPERATION_TITLE_ROI = PixelRoi(x=720, y=500, width=480, height=140)
+_OPERATION_BACKGROUND_ROI = PixelRoi(x=100, y=100, width=1720, height=850)
 _SELECTION_HEADER_CYAN_THRESHOLD = 250
 _OPERATION_TITLE_BRIGHT_THRESHOLD = 1_000
+_OPERATION_BACKGROUND_DARK_FRACTION_THRESHOLD = 0.82
 
 
 def observe_jp_mumu_selection_screen(
@@ -192,18 +199,26 @@ def observe_jp_mumu_operation_terminal(
             state=OperationTerminalState.UNRESOLVED,
             frame_id=frame.frame_id,
             title_bright_pixel_count=None,
+            background_dark_pixel_fraction=None,
         )
     title = _crop(frame, _OPERATION_TITLE_ROI)
+    background = _crop(frame, _OPERATION_BACKGROUND_ROI)
     grayscale = cv2.cvtColor(title, cv2.COLOR_BGR2GRAY)
-    count = int(np.count_nonzero(grayscale >= 210))
+    background_grayscale = cv2.cvtColor(background, cv2.COLOR_BGR2GRAY)
+    title_count = int(np.count_nonzero(grayscale >= 210))
+    dark_fraction = float(np.mean(background_grayscale <= 40))
     return SelectionTerminalObservation(
         state=(
             OperationTerminalState.PRESENT
-            if count >= _OPERATION_TITLE_BRIGHT_THRESHOLD
+            if (
+                title_count >= _OPERATION_TITLE_BRIGHT_THRESHOLD
+                and dark_fraction >= _OPERATION_BACKGROUND_DARK_FRACTION_THRESHOLD
+            )
             else OperationTerminalState.ABSENT
         ),
         frame_id=frame.frame_id,
-        title_bright_pixel_count=count,
+        title_bright_pixel_count=title_count,
+        background_dark_pixel_fraction=dark_fraction,
     )
 
 

@@ -33,6 +33,7 @@ def _terminal(state: OperationTerminalState) -> SelectionTerminalObservation:
         state=state,
         frame_id=f"terminal-{state}",
         title_bright_pixel_count=0,
+        background_dark_pixel_fraction=0.0,
     )
 
 
@@ -162,6 +163,29 @@ def test_fixed_layout_cues_produce_observations_without_mutating_frame() -> None
         is OperationTerminalState.PRESENT
     )
     assert np.array_equal(frame.image, original)
+
+
+def test_bright_title_without_dark_operation_background_is_not_terminal() -> None:
+    image = np.full((1080, 1920, 3), 100, dtype=np.uint8)
+    image[500:640, 720:1200] = (220, 220, 220)
+    frame = Frame(
+        frame_id="synthetic:bright-runtime",
+        frame_index=0,
+        processed_at=datetime.now(UTC),
+        source_timestamp=None,
+        source_type=FrameSourceType.IMAGE_SEQUENCE,
+        source_id="synthetic",
+        width=1920,
+        height=1080,
+        image=image,
+        source_reference="synthetic",
+    )
+
+    observation = observe_jp_mumu_operation_terminal(frame, ContentViewport.full_frame(frame))
+    assert observation.state is OperationTerminalState.ABSENT
+    assert observation.title_bright_pixel_count is not None
+    assert observation.title_bright_pixel_count >= 1_000
+    assert observation.background_dark_pixel_fraction == 0.0
 
 
 def test_wrong_frame_or_viewport_is_unresolved() -> None:
