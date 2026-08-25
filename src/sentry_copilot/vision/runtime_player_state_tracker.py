@@ -56,7 +56,12 @@ class RuntimePlayerCardStateTracker:
     def apply(
         self, observation: RuntimePlayerCardVisualStateObservation
     ) -> RuntimePlayerCardStateTracker:
-        """Return an updated immutable tracker; unresolved input preserves all temporal evidence."""
+        """Return an updated immutable tracker; callers supply observations chronologically.
+
+        The tracker owns neither capture timing nor frame scanning/background work.  ``UNRESOLVED``
+        is absence of usable evidence, so it preserves pending evidence.  Only stable resolved
+        state is projectable downstream; this never infers battle entry.
+        """
 
         current = self.for_slot(observation.runtime_slot_id) or RuntimePlayerCardSlotTimeline(
             runtime_slot_id=observation.runtime_slot_id
