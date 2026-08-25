@@ -245,6 +245,17 @@
 - [x] Project only a unique self marker and the historical trustworthy HP baseline into the pure
   M0.6b1a core.  Runtime-state recognition remains deferred.
 
+## M0.6c — Runtime player-card visual state
+
+### M0.6c1 — Fixed-layout card-state evidence
+
+- [x] Add source-neutral, immutable observation of positive `ACTIVE`, `SPECTATING_OR_DEAD`, and
+  `EXITED` card presentations for caller-specified JP MuMu runtime slots.
+- [x] Exclude lower-card HP from the state cue; persistent spectating/dead presentation is enough
+  and does not require a transient HP=0 frame.
+- [x] Project only resolved card presentation into the existing pure association-core input while
+  preserving its sticky prior participant association behavior.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.
