@@ -234,6 +234,17 @@
 - [x] Calibrate an opt-in mask for the fixed lower HP/presentation area of the known 1920x1080 JP
   MuMu runtime card; do not resize profile crops or infer runtime state.
 
+### M0.6b1b2 — Preparation checkpoints, self marker, and initial-HP evidence
+
+- [x] Observe only an explicit `休憩タイム` preparation checkpoint or an explicit enemy-count
+  battle counter in the known JP MuMu layout; leave every other phase unresolved.
+- [x] Keep an independently observed round number and establish an initial-HP baseline only at
+  round-one preparation, never from frame order or a later current HP.
+- [x] Observe fixed card self-marker and current-HP evidence without creating a player identity or
+  persistent association authority; multiple self claims remain a conflict.
+- [x] Project only a unique self marker and the historical trustworthy HP baseline into the pure
+  M0.6b1a core.  Runtime-state recognition remains deferred.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.

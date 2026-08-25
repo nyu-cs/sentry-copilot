@@ -34,3 +34,8 @@ slot.
 
 This is deliberately separate from the M0.2c.2 auditable direct association bases. Vision
 integration, evidence persistence, and any reducer/event integration remain future work.
+
+M0.6b1b2 adds a frame-only preparation-checkpoint adapter.  It may project a runtime self marker
+only after exactly one marker is observed, and may project HP only from a historical,
+round-one-preparation baseline.  A later current HP remains runtime-state evidence and is never
+used as an initial-HP identity filter.  See [runtime preparation checkpoints](runtime-preparation-checkpoints.md).
