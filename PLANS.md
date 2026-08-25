@@ -260,6 +260,10 @@
 
 - [x] M0.6d1 composes caller-supplied normalized selection facts and existing runtime evidence
   into a query-derived team view; continuous live orchestration and manual fallback remain deferred.
+- [x] M0.6d2 adds identity-free selection-screen player profile-avatar crops and explicit
+  row-to-caller-owned-participant binding for the existing runtime-avatar matcher.  It combines
+  screenshot-derived strategy and player-avatar evidence by selection row only; tags/names remain
+  caller metadata, and it does not claim visual player-identity recognition.
 
 ## M1 — Replay route overlay
 
