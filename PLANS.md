@@ -256,6 +256,11 @@
 - [x] Project only resolved card presentation into the existing pure association-core input while
   preserving its sticky prior participant association behavior.
 
+## M0.6d — Offline runtime session orchestration
+
+- [x] M0.6d1 composes caller-supplied normalized selection facts and existing runtime evidence
+  into a query-derived team view; continuous live orchestration and manual fallback remain deferred.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.
