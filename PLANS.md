@@ -275,6 +275,11 @@
 - [x] Keep all cues player/party-count independent, provenance-bearing, immutable, and outside the
   selection lifecycle watcher; page evidence never infers an outcome cause.
 
+### M0.7a1c2 — Outside-run lifecycle debounce
+
+- [x] End an active selection session after independently debounced, semantic outside-run page
+  evidence, while preserving the existing OPERATION debounce and non-terminal page behavior.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.

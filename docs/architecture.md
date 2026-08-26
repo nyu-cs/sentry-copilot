@@ -74,8 +74,9 @@ M0.7a1c1 adds independent, immutable fixed-layout observations for JP MuMu 1920Ã
 pages: main lobby, party room, party-room matching overlay, solo matchmaking, success result,
 post-clear rematch, and the match-success transition.  Each observation is `present`, `absent`, or
 `unresolved` and retains only non-identity pixel-cue metrics plus frame provenance.  The module
-does not infer why a previous run ended and is not connected to `SelectionLifecycleWatcher`; a
-later orchestration layer may consume its explicit terminal/outside grouping.
+does not infer why a previous run ended. `SelectionLifecycleWatcher` reduces the independent
+observations to a single semantic outside-run boolean and debounces it separately from OPERATION;
+the watcher stores no page kind or termination cause.
 `PARTY_ROOM` denotes its visible base/context, so it can intentionally co-occur with the distinct
 `PARTY_ROOM_MATCHING_OVERLAY` observation.
 

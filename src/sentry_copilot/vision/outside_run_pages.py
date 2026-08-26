@@ -231,7 +231,8 @@ def is_definite_old_run_terminal_or_outside(observation: OutsideRunPageObservati
     """Return whether a resolved observation is a strong old-run/outside cue.
 
     This helper deliberately says nothing about the reason the previous run
-    ended.  It is not wired into a lifecycle watcher in this milestone.
+    ended.  Lifecycle orchestration consumes only this semantic predicate, not
+    a specific page kind.
     """
 
     return observation.state is OutsideRunPageState.PRESENT and observation.page_kind in {

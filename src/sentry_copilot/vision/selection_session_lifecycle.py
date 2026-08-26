@@ -14,6 +14,10 @@ import cv2
 import numpy as np
 
 from sentry_copilot.capture.frame_source import Frame
+from sentry_copilot.vision.outside_run_pages import (
+    OutsideRunPageObservation,
+    is_definite_old_run_terminal_or_outside,
+)
 from sentry_copilot.vision.viewport import ContentViewport, PixelRoi
 
 
@@ -81,7 +85,8 @@ class SelectionLifecycleWatcher:
     """Immutable chronological debounce for selection-session boundaries.
 
     Ordinary screen changes, black frames, and unresolved observations preserve
-    an active session. Only repeated generic OPERATION observations end it.
+    an active session. Repeated generic OPERATION or semantic outside-run
+    observations end it without inferring an outcome cause.
     """
 
     state: SelectionLifecycleState = SelectionLifecycleState.OUTSIDE
@@ -89,19 +94,25 @@ class SelectionLifecycleWatcher:
     pending_selection_count: int = 0
     pending_terminal_count: int = 0
     confirmation_count: int = 2
+    pending_outside_count: int = 0
 
     def __post_init__(self) -> None:
         if self.confirmation_count < 2:
             raise ValueError("selection lifecycle confirmation_count must be at least 2")
         if self.session_count < 0:
             raise ValueError("selection lifecycle session_count must be non-negative")
-        if self.pending_selection_count < 0 or self.pending_terminal_count < 0:
+        if (
+            self.pending_selection_count < 0
+            or self.pending_terminal_count < 0
+            or self.pending_outside_count < 0
+        ):
             raise ValueError("selection lifecycle pending counts must be non-negative")
 
     def apply(
         self,
         screen: SelectionScreenObservation,
         terminal: SelectionTerminalObservation,
+        outside_run_pages: tuple[OutsideRunPageObservation, ...] = (),
     ) -> SelectionLifecycleWatcher:
         """Return the next watcher state without mutating this watcher."""
 
@@ -111,7 +122,15 @@ class SelectionLifecycleWatcher:
                 if terminal.state is OperationTerminalState.PRESENT
                 else 0
             )
-            if terminal_count >= self.confirmation_count:
+            outside_count = (
+                self.pending_outside_count + 1
+                if has_definite_outside_run_evidence(outside_run_pages)
+                else 0
+            )
+            if (
+                terminal_count >= self.confirmation_count
+                or outside_count >= self.confirmation_count
+            ):
                 return SelectionLifecycleWatcher(
                     state=SelectionLifecycleState.ENDED,
                     session_count=self.session_count,
@@ -121,6 +140,7 @@ class SelectionLifecycleWatcher:
                 state=SelectionLifecycleState.ACTIVE,
                 session_count=self.session_count,
                 pending_terminal_count=terminal_count,
+                pending_outside_count=outside_count,
                 confirmation_count=self.confirmation_count,
             )
 
@@ -141,6 +161,18 @@ class SelectionLifecycleWatcher:
             pending_selection_count=selection_count,
             confirmation_count=self.confirmation_count,
         )
+
+
+def has_definite_outside_run_evidence(
+    observations: tuple[OutsideRunPageObservation, ...],
+) -> bool:
+    """Return whether any independent page observation is a definite outside cue.
+
+    Page kind is intentionally discarded here: consecutive different outside
+    pages count toward the same semantic lifecycle debounce.
+    """
+
+    return any(is_definite_old_run_terminal_or_outside(item) for item in observations)
 
 
 JP_MUMU_SELECTION_LIFECYCLE_PROFILE_ID = "jp_mumu_fullscreen_1920x1080.lifecycle.v1"

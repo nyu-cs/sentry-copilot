@@ -7,6 +7,12 @@ import numpy as np
 import pytest
 
 from sentry_copilot.capture.frame_source import Frame, FrameSourceType
+from sentry_copilot.vision.outside_run_pages import (
+    OutsideRunPageKind,
+    OutsideRunPageObservation,
+    OutsideRunPageObservationMethod,
+    OutsideRunPageState,
+)
 from sentry_copilot.vision.selection_session_lifecycle import (
     OperationTerminalState,
     SelectionLifecycleState,
@@ -37,6 +43,29 @@ def _terminal(state: OperationTerminalState) -> SelectionTerminalObservation:
     )
 
 
+def _outside(
+    kind: OutsideRunPageKind,
+    state: OutsideRunPageState = OutsideRunPageState.PRESENT,
+) -> OutsideRunPageObservation:
+    return OutsideRunPageObservation(
+        page_kind=kind,
+        state=state,
+        method=(
+            OutsideRunPageObservationMethod.FIXED_LAYOUT_PIXEL_CUES
+            if state is not OutsideRunPageState.UNRESOLVED
+            else OutsideRunPageObservationMethod.UNRESOLVED_LAYOUT
+        ),
+        frame_id=f"outside-{kind}-{state}",
+        frame_index=0,
+        processed_at=datetime.now(UTC),
+        source_timestamp=None,
+        source_type=FrameSourceType.IMAGE_SEQUENCE,
+        source_id="synthetic",
+        source_reference="synthetic",
+        metrics=(),
+    )
+
+
 def _frame(*, width: int = 1920, height: int = 1080) -> Frame:
     return Frame(
         frame_id="synthetic:000000",
@@ -56,8 +85,9 @@ def _advance(
     watcher: SelectionLifecycleWatcher,
     screen: SelectionScreenState,
     terminal: OperationTerminalState = OperationTerminalState.ABSENT,
+    outside_run_pages: tuple[OutsideRunPageObservation, ...] = (),
 ) -> SelectionLifecycleWatcher:
-    return watcher.apply(_screen(screen), _terminal(terminal))
+    return watcher.apply(_screen(screen), _terminal(terminal), outside_run_pages)
 
 
 def test_confirmation_count_must_be_at_least_two() -> None:
@@ -131,6 +161,132 @@ def test_terminal_absence_does_not_end_and_later_selection_starts_second_session
     )
     assert watcher.state is SelectionLifecycleState.ENDED
 
+    watcher = _advance(watcher, SelectionScreenState.SELECTION)
+    watcher = _advance(watcher, SelectionScreenState.SELECTION)
+    assert watcher.state is SelectionLifecycleState.ACTIVE
+    assert watcher.session_count == 2
+
+
+def test_one_outside_run_observation_is_insufficient() -> None:
+    watcher = _advance(SelectionLifecycleWatcher(), SelectionScreenState.SELECTION)
+    watcher = _advance(watcher, SelectionScreenState.SELECTION)
+    watcher = _advance(
+        watcher,
+        SelectionScreenState.NOT_SELECTION,
+        outside_run_pages=(_outside(OutsideRunPageKind.MAIN_LOBBY),),
+    )
+    assert watcher.state is SelectionLifecycleState.ACTIVE
+    assert watcher.pending_outside_count == 1
+
+
+def test_two_same_kind_outside_run_observations_end_active_session() -> None:
+    watcher = _advance(SelectionLifecycleWatcher(), SelectionScreenState.SELECTION)
+    watcher = _advance(watcher, SelectionScreenState.SELECTION)
+    outside = (_outside(OutsideRunPageKind.MAIN_LOBBY),)
+    watcher = _advance(watcher, SelectionScreenState.NOT_SELECTION, outside_run_pages=outside)
+    watcher = _advance(watcher, SelectionScreenState.NOT_SELECTION, outside_run_pages=outside)
+    assert watcher.state is SelectionLifecycleState.ENDED
+
+
+def test_different_outside_run_page_kinds_confirm_semantically() -> None:
+    watcher = _advance(SelectionLifecycleWatcher(), SelectionScreenState.SELECTION)
+    watcher = _advance(watcher, SelectionScreenState.SELECTION)
+    watcher = _advance(
+        watcher,
+        SelectionScreenState.NOT_SELECTION,
+        outside_run_pages=(_outside(OutsideRunPageKind.SUCCESS_RESULT),),
+    )
+    watcher = _advance(
+        watcher,
+        SelectionScreenState.NOT_SELECTION,
+        outside_run_pages=(_outside(OutsideRunPageKind.POST_CLEAR_REMATCH),),
+    )
+    assert watcher.state is SelectionLifecycleState.ENDED
+
+
+def test_party_room_and_its_matching_overlay_confirm_semantically() -> None:
+    watcher = _advance(SelectionLifecycleWatcher(), SelectionScreenState.SELECTION)
+    watcher = _advance(watcher, SelectionScreenState.SELECTION)
+    watcher = _advance(
+        watcher,
+        SelectionScreenState.NOT_SELECTION,
+        outside_run_pages=(_outside(OutsideRunPageKind.PARTY_ROOM),),
+    )
+    watcher = _advance(
+        watcher,
+        SelectionScreenState.NOT_SELECTION,
+        outside_run_pages=(_outside(OutsideRunPageKind.PARTY_ROOM_MATCHING_OVERLAY),),
+    )
+    assert watcher.state is SelectionLifecycleState.ENDED
+
+
+def test_cooccurring_outside_pages_count_as_one_frame_of_evidence() -> None:
+    watcher = _advance(SelectionLifecycleWatcher(), SelectionScreenState.SELECTION)
+    watcher = _advance(watcher, SelectionScreenState.SELECTION)
+    watcher = _advance(
+        watcher,
+        SelectionScreenState.NOT_SELECTION,
+        outside_run_pages=(
+            _outside(OutsideRunPageKind.PARTY_ROOM),
+            _outside(OutsideRunPageKind.PARTY_ROOM_MATCHING_OVERLAY),
+        ),
+    )
+    assert watcher.state is SelectionLifecycleState.ACTIVE
+    assert watcher.pending_outside_count == 1
+
+
+def test_interrupted_outside_run_debounce_resets() -> None:
+    watcher = _advance(SelectionLifecycleWatcher(), SelectionScreenState.SELECTION)
+    watcher = _advance(watcher, SelectionScreenState.SELECTION)
+    outside = (_outside(OutsideRunPageKind.MAIN_LOBBY),)
+    watcher = _advance(watcher, SelectionScreenState.NOT_SELECTION, outside_run_pages=outside)
+    watcher = _advance(watcher, SelectionScreenState.NOT_SELECTION)
+    assert watcher.state is SelectionLifecycleState.ACTIVE
+    assert watcher.pending_outside_count == 0
+    watcher = _advance(watcher, SelectionScreenState.NOT_SELECTION, outside_run_pages=outside)
+    assert watcher.state is SelectionLifecycleState.ACTIVE
+    watcher = _advance(watcher, SelectionScreenState.NOT_SELECTION, outside_run_pages=outside)
+    assert watcher.state is SelectionLifecycleState.ENDED
+
+
+def test_operation_and_outside_debounces_do_not_cross_confirm() -> None:
+    watcher = _advance(SelectionLifecycleWatcher(), SelectionScreenState.SELECTION)
+    watcher = _advance(watcher, SelectionScreenState.SELECTION)
+    watcher = _advance(
+        watcher,
+        SelectionScreenState.NOT_SELECTION,
+        outside_run_pages=(_outside(OutsideRunPageKind.MAIN_LOBBY),),
+    )
+    watcher = _advance(
+        watcher,
+        SelectionScreenState.NOT_SELECTION,
+        OperationTerminalState.PRESENT,
+    )
+    assert watcher.state is SelectionLifecycleState.ACTIVE
+    assert watcher.pending_outside_count == 0
+    assert watcher.pending_terminal_count == 1
+
+
+def test_unresolved_outside_run_observation_does_not_count() -> None:
+    watcher = _advance(SelectionLifecycleWatcher(), SelectionScreenState.SELECTION)
+    watcher = _advance(watcher, SelectionScreenState.SELECTION)
+    unresolved = _outside(OutsideRunPageKind.MAIN_LOBBY, OutsideRunPageState.UNRESOLVED)
+    watcher = _advance(
+        watcher,
+        SelectionScreenState.NOT_SELECTION,
+        outside_run_pages=(unresolved,),
+    )
+    assert watcher.state is SelectionLifecycleState.ACTIVE
+    assert watcher.pending_outside_count == 0
+
+
+def test_selection_after_outside_run_termination_starts_a_new_session() -> None:
+    watcher = _advance(SelectionLifecycleWatcher(), SelectionScreenState.SELECTION)
+    watcher = _advance(watcher, SelectionScreenState.SELECTION)
+    outside = (_outside(OutsideRunPageKind.MAIN_LOBBY),)
+    watcher = _advance(watcher, SelectionScreenState.NOT_SELECTION, outside_run_pages=outside)
+    watcher = _advance(watcher, SelectionScreenState.NOT_SELECTION, outside_run_pages=outside)
+    assert watcher.state is SelectionLifecycleState.ENDED
     watcher = _advance(watcher, SelectionScreenState.SELECTION)
     watcher = _advance(watcher, SelectionScreenState.SELECTION)
     assert watcher.state is SelectionLifecycleState.ACTIVE
