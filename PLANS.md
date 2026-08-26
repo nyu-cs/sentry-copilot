@@ -280,6 +280,13 @@
 - [x] End an active selection session after independently debounced, semantic outside-run page
   evidence, while preserving the existing OPERATION debounce and non-terminal page behavior.
 
+### M0.7a2a — Per-row selection confirmation evidence
+
+- [x] Observe the persistent confirmation marker for four fixed selection rows under an explicit
+  grid or strategy-detail render context; rows outside a reliable selection frame are unresolved.
+- [x] Debounce and keep visual row confirmation sticky within a caller-owned selection session,
+  without storing strategy identity. Strategy collection remains deferred to M0.7a2b.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.

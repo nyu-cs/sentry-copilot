@@ -291,6 +291,13 @@ layout without inheriting old claims. Only current confirmed battle entrants may
 Tag, self marker, and manual confirmation are the only accepted bases; legacy slot position,
 selection row, avatar, HP, and strategy fields are isolated from this layer.
 
+For the fixed 1920×1080 JP MuMu selection baseline, M0.7a2a observes only each row's persistent
+cyan confirmation marker. The caller must explicitly choose `selection_grid` or `strategy_detail`;
+the two contexts have different horizontal marker ROIs and are never combined. A caller-owned
+immutable tracker locks a row only after consecutive positive observations and never interprets a
+later negative or unresolved frame as an in-game unconfirm. This visual evidence stores no
+strategy identity; strategy collection remains deferred.
+
 ## Route subsystem boundaries
 
 1. **Map recognition**: identify `map_id`.
