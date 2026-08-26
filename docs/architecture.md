@@ -76,6 +76,8 @@ post-clear rematch, and the match-success transition.  Each observation is `pres
 `unresolved` and retains only non-identity pixel-cue metrics plus frame provenance.  The module
 does not infer why a previous run ended and is not connected to `SelectionLifecycleWatcher`; a
 later orchestration layer may consume its explicit terminal/outside grouping.
+`PARTY_ROOM` denotes its visible base/context, so it can intentionally co-occur with the distinct
+`PARTY_ROOM_MATCHING_OVERLAY` observation.
 
 ## State ownership
 

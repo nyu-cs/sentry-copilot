@@ -114,8 +114,11 @@ _POST_CLEAR_HEADER_CHROME_ROI = PixelRoi(x=0, y=90, width=1920, height=70)
 _POST_CLEAR_SUCCESS_ROI = PixelRoi(x=20, y=930, width=480, height=150)
 
 _MAIN_LOBBY_BRIGHT_THRESHOLD = 40_000
-_PARTY_ROOM_COPY_BRIGHT_THRESHOLD = 5_000
-_PARTY_ROOM_HEADER_CYAN_THRESHOLD = 20_000
+# The matching overlay dims the copy-code control to zero bright pixels.  Keep
+# this metric in the conjunction/provenance, but let the stable room header be
+# the discriminating cue while that overlay is visible.
+_PARTY_ROOM_COPY_BRIGHT_THRESHOLD = 0
+_PARTY_ROOM_HEADER_CYAN_THRESHOLD = 12_000
 _PARTY_OVERLAY_WIREFRAME_CYAN_THRESHOLD = 50_000
 _PARTY_OVERLAY_WIREFRAME_RED_MAXIMUM = 10_000
 _PARTY_OVERLAY_FACE_CYAN_THRESHOLD = 6_000
@@ -137,7 +140,8 @@ def observe_jp_mumu_outside_run_pages(
     A wrong resolution or non-full viewport makes every result unresolved.  On
     the known layout, page cues are intentionally independent: callers can
     retain several observations during a transition instead of forcing a
-    top-one page label.
+    top-one page label.  In particular, the party-room base and its matching
+    overlay may both be present in the same frame.
     """
 
     if not _has_known_jp_mumu_layout(frame, viewport):

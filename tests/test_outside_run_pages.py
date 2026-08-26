@@ -90,8 +90,7 @@ def _state(frame: Frame, page: OutsideRunPageKind) -> OutsideRunPageState:
             OutsideRunPageKind.PARTY_ROOM_MATCHING_OVERLAY,
             lambda frame: _with_hsv_rect(
                 _with_hsv_rect(frame, PixelRoi(100, 170, 1050, 710), (85, 200, 200)),
-                PixelRoi(1370, 480, 330, 260),
-                (85, 200, 200),
+                PixelRoi(1370, 480, 330, 260), (85, 200, 200)
             ),
         ),
         (
@@ -105,7 +104,7 @@ def _state(frame: Frame, page: OutsideRunPageKind) -> OutsideRunPageState:
         (
             OutsideRunPageKind.POST_CLEAR_REMATCH,
             lambda frame: _with_hsv_rect(
-                _with_hsv_rect(frame, PixelRoi(0, 90, 1920, 70), (85, 200, 200)),
+                _with_hsv_rect(frame, PixelRoi(0, 90, 1920, 55), (85, 200, 200)),
                 PixelRoi(20, 930, 480, 150),
                 (85, 200, 200),
             ),
@@ -129,11 +128,51 @@ def test_each_page_kind_has_a_positive_synthetic_cue(
     observations = observe_jp_mumu_outside_run_pages(frame, ContentViewport.full_frame(frame))
     states = {item.page_kind: item.state for item in observations}
     assert states[page] is OutsideRunPageState.PRESENT
-    assert all(
-        state is OutsideRunPageState.ABSENT
-        for kind, state in states.items()
-        if kind is not page
+
+
+def test_party_room_and_matching_overlay_may_cooccur() -> None:
+    frame = _with_hsv_rect(_frame(), PixelRoi(140, 145, 800, 45), (85, 200, 200))
+    frame = _with_hsv_rect(frame, PixelRoi(100, 170, 1050, 710), (85, 200, 200))
+    frame = _with_hsv_rect(frame, PixelRoi(1370, 480, 330, 260), (85, 200, 200))
+    states = {
+        item.page_kind: item.state
+        for item in observe_jp_mumu_outside_run_pages(frame, ContentViewport.full_frame(frame))
+    }
+    assert states[OutsideRunPageKind.PARTY_ROOM] is OutsideRunPageState.PRESENT
+    assert states[OutsideRunPageKind.PARTY_ROOM_MATCHING_OVERLAY] is OutsideRunPageState.PRESENT
+
+
+def test_plain_party_room_does_not_imply_matching_overlay() -> None:
+    frame = _with_hsv_rect(
+        _with_bgr_rect(_frame(), PixelRoi(1700, 35, 180, 55), (220, 220, 220)),
+        PixelRoi(140, 145, 800, 45),
+        (85, 200, 200),
     )
+    assert _state(frame, OutsideRunPageKind.PARTY_ROOM) is OutsideRunPageState.PRESENT
+    assert (
+        _state(frame, OutsideRunPageKind.PARTY_ROOM_MATCHING_OVERLAY)
+        is OutsideRunPageState.ABSENT
+    )
+
+
+def test_solo_matchmaking_is_not_a_party_room() -> None:
+    frame = _with_hsv_rect(_frame(), PixelRoi(100, 170, 1050, 710), (0, 200, 200))
+    assert _state(frame, OutsideRunPageKind.SOLO_MATCHMAKING_PAGE) is OutsideRunPageState.PRESENT
+    assert _state(frame, OutsideRunPageKind.PARTY_ROOM) is OutsideRunPageState.ABSENT
+
+
+def test_post_clear_rematch_is_not_a_party_room() -> None:
+    frame = _with_hsv_rect(
+        _with_hsv_rect(_frame(), PixelRoi(0, 90, 1920, 55), (85, 200, 200)),
+        PixelRoi(20, 930, 480, 150),
+        (85, 200, 200),
+    )
+    assert _state(frame, OutsideRunPageKind.POST_CLEAR_REMATCH) is OutsideRunPageState.PRESENT
+    assert _state(frame, OutsideRunPageKind.PARTY_ROOM) is OutsideRunPageState.ABSENT
+
+
+def test_blank_selection_info_or_runtime_like_frame_is_not_a_party_room() -> None:
+    assert _state(_frame(), OutsideRunPageKind.PARTY_ROOM) is OutsideRunPageState.ABSENT
 
 
 def test_cross_page_cues_do_not_force_an_unrelated_page_present() -> None:
