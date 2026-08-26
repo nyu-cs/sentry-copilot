@@ -298,6 +298,13 @@ immutable tracker locks a row only after consecutive positive observations and n
 later negative or unresolved frame as an in-game unconfirm. This visual evidence stores no
 strategy identity; strategy collection remains deferred.
 
+M0.7a2b composes that sticky row state with an already resolved selection-matcher result. Only
+evidence from the confirmed period is retained, including the frame that completes debounce;
+pre-confirmation previews are intentionally discarded. The caller finalizes each row at selection
+end as unconfirmed, identified, confirmed-but-unresolved, or conflicted. Conflicts retain every
+resolved identity without score ranking or majority selection. This is still vision-local history:
+it does not create a domain commitment, battle-entry fact, participant outcome, or slot assignment.
+
 ## Route subsystem boundaries
 
 1. **Map recognition**: identify `map_id`.

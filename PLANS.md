@@ -287,6 +287,13 @@
 - [x] Debounce and keep visual row confirmation sticky within a caller-owned selection session,
   without storing strategy identity. Strategy collection remains deferred to M0.7a2b.
 
+### M0.7a2b — Confirmed-period strategy finalization
+
+- [x] Accumulate only existing resolved strategy-matcher evidence observed after a row is sticky
+  confirmed; previews and other pre-confirmation candidates cannot promote a strategy identity.
+- [x] Provide caller-driven per-row finalization as unconfirmed, identified, unresolved, or
+  conflict while preserving all eligible evidence. Domain promotion remains deferred.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.
