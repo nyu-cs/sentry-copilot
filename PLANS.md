@@ -301,6 +301,13 @@
 - [x] Leave selection lifecycle responsible for finalization timing; domain promotion remains
   deferred.
 
+### M0.7a2d — Selection render-context recognition
+
+- [x] Add an independent fixed-layout JP MuMu 1920×1080 observation for `SELECTION_GRID`,
+  `STRATEGY_DETAIL`, or `UNRESOLVED`, gated by the existing selection-screen boundary.
+- [x] Use only the verified right-side layout brightness cue; outside-selection pages remain
+  unresolved and collector integration remains deferred.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.

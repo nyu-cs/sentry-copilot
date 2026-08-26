@@ -80,6 +80,12 @@ the watcher stores no page kind or termination cause.
 `PARTY_ROOM` denotes its visible base/context, so it can intentionally co-occur with the distinct
 `PARTY_ROOM_MATCHING_OVERLAY` observation.
 
+M0.7a2d adds an independent fixed-layout JP MuMu 1920×1080 strategy-selection render-context
+observation. It first reuses the selection-screen boundary, then reads a verified right-side
+layout brightness cue to report `SELECTION_GRID` or `STRATEGY_DETAIL`; wrong layouts and true
+outside-selection information pages remain `UNRESOLVED`. It does not inspect confirmation-marker
+ROIs, infer strategy identity, mutate state, or yet alter the selection collector API.
+
 ## State ownership
 
 Recognizers do not edit `SessionState`. The reducer enforces:
