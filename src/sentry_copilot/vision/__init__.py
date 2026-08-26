@@ -35,6 +35,16 @@ from .ocr import (
     check_windows_ocr_language,
     recognize_text,
 )
+from .outside_run_pages import (
+    JP_MUMU_OUTSIDE_RUN_PAGES_PROFILE_ID,
+    OutsideRunPageKind,
+    OutsideRunPageMetric,
+    OutsideRunPageObservation,
+    OutsideRunPageObservationMethod,
+    OutsideRunPageState,
+    is_definite_old_run_terminal_or_outside,
+    observe_jp_mumu_outside_run_pages,
+)
 from .recognition_probe import (
     OcrProbeOperation,
     RecognitionProbeConfig,
@@ -100,6 +110,14 @@ __all__ = [
     "WindowsOcrRuntime",
     "check_windows_ocr_language",
     "recognize_text",
+    "JP_MUMU_OUTSIDE_RUN_PAGES_PROFILE_ID",
+    "OutsideRunPageKind",
+    "OutsideRunPageMetric",
+    "OutsideRunPageObservation",
+    "OutsideRunPageObservationMethod",
+    "OutsideRunPageState",
+    "is_definite_old_run_terminal_or_outside",
+    "observe_jp_mumu_outside_run_pages",
     "OcrProbeOperation",
     "RecognitionProbeConfig",
     "RecognitionProbeConfigurationError",

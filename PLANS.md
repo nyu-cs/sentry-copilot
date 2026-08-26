@@ -265,6 +265,16 @@
   screenshot-derived strategy and player-avatar evidence by selection row only; tags/names remain
   caller metadata, and it does not claim visual player-identity recognition.
 
+## M0.7a — Selection lifecycle visual evidence
+
+### M0.7a1c1 — Outside-run page observations
+
+- [x] Add independent fixed-layout JP MuMu 1920×1080 observations for main lobby, party room,
+  party-room matching overlay, solo matchmaking, success result, post-clear rematch, and match
+  success.
+- [x] Keep all cues player/party-count independent, provenance-bearing, immutable, and outside the
+  selection lifecycle watcher; page evidence never infers an outcome cause.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.

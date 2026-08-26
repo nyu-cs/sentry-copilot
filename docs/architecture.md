@@ -70,6 +70,13 @@ viewport, OCR, and template interfaces for one or more explicit normalized or pi
 harness writes only caller-owned source/crop/optional diagnostic/report artifacts; it has no
 automatic ROI discovery, game semantics, domain-state mutation, or UI interaction.
 
+M0.7a1c1 adds independent, immutable fixed-layout observations for JP MuMu 1920×1080 outside-run
+pages: main lobby, party room, party-room matching overlay, solo matchmaking, success result,
+post-clear rematch, and the match-success transition.  Each observation is `present`, `absent`, or
+`unresolved` and retains only non-identity pixel-cue metrics plus frame provenance.  The module
+does not infer why a previous run ended and is not connected to `SelectionLifecycleWatcher`; a
+later orchestration layer may consume its explicit terminal/outside grouping.
+
 ## State ownership
 
 Recognizers do not edit `SessionState`. The reducer enforces:
