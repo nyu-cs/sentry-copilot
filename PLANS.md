@@ -294,6 +294,13 @@
 - [x] Provide caller-driven per-row finalization as unconfirmed, identified, unresolved, or
   conflict while preserving all eligible evidence. Domain promotion remains deferred.
 
+### M0.7a2c1 — Per-frame selection collection composition
+
+- [x] Compose fixed-layout confirmation observation, updated sticky confirmation, and same-frame
+  strategy accumulation in that order under a caller-provided render context.
+- [x] Leave selection lifecycle responsible for finalization timing; domain promotion remains
+  deferred.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.

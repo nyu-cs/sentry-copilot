@@ -305,6 +305,12 @@ end as unconfirmed, identified, confirmed-but-unresolved, or conflicted. Conflic
 resolved identity without score ranking or majority selection. This is still vision-local history:
 it does not create a domain commitment, battle-entry fact, participant outcome, or slot assignment.
 
+M0.7a2c1 provides a caller-owned per-frame composition state. It applies confirmation observation
+and debounce first, then passes the updated locked rows with same-frame existing matcher results
+to confirmed-period accumulation. Thus the debounce-completing frame can contribute evidence.
+Render context remains explicit, lifecycle remains responsible for deciding when to finalize, and
+no composition result is promoted into domain or runtime state.
+
 ## Route subsystem boundaries
 
 1. **Map recognition**: identify `map_id`.
