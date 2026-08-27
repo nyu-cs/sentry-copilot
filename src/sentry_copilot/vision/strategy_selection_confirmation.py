@@ -34,6 +34,10 @@ _CUE_WIDTH = 85
 _CUE_HEIGHT = 75
 _GRID_X = 735
 _DETAIL_X = 410
+_MARKER_MIN_SIZE = 45
+_MARKER_MAX_SIZE = 60
+_MARKER_MIN_FILL_RATIO = 0.2
+_MARKER_MAX_FILL_RATIO = 0.5
 
 
 class SelectionConfirmationRenderContext(StrEnum):
@@ -196,19 +200,21 @@ def _observe_row(
     roi = selection_confirmation_roi(render_context, selection_row)
     crop = frame.image[roi.y : roi.bottom, roi.x : roi.right]
     hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
-    cyan_count = int(
-        np.count_nonzero(
-            (hsv[:, :, 0] >= 70)
-            & (hsv[:, :, 0] <= 100)
-            & (hsv[:, :, 1] >= 90)
-            & (hsv[:, :, 2] >= 100)
-        )
-    )
+    cyan_mask = (
+        (hsv[:, :, 0] >= 70)
+        & (hsv[:, :, 0] <= 100)
+        & (hsv[:, :, 1] >= 90)
+        & (hsv[:, :, 2] >= 100)
+    ).astype(np.uint8)
+    cyan_count = int(np.count_nonzero(cyan_mask))
     return SelectionRowConfirmationObservation(
         selection_row=selection_row,
         state=(
             SelectionRowConfirmationState.CONFIRMED
-            if cyan_count >= JP_MUMU_SELECTION_CONFIRMATION_THRESHOLD
+            if (
+                cyan_count >= JP_MUMU_SELECTION_CONFIRMATION_THRESHOLD
+                and _has_check_like_marker(cyan_mask)
+            )
             else SelectionRowConfirmationState.NOT_CONFIRMED
         ),
         cyan_pixel_count=cyan_count,
@@ -222,6 +228,40 @@ def _observe_row(
         source_id=frame.source_id,
         source_reference=frame.source_reference,
     )
+
+
+def _has_check_like_marker(cyan_mask: np.ndarray) -> bool:
+    """Return whether one compact, interior cyan component looks like a check frame.
+
+    The quantity gate alone also accepts the large, edge-spanning cyan band
+    used by the active-row selection animation. A real marker has a compact
+    square outer component with substantial dark interior; its relative shape
+    is shared by the grid and detail confirmation ROIs.
+    """
+
+    component_count, _, stats, _ = cv2.connectedComponentsWithStats(
+        cyan_mask,
+        connectivity=8,
+    )
+    height, width = cyan_mask.shape
+    for index in range(1, component_count):
+        x, y, component_width, component_height, area = stats[index]
+        if (
+            x == 0
+            or y == 0
+            or x + component_width == width
+            or y + component_height == height
+        ):
+            continue
+        if not (
+            _MARKER_MIN_SIZE <= component_width <= _MARKER_MAX_SIZE
+            and _MARKER_MIN_SIZE <= component_height <= _MARKER_MAX_SIZE
+        ):
+            continue
+        fill_ratio = area / (component_width * component_height)
+        if _MARKER_MIN_FILL_RATIO <= fill_ratio <= _MARKER_MAX_FILL_RATIO:
+            return True
+    return False
 
 
 def _unresolved_observation(

@@ -38,7 +38,10 @@ def _frame(
         image[35:115, 540:820] = (255, 255, 0)
     for row in confirmed_rows:
         roi = selection_confirmation_roi(SelectionConfirmationRenderContext.SELECTION_GRID, row)
-        image[roi.y : roi.bottom, roi.x : roi.right] = (255, 255, 0)
+        x, y = roi.x + 11, roi.y + 11
+        image[y : y + 51, x : x + 51] = (255, 255, 0)
+        image[y + 4 : y + 47, x + 4 : x + 47] = (0, 0, 0)
+        image[y + 9 : y + 42, x + 9 : x + 42] = (255, 255, 0)
     return Frame(
         frame_id=f"synthetic:{index}",
         frame_index=index,

@@ -308,6 +308,13 @@
 - [x] Use only the verified right-side layout brightness cue; outside-selection pages remain
   unresolved and collector integration remains deferred.
 
+### M0.7a2 — Confirmation hardening
+
+- [x] Reject large edge-spanning cyan active-row animations with a compact check-marker geometry
+  gate before existing temporal debounce; sticky confirmation semantics remain unchanged.
+- [ ] Add a future participant-state gate so `EXITED_UNCONFIRMED` cannot later promote to
+  confirmed, while `CONFIRMED_THEN_EXITED` retains its historical confirmation.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.

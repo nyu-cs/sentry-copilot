@@ -86,6 +86,12 @@ layout brightness cue to report `SELECTION_GRID` or `STRATEGY_DETAIL`; wrong lay
 outside-selection information pages remain `UNRESOLVED`. It does not inspect confirmation-marker
 ROIs, infer strategy identity, mutate state, or yet alter the selection collector API.
 
+M0.7a2 confirmation hardening keeps the existing two-frame debounce and sticky semantics, but
+requires a compact, non-edge-touching cyan check-frame component after the existing cyan-count
+gate. This rejects the large active-row animation without inferring turn, strategy, or participant
+state. A future selection participant-state layer must separately make `EXITED_UNCONFIRMED`
+terminal for confirmation promotion; that semantic gate is not part of the visual detector.
+
 ## State ownership
 
 Recognizers do not edit `SessionState`. The reducer enforces:

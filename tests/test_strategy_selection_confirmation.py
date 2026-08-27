@@ -9,6 +9,7 @@ from sentry_copilot.capture.frame_source import Frame, FrameSourceType
 from sentry_copilot.vision.strategy_selection_confirmation import (
     JP_MUMU_SELECTION_CONFIRMATION_THRESHOLD,
     SelectionConfirmationRenderContext,
+    SelectionRowConfirmationObservation,
     SelectionRowConfirmationState,
     SelectionRowConfirmationTracker,
     observe_jp_mumu_selection_row_confirmations,
@@ -42,7 +43,7 @@ def _with_marker(
 ) -> Frame:
     image = np.array(frame.image, copy=True)
     roi = selection_confirmation_roi(context, row)
-    image[roi.y : roi.bottom, roi.x : roi.right] = (255, 255, 0)
+    _draw_check_like_marker(image, roi)
     return Frame(
         frame_id=f"{frame.frame_id}:marker-{context}-{row}",
         frame_index=frame.frame_index,
@@ -57,10 +58,19 @@ def _with_marker(
     )
 
 
+def _draw_check_like_marker(image: np.ndarray, roi: PixelRoi) -> None:
+    """Draw a synthetic outer marker frame plus separate cyan check interior."""
+
+    x, y = roi.x + 11, roi.y + 11
+    image[y : y + 51, x : x + 51] = (255, 255, 0)
+    image[y + 4 : y + 47, x + 4 : x + 47] = (0, 0, 0)
+    image[y + 9 : y + 42, x + 9 : x + 42] = (255, 255, 0)
+
+
 def _observe(
     frame: Frame,
     context: SelectionConfirmationRenderContext = SelectionConfirmationRenderContext.SELECTION_GRID,
-):
+) -> tuple[SelectionRowConfirmationObservation, ...]:
     return observe_jp_mumu_selection_row_confirmations(
         frame, ContentViewport.full_frame(frame), context
     )
@@ -73,6 +83,7 @@ def test_grid_marker_confirms_only_its_row_and_preserves_frame() -> None:
     observations = _observe(frame)
 
     assert observations[0].state is SelectionRowConfirmationState.CONFIRMED
+    assert observations[0].cyan_pixel_count is not None
     assert observations[0].cyan_pixel_count >= JP_MUMU_SELECTION_CONFIRMATION_THRESHOLD
     assert [item.state for item in observations[1:]] == [
         SelectionRowConfirmationState.NOT_CONFIRMED,
@@ -143,6 +154,63 @@ def test_below_threshold_marker_is_not_confirmed() -> None:
     assert observation.cyan_pixel_count == 100
 
 
+@pytest.mark.parametrize(
+    "shape",
+    [
+        (0, 0, 85, 32),
+        (0, 0, 85, 75),
+        (0, 10, 50, 60),
+    ],
+)
+def test_large_or_edge_touching_cyan_animation_is_not_confirmed(
+    shape: tuple[int, int, int, int],
+) -> None:
+    frame = _frame()
+    image = np.array(frame.image, copy=True)
+    roi = selection_confirmation_roi(SelectionConfirmationRenderContext.SELECTION_GRID, 3)
+    x, y, width, height = shape
+    image[roi.y + y : roi.y + y + height, roi.x + x : roi.x + x + width] = (255, 255, 0)
+    nuisance = Frame(
+        frame_id="synthetic:animation",
+        frame_index=0,
+        processed_at=frame.processed_at,
+        source_timestamp=None,
+        source_type=FrameSourceType.IMAGE_SEQUENCE,
+        source_id="synthetic",
+        width=1920,
+        height=1080,
+        image=image,
+        source_reference="synthetic",
+    )
+
+    observation = _observe(nuisance)[2]
+
+    assert observation.cyan_pixel_count is not None
+    assert observation.cyan_pixel_count >= JP_MUMU_SELECTION_CONFIRMATION_THRESHOLD
+    assert observation.state is SelectionRowConfirmationState.NOT_CONFIRMED
+
+
+def test_check_like_marker_with_unrelated_cyan_noise_confirms() -> None:
+    frame = _with_marker(_frame(), SelectionConfirmationRenderContext.SELECTION_GRID, 2)
+    image = np.array(frame.image, copy=True)
+    roi = selection_confirmation_roi(SelectionConfirmationRenderContext.SELECTION_GRID, 2)
+    image[roi.y : roi.y + 4, roi.x : roi.x + 4] = (255, 255, 0)
+    noisy = Frame(
+        frame_id="synthetic:marker-noise",
+        frame_index=0,
+        processed_at=frame.processed_at,
+        source_timestamp=None,
+        source_type=FrameSourceType.IMAGE_SEQUENCE,
+        source_id="synthetic",
+        width=1920,
+        height=1080,
+        image=image,
+        source_reference="synthetic",
+    )
+
+    assert _observe(noisy)[1].state is SelectionRowConfirmationState.CONFIRMED
+
+
 def test_wrong_resolution_or_viewport_or_non_selection_is_unresolved() -> None:
     wrong = _frame(width=1280, height=720)
     assert {item.state for item in _observe(wrong)} == {SelectionRowConfirmationState.UNRESOLVED}
@@ -199,3 +267,27 @@ def test_tracker_debounces_rows_independently_and_can_lock_all_rows() -> None:
 
     locked = once.apply(observations)
     assert locked.locked_confirmed_rows == frozenset({1, 2, 3, 4})
+
+
+def test_tracker_does_not_lock_from_repeated_animation_contamination() -> None:
+    frame = _frame()
+    image = np.array(frame.image, copy=True)
+    roi = selection_confirmation_roi(SelectionConfirmationRenderContext.SELECTION_GRID, 3)
+    image[roi.y : roi.y + 32, roi.x : roi.right] = (255, 255, 0)
+    animation = Frame(
+        frame_id="synthetic:active-row-animation",
+        frame_index=0,
+        processed_at=frame.processed_at,
+        source_timestamp=None,
+        source_type=FrameSourceType.IMAGE_SEQUENCE,
+        source_id="synthetic",
+        width=1920,
+        height=1080,
+        image=image,
+        source_reference="synthetic",
+    )
+
+    tracker = SelectionRowConfirmationTracker().apply(_observe(animation))
+    tracker = tracker.apply(_observe(animation))
+
+    assert not tracker.is_confirmed(3)
