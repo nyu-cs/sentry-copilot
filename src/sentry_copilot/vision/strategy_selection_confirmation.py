@@ -113,6 +113,8 @@ class SelectionRowConfirmationTracker:
     def apply(
         self,
         observations: tuple[SelectionRowConfirmationObservation, ...],
+        *,
+        terminal_rows: frozenset[int] = frozenset(),
     ) -> SelectionRowConfirmationTracker:
         """Return the debounced tracker state without mutating this instance.
 
@@ -121,11 +123,13 @@ class SelectionRowConfirmationTracker:
         """
 
         _validate_complete_rows(observations)
+        if not terminal_rows.issubset(_ROWS):
+            raise ValueError("terminal selection confirmation rows must be between 1 and 4")
         pending = list(self.pending_positive_counts)
         locked = set(self.locked_confirmed_rows)
         for observation in observations:
             index = observation.selection_row - 1
-            if observation.selection_row in locked:
+            if observation.selection_row in locked or observation.selection_row in terminal_rows:
                 pending[index] = 0
                 continue
             if observation.state is SelectionRowConfirmationState.CONFIRMED:

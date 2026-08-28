@@ -323,6 +323,19 @@ to confirmed-period accumulation. Thus the debounce-completing frame can contrib
 Render context remains explicit, lifecycle remains responsible for deciding when to finalize, and
 no composition result is promoted into domain or runtime state.
 
+The fixed JP MuMu 1920×1080 layout now has separate participant-status and completion-presentation
+observations. The bounded status-overlay gate requires `gray < 80` for at least 0.30 of the ROI and
+an HSV low-saturation (`<= 70`) grayscale-white (`>= 100`) fraction from 0.15 through 0.35. Only
+then does the context-aware bottom-right white occupancy classify `NETWORK_WARNING` at `<=
+0.282949`, `EXIT` at `>= 0.329032`, and the gap as unresolved. The caller-owned tracker requires
+two EXIT frames and never clears a lock. The fixed-layout visual observer recognizes an explicit,
+strictly validated ellipsis or a retained strategy portrait with the established row-local textured,
+color-rich image cue; non-ellipsis evidence without that portrait cue remains unresolved. Once EXIT is
+locked, ellipsis with no prior confirmation becomes sticky `EXITED_UNCONFIRMED` and cannot later
+collect strategy evidence; a prior confirmation or retained portrait becomes
+`CONFIRMED_THEN_EXITED` and keeps its earlier evidence. These are visual-local history facts, not
+domain exit events or battle death/spectating/runtime-participation facts.
+
 ## Route subsystem boundaries
 
 1. **Map recognition**: identify `map_id`.

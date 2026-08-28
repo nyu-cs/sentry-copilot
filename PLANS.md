@@ -312,8 +312,12 @@
 
 - [x] Reject large edge-spanning cyan active-row animations with a compact check-marker geometry
   gate before existing temporal debounce; sticky confirmation semantics remain unchanged.
-- [ ] Add a future participant-state gate so `EXITED_UNCONFIRMED` cannot later promote to
-  confirmed, while `CONFIRMED_THEN_EXITED` retains its historical confirmation.
+- [x] Add a fixed-layout, context-aware visual participant-status observer for ordinary rows,
+  network warnings, exits, and unresolved evidence; two consecutive EXIT observations lock a row
+  for the caller-owned selection session.
+- [x] Preserve retained-strategy presentation, via its explicit row-local portrait cue, separately from strict ellipsis evidence
+  placeholder. `EXITED_UNCONFIRMED` cannot later promote, while `CONFIRMED_THEN_EXITED` retains
+  historical confirmation without inventing a concrete strategy identity.
 
 ## M1 — Replay route overlay
 
