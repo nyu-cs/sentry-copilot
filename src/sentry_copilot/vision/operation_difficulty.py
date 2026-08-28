@@ -1,4 +1,4 @@
-"""Fixed-layout JP MuMu OPERATION map-code evidence, without gameplay interpretation."""
+"""Fixed-layout JP MuMu OPERATION simulation-difficulty evidence."""
 
 from __future__ import annotations
 
@@ -16,17 +16,17 @@ from sentry_copilot.vision.selection_session_lifecycle import (
 from sentry_copilot.vision.viewport import ContentViewport, PixelRoi
 
 
-class OperationMapState(StrEnum):
+class OperationDifficultyState(StrEnum):
     OBSERVED = "observed"
     UNRESOLVED = "unresolved"
 
 
 @dataclass(frozen=True)
-class OperationMapObservation:
-    """Immutable stage-code fact and OCR provenance from one OPERATION frame."""
+class OperationDifficultyObservation:
+    """Immutable simulation-difficulty fact and OCR provenance from one OPERATION frame."""
 
-    state: OperationMapState
-    map_code: str | None
+    state: OperationDifficultyState
+    simulation_code: str | None
     difficulty_id: str | None
     observed_difficulty: str | None
     processed_at: datetime
@@ -36,43 +36,43 @@ class OperationMapObservation:
     source_type: FrameSourceType
     source_id: str
     source_reference: str
-    map_code_ocr: OcrResult | None
+    simulation_code_ocr: OcrResult | None
     difficulty_ocr: OcrResult | None
 
     def __post_init__(self) -> None:
         if not self.frame_id or not self.source_id or not self.source_reference:
-            raise ValueError("operation map observation provenance must not be blank")
-        if self.state is OperationMapState.OBSERVED:
-            if self.map_code is None or self.map_code_ocr is None:
+            raise ValueError("operation difficulty observation provenance must not be blank")
+        if self.state is OperationDifficultyState.OBSERVED:
+            if self.simulation_code is None or self.simulation_code_ocr is None:
                 raise ValueError(
-                    "observed operation map requires normalized map code and OCR evidence"
+                    "observed operation difficulty requires normalized code and OCR evidence"
                 )
         elif any(
             item is not None
             for item in (
-                self.map_code,
+                self.simulation_code,
                 self.difficulty_id,
                 self.observed_difficulty,
             )
         ):
             raise ValueError(
-                "unresolved operation map observation must not contain inferred values"
+                "unresolved operation difficulty observation must not contain inferred values"
             )
 
 
-JP_MUMU_OPERATION_MAP_PROFILE_ID = "jp_mumu_fullscreen_1920x1080.operation_map.v1"
+JP_MUMU_OPERATION_DIFFICULTY_PROFILE_ID = "jp_mumu_fullscreen_1920x1080.operation_difficulty.v1"
 """Explicit calibration profile for the initial JP MuMu fullscreen target."""
 
-JP_MUMU_OPERATION_MAP_CODE_ROI = PixelRoi(x=720, y=500, width=480, height=140)
+JP_MUMU_OPERATION_SIMULATION_CODE_ROI = PixelRoi(x=720, y=500, width=480, height=140)
 JP_MUMU_OPERATION_DIFFICULTY_ROI = PixelRoi(x=780, y=670, width=360, height=120)
 
 
-async def observe_jp_mumu_operation_map(
+async def observe_jp_mumu_operation_difficulty(
     frame: Frame,
     viewport: ContentViewport,
     backend: OcrBackend,
-) -> OperationMapObservation:
-    """Read bounded map code/difficulty OCR only after generic OPERATION evidence is present.
+) -> OperationDifficultyObservation:
+    """Read bounded simulation-code/difficulty OCR only after generic OPERATION evidence is present.
 
     The lower text region is difficulty evidence, not a localized battlefield name. Only the
     retained, calibrated `死地` label is normalized; other OCR leaves difficulty unresolved.
@@ -84,7 +84,7 @@ async def observe_jp_mumu_operation_map(
     code_ocr = await recognize_text(
         frame,
         viewport,
-        JP_MUMU_OPERATION_MAP_CODE_ROI,
+        JP_MUMU_OPERATION_SIMULATION_CODE_ROI,
         backend,
         language_tag="ja-JP",
     )
@@ -95,14 +95,14 @@ async def observe_jp_mumu_operation_map(
         backend,
         language_tag="ja-JP",
     )
-    map_code = normalize_operation_map_code(code_ocr.normalized_text)
-    if code_ocr.status is not OcrStatus.RECOGNIZED or map_code is None:
-        return _unresolved(frame, map_code_ocr=code_ocr, difficulty_ocr=difficulty_ocr)
+    simulation_code = normalize_operation_simulation_code(code_ocr.normalized_text)
+    if code_ocr.status is not OcrStatus.RECOGNIZED or simulation_code is None:
+        return _unresolved(frame, simulation_code_ocr=code_ocr, difficulty_ocr=difficulty_ocr)
     candidate_difficulty = _normalize_difficulty(difficulty_ocr.normalized_text)
     difficulty_id = _difficulty_id_for(candidate_difficulty)
-    return OperationMapObservation(
-        state=OperationMapState.OBSERVED,
-        map_code=map_code,
+    return OperationDifficultyObservation(
+        state=OperationDifficultyState.OBSERVED,
+        simulation_code=simulation_code,
         difficulty_id=difficulty_id,
         observed_difficulty=candidate_difficulty if difficulty_id is not None else None,
         processed_at=frame.processed_at,
@@ -112,12 +112,12 @@ async def observe_jp_mumu_operation_map(
         source_type=frame.source_type,
         source_id=frame.source_id,
         source_reference=frame.source_reference,
-        map_code_ocr=code_ocr,
+        simulation_code_ocr=code_ocr,
         difficulty_ocr=difficulty_ocr,
     )
 
 
-def normalize_operation_map_code(value: str | None) -> str | None:
+def normalize_operation_simulation_code(value: str | None) -> str | None:
     """Conservatively normalize OCR spacing/punctuation around one stage-code hyphen."""
 
     if value is None:
@@ -142,12 +142,12 @@ def _difficulty_id_for(observed_difficulty: str | None) -> str | None:
 def _unresolved(
     frame: Frame,
     *,
-    map_code_ocr: OcrResult | None = None,
+    simulation_code_ocr: OcrResult | None = None,
     difficulty_ocr: OcrResult | None = None,
-) -> OperationMapObservation:
-    return OperationMapObservation(
-        state=OperationMapState.UNRESOLVED,
-        map_code=None,
+) -> OperationDifficultyObservation:
+    return OperationDifficultyObservation(
+        state=OperationDifficultyState.UNRESOLVED,
+        simulation_code=None,
         difficulty_id=None,
         observed_difficulty=None,
         processed_at=frame.processed_at,
@@ -157,6 +157,6 @@ def _unresolved(
         source_type=frame.source_type,
         source_id=frame.source_id,
         source_reference=frame.source_reference,
-        map_code_ocr=map_code_ocr,
+        simulation_code_ocr=simulation_code_ocr,
         difficulty_ocr=difficulty_ocr,
     )

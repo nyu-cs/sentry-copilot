@@ -95,6 +95,7 @@ class DifficultyDefinition(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     difficulty_id: str
+    simulation_codes: tuple[str, ...] = ()
     names: tuple[LocalizedText, ...]
     source_note: str | None = None
 
@@ -102,6 +103,10 @@ class DifficultyDefinition(BaseModel):
     def valid_locales(self) -> DifficultyDefinition:
         if not self.difficulty_id.strip():
             raise ValueError("difficulty_id must not be blank")
+        if any(not _SIMULATION_CODE.fullmatch(code) for code in self.simulation_codes):
+            raise ValueError("difficulty simulation codes must use normalized stage syntax")
+        if len(self.simulation_codes) != len(set(self.simulation_codes)):
+            raise ValueError("difficulty simulation codes must be unique")
         locales = [item.locale_id for item in self.names]
         if len(locales) != len(set(locales)):
             raise ValueError("difficulty definition name locales must be unique")
@@ -115,8 +120,22 @@ class CapturedMap(BaseModel):
 
     map_id: str
     map_code: str
-    difficulty_id: str | None = None
-    observed_difficulty: str | None = None
+
+
+class CapturedDifficulty(BaseModel):
+    """One durable simulation-difficulty capture, independent from battlefield identity."""
+
+    model_config = ConfigDict(frozen=True)
+
+    difficulty_id: str
+    simulation_code: str
+    observed_label: str | None = None
+
+    @model_validator(mode="after")
+    def valid_identity(self) -> CapturedDifficulty:
+        if not self.difficulty_id.strip() or not _SIMULATION_CODE.fullmatch(self.simulation_code):
+            raise ValueError("captured difficulty must have an ID and normalized simulation code")
+        return self
 
 
 class MapCaptureConflict(BaseModel):
@@ -129,11 +148,10 @@ class MapCaptureConflict(BaseModel):
 
 
 class DifficultyCaptureConflict(BaseModel):
-    """A same-map difficulty contradiction that cannot silently replace prior evidence."""
+    """A difficulty contradiction that cannot silently replace prior evidence."""
 
     model_config = ConfigDict(frozen=True)
 
-    map_id: str
     existing_difficulty_id: str
     conflicting_difficulty_id: str
 
@@ -145,6 +163,7 @@ class EncounterSession(BaseModel):
 
     encounter_id: str
     captured_map: CapturedMap | None = None
+    captured_difficulty: CapturedDifficulty | None = None
     map_conflict: MapCaptureConflict | None = None
     difficulty_conflict: DifficultyCaptureConflict | None = None
     boss_id: str | None = None
@@ -181,3 +200,4 @@ class EncounterSession(BaseModel):
 
 
 _MAP_CODE = re.compile(r"[A-Z]{1,8}-\d{1,3}\Z")
+_SIMULATION_CODE = re.compile(r"[A-Z]{1,8}-\d{1,3}\Z")

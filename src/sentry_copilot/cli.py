@@ -28,6 +28,7 @@ from sentry_copilot.routes.models import (
 from sentry_copilot.routes.overlay import RouteOverlayRenderer
 from sentry_copilot.routes.repository import MapRepository, load_map_definition
 from sentry_copilot.routes.selector import RouteSelector
+from sentry_copilot.services.live_encounter_preview import run_windows_live_encounter_preview
 from sentry_copilot.vision.live_ocr_probe import LiveOcrProbeConfig, run_live_ocr_probe
 from sentry_copilot.vision.local_feature_matching import (
     LocalFeatureMatcherConfig,
@@ -118,6 +119,19 @@ def build_parser() -> argparse.ArgumentParser:
     roi = live_ocr_probe.add_mutually_exclusive_group(required=True)
     roi.add_argument("--normalized-roi", nargs=4, type=float, metavar=("X", "Y", "W", "H"))
     roi.add_argument("--pixel-roi", nargs=4, type=int, metavar=("X", "Y", "W", "H"))
+    live_preview = commands.add_parser(
+        "live-encounter-preview",
+        help="Show the bounded live Map/Difficulty encounter preview on Windows",
+    )
+    live_preview.add_argument("--monitor", type=int, default=1, metavar="INDEX")
+    live_preview.add_argument("--locale", choices=("zh_CN", "en"), default="zh_CN")
+    live_preview.add_argument("--no-topmost", action="store_true")
+    live_preview.add_argument(
+        "--diagnostic-output",
+        type=Path,
+        metavar="PATH",
+        help="write a local diagnostic JSON only after the preview closes",
+    )
     recognition_probe = commands.add_parser(
         "recognition-probe", help="Run explicit generic OCR/template operations over one frame"
     )
@@ -293,6 +307,15 @@ def main() -> None:
             ),
         )
         print(f"wrote {probe_result.result_path} ({probe_result.outcome.value})")
+    elif args.command == "live-encounter-preview":
+        capability = check_windows_ocr_language("ja-JP")
+        run_windows_live_encounter_preview(
+            monitor_index=args.monitor,
+            locale_id=args.locale,
+            always_on_top=not args.no_topmost,
+            ocr_unavailable_reason=capability.reason if not capability.available else None,
+            diagnostic_path=args.diagnostic_output,
+        )
     elif args.command == "recognition-probe":
         try:
             operations = _recognition_probe_operations(args)

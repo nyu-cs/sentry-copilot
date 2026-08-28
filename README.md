@@ -28,9 +28,9 @@
 - 地图路径按 `ruleset_id + map_id` 版本化，支持普通敌人路线、Boss 路线、阶段路线、停留点和传送段。
 - 路线保存在归一化地图坐标中，再通过四角校准/单应性矩阵投影到当前画面。
 - 地图或校准置信度不足时不显示猜测路线。
-- encounter preview 将地图、Boss、敌人类型和禁用盟约作为固定四项独立进度；`OPERATION`
-  只补充当前 encounter 的地图/难度，不会重置先前情报。未来的 `情報確認 1/2` 才是新 encounter
-  的权威启动边界；地图机制由独立知识库提供，不能从画面猜测。
+- encounter preview 将地图、Boss、敌人类型和禁用盟约作为固定四项独立进度；`OPERATION` 的
+  `AC-3` / `死地` 仅补充当前 encounter 的模拟难度，不是随机战场地图，因而不计入 1/4 进度。
+  未来的 `情報確認 1/2` 才是新 encounter 的权威启动边界；地图机制由独立知识库提供，不能从画面猜测。
 
 ## 快速运行
 
@@ -47,6 +47,8 @@ python -m sentry_copilot.cli validate-data --maps data/maps
 python -m sentry_copilot.cli demo-route-overlay \
   --map-file data/maps/demo.synthetic_training_map.yaml \
   --output outputs/demo_route_overlay.png
+# Windows JP MuMu fullscreen 1920×1080 live Map/Difficulty preview:
+python -m sentry_copilot.cli live-encounter-preview --monitor 1 --locale zh_CN
 ```
 
 演示图完全由合成背景和占位路线生成，不代表真实游戏地图或真实 Boss 路径。

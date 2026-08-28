@@ -15,7 +15,8 @@ _UI_TEXT: dict[str, dict[str, str]] = {
         "boss": "Boss",
         "enemy_types": "敌人类型",
         "banned_covenants": "禁用盟约",
-        "not_captured": "尚未记录",
+        "not_captured": "尚未识别",
+        "upcoming": "本版本暂未支持",
         "map_intel": "地图情报",
     },
     "en": {
@@ -26,6 +27,7 @@ _UI_TEXT: dict[str, dict[str, str]] = {
         "enemy_types": "Enemy Types",
         "banned_covenants": "Bans",
         "not_captured": "Not captured",
+        "upcoming": "Not supported in this preview",
         "map_intel": "Map Intel",
     },
 }
@@ -36,6 +38,7 @@ class EncounterCaptureItemView:
     item: EncounterCaptureItem
     label: str
     complete: bool
+    implemented: bool
     value: str
 
 
@@ -77,10 +80,15 @@ def present_encounter(
             item=item,
             label=strings[mapping[item]],
             complete=item in session.complete_items,
+            implemented=item is EncounterCaptureItem.MAP,
             value=(
                 map_value
                 if item is EncounterCaptureItem.MAP and map_value is not None
-                else strings["not_captured"]
+                else (
+                    strings["not_captured"]
+                    if item is EncounterCaptureItem.MAP
+                    else strings["upcoming"]
+                )
             ),
         )
         for item in EncounterCaptureItem
@@ -109,30 +117,35 @@ def _map_value_and_knowledge(
     locale_id: str,
 ) -> tuple[str | None, str | None, tuple[MapKnowledgeEntry, ...]]:
     capture = session.captured_map
+    difficulty_capture = session.captured_difficulty
+    difficulty = (
+        catalog.difficulty_by_id(difficulty_capture.difficulty_id)
+        if difficulty_capture is not None
+        else None
+    )
+    difficulty_value = (
+        _localized(difficulty.names, locale_id)
+        if difficulty is not None
+        else (difficulty_capture.observed_label if difficulty_capture is not None else None)
+    )
     if capture is None:
-        return None, None, ()
+        return None, difficulty_value, ()
     definition = catalog.by_id(capture.map_id)
     if definition is None:
-        return capture.map_code, capture.observed_difficulty, ()
+        return capture.map_code, difficulty_value, ()
     entries = tuple(
         entry
         for entry in definition.knowledge_entries
         if not entry.difficulty_ids
-        or (
-            capture.difficulty_id is not None
-            and capture.difficulty_id in entry.difficulty_ids
-        )
+            or (
+                difficulty_capture is not None
+                and difficulty_capture.difficulty_id in entry.difficulty_ids
+            )
     )
     map_value = (
         f"{capture.map_code} · {_localized(definition.names, locale_id)}"
         if definition.names
         else capture.map_code
-    )
-    difficulty = catalog.difficulty_by_id(capture.difficulty_id) if capture.difficulty_id else None
-    difficulty_value = (
-        _localized(difficulty.names, locale_id)
-        if difficulty is not None
-        else capture.observed_difficulty
     )
     return map_value, difficulty_value, entries
 
