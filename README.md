@@ -28,6 +28,9 @@
 - 地图路径按 `ruleset_id + map_id` 版本化，支持普通敌人路线、Boss 路线、阶段路线、停留点和传送段。
 - 路线保存在归一化地图坐标中，再通过四角校准/单应性矩阵投影到当前画面。
 - 地图或校准置信度不足时不显示猜测路线。
+- encounter preview 将地图、Boss、敌人类型和禁用盟约作为固定四项独立进度；`OPERATION`
+  只补充当前 encounter 的地图/难度，不会重置先前情报。未来的 `情報確認 1/2` 才是新 encounter
+  的权威启动边界；地图机制由独立知识库提供，不能从画面猜测。
 
 ## 快速运行
 
@@ -175,6 +178,7 @@ src/sentry_copilot/
   vision/      地图识别与校准接口
   services/    模块编排
   capture/     回放帧来源
+  encounter/   独立于玩家人数的 encounter、地图知识与纯展示模型
 data/maps/    版本化地图路线 YAML
 data/strategy_catalogs/  仅 synthetic catalog、synthetic locale 与 synthetic SVG
 data/replays/  录像标注元数据，不含视频

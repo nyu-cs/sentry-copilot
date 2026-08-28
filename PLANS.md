@@ -319,6 +319,20 @@
   placeholder. `EXITED_UNCONFIRMED` cannot later promote, while `CONFIRMED_THEN_EXITED` retains
   historical confirmation without inventing a concrete strategy identity.
 
+## M0.8 — Encounter intelligence / playable preview
+
+- [x] Add a player-count-independent encounter model with Map, Boss, Enemy Types, and Banned
+  Covenants as the four ordinary capture items.
+- [x] Add a fixed-layout JP MuMu `OPERATION` observer for independent map-code and calibrated
+  difficulty evidence that enriches—not resets—the current encounter, preserves prior map facts
+  through later unresolved observations, and surfaces same-map difficulty contradictions.
+- [x] Separate immutable map identity, map facts, and difficulty definitions; expose pure zh_CN/en
+  presentation and an optional caller-owned desktop panel.
+- [ ] Calibrate and debounce `情報確認 1/2` as the authoritative encounter-start boundary, including
+  revisits from `2/2` without creating a duplicate session.
+- [ ] Add Boss, Enemy Types, Banned Covenants, optional Secret Boss, and real difficulty evidence.
+- [ ] Populate curated map facts from bounded, provenance-bearing external sources.
+
 ## M1 — Replay route overlay
 
 - [ ] Add image-folder input in addition to video input.
