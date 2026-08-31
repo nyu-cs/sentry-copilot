@@ -34,6 +34,7 @@ class FrameSourceType(StrEnum):
     IMAGE_SEQUENCE = "image_sequence"
     LOCAL_VIDEO = "local_video"
     WINDOWS_DISPLAY = "windows_display"
+    MUMU_IPC = "mumu_ipc"
 
 
 @dataclass(frozen=True)

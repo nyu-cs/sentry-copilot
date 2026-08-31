@@ -2,29 +2,26 @@
 
 ## Scope
 
-The v0.1 encounter preview is player-count independent. It shows four ordinary capture items—Map,
-Boss, Enemy Types, and Banned Covenants—and progress is therefore always based on four items. A
-future Secret Boss item is optional and does not change that denominator.
+The v0.1 encounter preview is player-count independent. Its five ordinary capture items are
+Difficulty, Boss, Enemy Types, Banned Covenants, and Map; progress is therefore based on five
+items. Difficulty, Boss, and Enemy Types are currently implemented. Banned Covenants and Map
+remain unimplemented.
 
-This first vertical slice captures one calibrated simulation difficulty from a JP MuMu 1920×1080
-`OPERATION` presentation. It does not yet recognize the randomized battlefield/map, Boss, Enemy
-Types, Banned Covenants, Secret Boss, or any gameplay mechanics from pixels.
+The current JP MuMu 1920×1080 slice recognizes Standard / AC-1, Adversity / AC-2, and Deadland /
+AC-3 difficulty, plus Boss and two- or three-slot Enemy Types from genuine INFO 1/2. It does not
+yet recognize the randomized battlefield/map, Banned Covenants, Secret Boss, or gameplay mechanics
+from pixels.
 
 ## Encounter boundary
 
-`情報確認 1/2` is the authoritative future start boundary for a new encounter session. It occurs
-before strategy selection and before the `OPERATION` presentation, so `OPERATION` must only enrich
-the current session with map/difficulty facts and must never reset it. The retained calibration
-material does not yet support a robust `情報確認 1/2` detector or reliable revisit deduplication;
-v0.1 therefore exposes an explicit `EncounterStartObservation`/`begin_encounter` boundary without
-inventing timing-based resets. A later observer must debounce one continuous `1/2` presentation and
-must not reset when the same encounter returns from `2/2` to `1/2`.
+`情報確認 1/2` is the authoritative start boundary for a new encounter session. The first genuine
+PRESENT starts an encounter; three consecutive genuine ABSENT observations arm re-entry, and two
+consecutive genuine PRESENT observations then start a fresh next encounter. The first re-entry
+frame cannot contaminate the old encounter. Same-process multi-run is implemented and live
+validated. `OPERATION` only enriches the active session and never resets it.
 
-The live preview can nevertheless reuse the already validated outside-run page observations and
-their two-frame semantic debounce to mark the current encounter ended. This is an END boundary only:
-it preserves prior facts, shows that the previous encounter ended, and never starts a new one. Until
-`情報確認 1/2` is implemented, the preview is single-encounter-per-launch: closing and relaunching
-creates a fresh encounter, with no reset button and no timing guess.
+Broad outside-run END detection is deliberately disabled in the production live preview. Hard Exit
+remains postponed; it is not currently an encounter-end authority.
 
 ## Vision versus knowledge
 
@@ -33,6 +30,8 @@ Vision produces only immutable, provenance-bearing identity evidence:
 ```text
 frame -> normalized battlefield identity
 frame -> normalized simulation code + label -> difficulty_id
+frame -> boss visual evidence -> boss_id
+frame -> enemy-card visual evidence -> enemy_type_ids
 ```
 
 It does not infer terrain, targeting, deployment, or tactics from screenshots. Those facts live in
@@ -56,32 +55,48 @@ They are not map facts and difficulty is not embedded in `map_id`.
 ## Presentation and safety
 
 `present_encounter(...)` is a pure zh_CN/en view builder. Before battlefield recognition exists, it
-renders `Map: Not captured` separately from `Difficulty: 死地`, and remains at `0 / 4`. The optional
+renders Map separately from Difficulty and uses the five-item progress model. The optional
 Tk panel is a caller-owned, always-on-top-capable display; locale
 switching changes only the view, never the immutable `EncounterSession`. Capture must read only the
 game source window/frame, not this panel. Users should hide or suspend the panel when it would
 obscure a capture target.
 
-The included `AC-3` difficulty mapping contains only verified display metadata. No game image asset, replay,
+The included difficulty mappings contain only verified display metadata. No game image asset, replay,
 or unlicensed screenshot is part of the repository. Broader online knowledge population, including
 PRTS collection, is deliberately a later bounded task.
 
+## Current recovery status
+
+The JP MuMu 1920×1080 INFO recovery subsystem is live validated and frozen pending
+contradictory live evidence: `2/2` detection, reminder, returned-info detection,
+returned Boss recovery, and returned Enemy recovery. Returned Enemy supports both
+two- and three-card layouts with fill-missing-only semantics. Broad outside-run END
+is disabled in the production live preview; Hard Exit remains postponed. Map and
+Banned Covenants remain unimplemented. The validation-only
+`--debug-skip-initial-enemy-capture` flag defaults off and exists solely to test the
+returned Enemy path without changing initial visual observation.
+
 ## Live preview v0.1
 
-On the supported Windows JP MuMu fullscreen 1920×1080 display, launch:
+On the primary supported Windows JP MuMu fullscreen 1920×1080 profile, capture uses MuMu renderer
+IPC at an approximately 5 FPS target. Physical-monitor capture remains a secondary supported path
+where applicable. Launch the IPC preview with the locally configured MuMu paths:
 
 ```powershell
-.\.venv\Scripts\python.exe -m sentry_copilot.cli live-encounter-preview --monitor 1 --locale zh_CN
+.\.venv\Scripts\python.exe -m sentry_copilot.cli live-encounter-preview `
+  --capture-backend mumu-ipc `
+  --mumu-install-root '<MuMu install root>' `
+  --mumu-ipc-dll '<path to external_renderer_ipc.dll>' `
+  --mumu-instance-id 0 `
+  --mumu-display-id 0 `
+  --locale zh_CN
 ```
 
-The selected physical monitor is sampled at two frames per second. The compact panel shows a
-player-facing running/waiting/error state, the supported profile, a small build identifier, and a
+The install root and IPC DLL path depend on the local MuMu installation.
+
+The compact panel shows a player-facing running/waiting/error state, the supported profile, a small build identifier, and a
 Copy Diagnostics action. `--diagnostic-output path\to\diagnostic.json` writes the same
 personal-data-free local JSON only after the window closes. It never uploads diagnostics or records
 gameplay.
 
-Only the calibrated `AC-3` / `死地` difficulty evidence is implemented in this preview; battlefield
-recognition is deferred. Boss, Enemy Types, and Banned Covenants remain explicitly marked as not
-supported in this build rather than looking like failed recognition. The panel uses physical-monitor capture, so keep it away from the
-calibrated OPERATION ROIs; the panel is never a vision input, but it can obscure the game if placed
-over that display area.
+Battlefield recognition and Banned Covenants remain deferred. The panel is never a vision input.

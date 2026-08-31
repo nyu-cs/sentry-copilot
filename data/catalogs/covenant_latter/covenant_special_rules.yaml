@@ -1,0 +1,74 @@
+schema_version: '0.1'
+ruleset_id: covenant_latter
+catalog_kind: covenant_special_rules
+dynamic_rules:
+- kind: prototype_replacement
+  rule_zh_CN: 未持有的预设干员可由对应原型干员替代；原型继承该预设干员完全相同的盟约与特性。
+- kind: free_choice_six_star
+  tiers:
+  - 5
+  - 6
+  slots_per_tier: 2
+  trait: null
+  membership_zh_CN: 自选六星依据通常/隐藏所属势力获得一个或多个核心盟约，或获得“协防干员”；若资料显示与游戏内不一致，以游戏内实际分配为准。
+- kind: ultimate_technique
+  covenant: 绝技
+  rule_zh_CN: 绝技按精英状态计数，不应展开成静态 Operator↔Covenant membership。
+project_semantics:
+  disabled_covenant_does_not_imply_impossible_activation: true
+  operator_availability_is_separate_from_membership: true
+  membership_is_separate_from_current_activation_layers: true
+  covenant_effect_definition_is_separate_from_all_above: true
+  ban_notes:
+    协防干员: 项目既有规则：不作为 ban-relevant covenant 处理。
+    调和: 项目既有规则：可能处于 disabled/ban-related 状态。
+    独行: 项目既有规则：可能处于 disabled/ban-related 状态。
+runtime_query_contract:
+  covenant_lookup:
+    input:
+    - covenant_id
+    - encounter_disabled_covenant_ids
+    output_fields:
+    - covenant identity
+    - disabled/enabled status for this encounter
+    - all static member operators
+    - per-operator derived availability
+    - activation requirement
+    - special rule notes
+    grouping:
+    - available_members
+    - disabled_members
+    - conditional_or_special_members
+  operator_lookup:
+    input:
+    - operator_id
+    - encounter_disabled_covenant_ids
+    output_fields:
+    - operator identity
+    - tier
+    - profession/subprofession when enriched
+    - traits when enriched
+    - talents when enriched
+    - skills when enriched
+    - all covenant memberships
+    - per-covenant disabled/enabled status
+    - overall derived recruitment status
+    - available acquisition routes
+    - blocked acquisition routes
+  derived_operator_status:
+    AVAILABLE: 至少一个静态 recruitment route 当前可用。
+    DISABLED: 所有已知静态 recruitment route 当前均不可用，且没有特殊/动态取得路径。
+    CONDITIONAL: 存在原型、自选六星、协防/特殊规则或未解析动态路径，不能仅凭静态 ban 得出绝对结论。
+    UNKNOWN: 缺少足够的 encounter state 或规则资料。
+reconciliations:
+- operator: 异客
+  issue: PRTS top reverse-membership list still contained a stale “独行” entry after the documented change.
+  resolved_covenants:
+  - 萨尔贡
+  - 精准
+  - 迅捷
+  resolution_basis_zh_CN: 以当前干员行与后续更新记录一致的“独行→精准”为准；从独行反向表中移除异客。
+- source_link_id: 34
+  operator: 凯瑟琳
+  issue: Direct evidence-link fetch was unavailable during audit.
+  resolution_basis_zh_CN: 由完整 112 人现行 roster 与其余已解析 link identity 做唯一集合差，并由当前干员行的“维多利亚+灵巧”组合交叉核对。

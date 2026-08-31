@@ -1,0 +1,78 @@
+catalog_version: "draft-2026-08-29"
+scope_id: "covenant_latter_half"
+status: "draft runtime identity catalog currently consumed by the bounded JP MuMu INFO 1/2 preview; not final"
+
+ordinary_boss_pool:
+  - boss_id: "boss.covenant_latter.hypothetical_armor"
+    names: { zh_CN: "假想敌：胄", en: "Hypothetical Armor", ja_JP: "仮想敵：冑" }
+    hidden_core_variant: true
+    visual_reference:
+      local_filename: "boss_hypothetical_armor.png"
+      prts_file_title: "头像_敌人_假想敌：胄.png"
+
+  - boss_id: "boss.covenant_latter.hypothetical_gun"
+    names: { zh_CN: "假想敌：铳", en: "Hypothetical Gun", ja_JP: "仮想敵：銃" }
+    hidden_core_variant: true
+    visual_reference:
+      local_filename: "boss_hypothetical_gun.png"
+      prts_file_title: "头像_敌人_假想敌：铳.png"
+
+  - boss_id: "boss.covenant_latter.hypothetical_pipe"
+    names: { zh_CN: "假想敌：管", en: "Hypothetical Pipe", ja_JP: "仮想敵：管" }
+    hidden_core_variant: true
+    visual_reference:
+      local_filename: "boss_hypothetical_pipe.png"
+      prts_file_title: "头像_敌人_假想敌：管.png"
+
+  - boss_id: "boss.covenant_latter.quintus"
+    names: { zh_CN: "盐风主教昆图斯", en: "Quintus", ja_JP: "「潮風の司教」クイントゥス" }
+    hidden_core_variant: false
+    visual_reference:
+      local_filename: "boss_quintus.png"
+      prts_file_title: "头像_敌人_盐风主教昆图斯.png"
+
+  - boss_id: "boss.covenant_latter.lucian"
+    names: { zh_CN: "卢西恩，“猩红血钻”", en: "Lucian", ja_JP: "「クリムゾンソリティア」ルシアン" }
+    hidden_core_variant: false
+    visual_reference:
+      local_filename: "boss_lucian.png"
+      prts_file_title: "头像_敌人_卢西恩，“猩红血钻”.png"
+
+  - boss_id: "boss.covenant_latter.alistair"
+    names: { zh_CN: "阿利斯泰尔，帝国余晖", en: "Alistair", ja_JP: "「帝国の残光」アリステア" }
+    hidden_core_variant: false
+    visual_reference:
+      local_filename: "boss_alistair.png"
+      prts_file_title: "头像_敌人_阿利斯泰尔，帝国余晖.png"
+
+  - boss_id: "boss.covenant_latter.sami_will"
+    names: { zh_CN: "“萨米的意志”", en: "Sami's Will", ja_JP: "「サーミの意志」" }
+    hidden_core_variant: false
+    visual_reference:
+      local_filename: "boss_sami_will.png"
+      prts_file_title: "头像_敌人_“萨米的意志”.png"
+
+hidden_core_pool:
+  - "boss.covenant_latter.hypothetical_armor"
+  - "boss.covenant_latter.hypothetical_gun"
+  - "boss.covenant_latter.hypothetical_pipe"
+
+recognition_notes:
+  ordinary_info_page:
+    method: "visual_reference_matching"
+    jp_ocr_required: false
+    portrait_static: true
+    expected_pool_size: 7
+  source_images:
+    role: "candidate clean references"
+    requires_live_validation_against_info_page: true
+  live_positive_validated:
+    - "boss.covenant_latter.hypothetical_armor"
+    - "boss.covenant_latter.hypothetical_gun"
+    - "boss.covenant_latter.quintus"
+    - "boss.covenant_latter.lucian"
+    - "boss.covenant_latter.alistair"
+  not_yet_live_positive_validated:
+    - "boss.covenant_latter.hypothetical_pipe"
+    - "boss.covenant_latter.sami_will"
+  calibration_scope: "JP MuMu 1920x1080 INFO 1/2; private references and calibration remain private"

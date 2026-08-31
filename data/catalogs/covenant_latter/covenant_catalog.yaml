@@ -1,0 +1,304 @@
+schema_version: '0.1'
+ruleset_id: covenant_latter
+catalog_kind: covenant_catalog
+covenants:
+- covenant_id: covenant.covenant_latter.yan
+  name_zh_CN: 炎
+  category: core
+  activation_required: 3
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.sargon
+  name_zh_CN: 萨尔贡
+  category: core
+  activation_required: 3
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.victoria
+  name_zh_CN: 维多利亚
+  category: core
+  activation_required: 3
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.kjerag
+  name_zh_CN: 谢拉格
+  category: core
+  activation_required: 3
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.laterano
+  name_zh_CN: 拉特兰
+  category: core
+  activation_required: 3
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.aegir
+  name_zh_CN: 阿戈尔
+  category: core
+  activation_required: 3
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.siracusa
+  name_zh_CN: 叙拉古
+  category: core
+  activation_required: 3
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.kazimierz
+  name_zh_CN: 卡西米尔
+  category: core
+  activation_required: 3
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.precision
+  name_zh_CN: 精准
+  category: additional
+  activation_required: 2
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.swiftness
+  name_zh_CN: 迅捷
+  category: additional
+  activation_required: 2
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.dexterity
+  name_zh_CN: 灵巧
+  category: additional
+  activation_required: 2
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.arcane
+  name_zh_CN: 奥术
+  category: additional
+  activation_required: 2
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.steadfast
+  name_zh_CN: 坚守
+  category: additional
+  activation_required: 2
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.support
+  name_zh_CN: 助力
+  category: additional
+  activation_required: 2
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.foresight
+  name_zh_CN: 远见
+  category: additional
+  activation_required: 2
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.miracle
+  name_zh_CN: 奇迹
+  category: additional
+  activation_required: 2
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.investor
+  name_zh_CN: 投资人
+  category: additional
+  activation_required: 3
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.assault
+  name_zh_CN: 突袭
+  category: additional
+  activation_required: 2
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.unyielding
+  name_zh_CN: 不屈
+  category: additional
+  activation_required: 2
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.harmony
+  name_zh_CN: 调和
+  category: additional
+  activation_required: 1
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.support_operator
+  name_zh_CN: 协防干员
+  category: additional
+  activation_required: 2
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: false
+    status: confirmed_project_rule
+    note_zh_CN: 项目既有规则：协防干员不作为 ban-relevant covenant 处理。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.lone_wolf
+  name_zh_CN: 独行
+  category: additional
+  activation_required: 1
+  membership_mode: explicit
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: true
+    counts_as_static_recruitment_route: true
+- covenant_id: covenant.covenant_latter.ultimate_technique
+  name_zh_CN: 绝技
+  category: additional
+  activation_required: 2
+  membership_mode: rule_based_elite_state
+  disable_policy:
+    can_be_disabled: null
+    status: runtime_ruleset_driven
+    note_zh_CN: 是否在本局被禁用属于 Encounter 状态，不写死在静态数据库。
+  query_role:
+    show_members_in_covenant_lookup: true
+    show_in_operator_lookup: false
+    counts_as_static_recruitment_route: false
+  rule_note_zh_CN: 所有精英状态干员均可用于激活；这些干员本身不因此成为“绝技”盟约成员，同名精英干员也可分别计数。

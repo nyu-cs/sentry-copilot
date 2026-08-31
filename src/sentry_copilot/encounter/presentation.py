@@ -69,6 +69,7 @@ def present_encounter(
 
     strings = _UI_TEXT.get(locale_id, _UI_TEXT["en"])
     mapping = {
+        EncounterCaptureItem.DIFFICULTY: "difficulty",
         EncounterCaptureItem.MAP: "map",
         EncounterCaptureItem.BOSS: "boss",
         EncounterCaptureItem.ENEMY_TYPES: "enemy_types",
@@ -80,14 +81,37 @@ def present_encounter(
             item=item,
             label=strings[mapping[item]],
             complete=item in session.complete_items,
-            implemented=item is EncounterCaptureItem.MAP,
+            implemented=item
+            in {
+                EncounterCaptureItem.DIFFICULTY,
+                EncounterCaptureItem.BOSS,
+                EncounterCaptureItem.ENEMY_TYPES,
+            },
             value=(
-                map_value
-                if item is EncounterCaptureItem.MAP and map_value is not None
+                difficulty_value
+                if item is EncounterCaptureItem.DIFFICULTY and difficulty_value is not None
                 else (
-                    strings["not_captured"]
-                    if item is EncounterCaptureItem.MAP
-                    else strings["upcoming"]
+                    map_value
+                    if item is EncounterCaptureItem.MAP and map_value is not None
+                    else (
+                        _boss_value(session, catalog, locale_id)
+                        if item is EncounterCaptureItem.BOSS and session.boss_id is not None
+                        else (
+                            _enemy_value(session, catalog, locale_id)
+                            if item is EncounterCaptureItem.ENEMY_TYPES
+                            and session.enemy_type_ids is not None
+                            else (
+                                strings["not_captured"]
+                                if item
+                                in {
+                                    EncounterCaptureItem.DIFFICULTY,
+                                    EncounterCaptureItem.BOSS,
+                                    EncounterCaptureItem.ENEMY_TYPES,
+                                }
+                                else strings["upcoming"]
+                            )
+                        )
+                    )
                 )
             ),
         )
@@ -137,10 +161,10 @@ def _map_value_and_knowledge(
         entry
         for entry in definition.knowledge_entries
         if not entry.difficulty_ids
-            or (
-                difficulty_capture is not None
-                and difficulty_capture.difficulty_id in entry.difficulty_ids
-            )
+        or (
+            difficulty_capture is not None
+            and difficulty_capture.difficulty_id in entry.difficulty_ids
+        )
     )
     map_value = (
         f"{capture.map_code} · {_localized(definition.names, locale_id)}"
@@ -158,3 +182,20 @@ def _localized(values: tuple[LocalizedText, ...], locale_id: str) -> str:
     if english is not None:
         return english
     return values[0].text
+
+
+def _boss_value(session: EncounterSession, catalog: EncounterMapCatalog, locale_id: str) -> str:
+    definition = catalog.boss_by_id(session.boss_id or "")
+    return (
+        _localized(definition.names, locale_id)
+        if definition is not None
+        else (session.boss_id or "")
+    )
+
+
+def _enemy_value(session: EncounterSession, catalog: EncounterMapCatalog, locale_id: str) -> str:
+    return " / ".join(
+        _localized(definition.names, locale_id) if definition is not None else enemy_id
+        for enemy_id in session.enemy_type_ids or ()
+        for definition in (catalog.enemy_category_by_id(enemy_id),)
+    )

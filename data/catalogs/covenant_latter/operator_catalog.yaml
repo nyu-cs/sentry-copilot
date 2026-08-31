@@ -1,0 +1,1476 @@
+schema_version: '0.1'
+ruleset_id: covenant_latter
+catalog_kind: operator_catalog
+review_status:
+  covenant_to_operator_memberships: user_reviewed
+  operator_to_covenant_reverse_index: derived_from_same_membership_edges
+  operator_gameplay_profiles: pending_enrichment
+  runtime_disable_logic: schema_ready_not_integrated
+operators:
+- operator_id: operator.covenant_latter.op_049
+  name_zh_CN: 隐现
+  tier: 1
+  source_link_id: 49
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_039
+  name_zh_CN: 角峰
+  tier: 1
+  source_link_id: 39
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_006
+  name_zh_CN: 惊蛰
+  tier: 1
+  source_link_id: 6
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_062
+  name_zh_CN: 深巡
+  tier: 1
+  source_link_id: 62
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_029
+  name_zh_CN: 刺玫
+  tier: 1
+  source_link_id: 29
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_075
+  name_zh_CN: 普罗旺斯
+  tier: 1
+  source_link_id: 75
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_074
+  name_zh_CN: 德克萨斯
+  tier: 1
+  source_link_id: 74
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_097
+  name_zh_CN: 跃跃
+  tier: 1
+  source_link_id: 97
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_117
+  name_zh_CN: 古米
+  tier: 1
+  source_link_id: 117
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_018
+  name_zh_CN: 艾丝黛尔
+  tier: 1
+  source_link_id: 18
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_123
+  name_zh_CN: 波登可
+  tier: 1
+  source_link_id: 123
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_109
+  name_zh_CN: 格雷伊
+  tier: 1
+  source_link_id: 109
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_098
+  name_zh_CN: 深靛
+  tier: 1
+  source_link_id: 98
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_138
+  name_zh_CN: 宴
+  tier: 1
+  source_link_id: 138
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_086
+  name_zh_CN: 野鬃
+  tier: 1
+  source_link_id: 86
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_142
+  name_zh_CN: 雷蛇
+  tier: 1
+  source_link_id: 142
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_050
+  name_zh_CN: 送葬人
+  tier: 2
+  source_link_id: 50
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_129
+  name_zh_CN: 赫默
+  tier: 2
+  source_link_id: 129
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_007
+  name_zh_CN: 小满
+  tier: 2
+  source_link_id: 7
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_030
+  name_zh_CN: 哈洛德
+  tier: 2
+  source_link_id: 30
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_019
+  name_zh_CN: 莎草
+  tier: 2
+  source_link_id: 19
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_063
+  name_zh_CN: 幽灵鲨
+  tier: 2
+  source_link_id: 63
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_020
+  name_zh_CN: 泡泡
+  tier: 2
+  source_link_id: 20
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_139
+  name_zh_CN: 休谟斯
+  tier: 2
+  source_link_id: 139
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_031
+  name_zh_CN: 洛洛
+  tier: 2
+  source_link_id: 31
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_133
+  name_zh_CN: 风丸
+  tier: 2
+  source_link_id: 133
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_087
+  name_zh_CN: 砾
+  tier: 2
+  source_link_id: 87
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_104
+  name_zh_CN: 蒂比
+  tier: 2
+  source_link_id: 104
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_124
+  name_zh_CN: 调香师
+  tier: 2
+  source_link_id: 124
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_076
+  name_zh_CN: 拉普兰德
+  tier: 2
+  source_link_id: 76
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_118
+  name_zh_CN: 折桠
+  tier: 2
+  source_link_id: 118
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_088
+  name_zh_CN: 灰毫
+  tier: 2
+  source_link_id: 88
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_103
+  name_zh_CN: 锡人
+  tier: 2
+  source_link_id: 103
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_051
+  name_zh_CN: 能天使
+  tier: 3
+  source_link_id: 51
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_110
+  name_zh_CN: 断崖
+  tier: 3
+  source_link_id: 110
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_008
+  name_zh_CN: 诗怀雅
+  tier: 3
+  source_link_id: 8
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_009
+  name_zh_CN: 琳琅诗怀雅
+  tier: 3
+  source_link_id: 9
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_064
+  name_zh_CN: 斯卡蒂
+  tier: 3
+  source_link_id: 64
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_021
+  name_zh_CN: 菲莱
+  tier: 3
+  source_link_id: 21
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_032
+  name_zh_CN: 薄绿
+  tier: 3
+  source_link_id: 32
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_065
+  name_zh_CN: 海霓
+  tier: 3
+  source_link_id: 65
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_105
+  name_zh_CN: 松果
+  tier: 3
+  source_link_id: 105
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_040
+  name_zh_CN: 雪猎
+  tier: 3
+  source_link_id: 40
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_089
+  name_zh_CN: 瑕光
+  tier: 3
+  source_link_id: 89
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_022
+  name_zh_CN: 至简
+  tier: 3
+  source_link_id: 22
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_041
+  name_zh_CN: 初雪
+  tier: 3
+  source_link_id: 41
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_119
+  name_zh_CN: 蛇屠箱
+  tier: 3
+  source_link_id: 119
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_090
+  name_zh_CN: 流星
+  tier: 3
+  source_link_id: 90
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_078
+  name_zh_CN: 忍冬
+  tier: 3
+  source_link_id: 78
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_077
+  name_zh_CN: 伺夜
+  tier: 3
+  source_link_id: 77
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_042
+  name_zh_CN: 耶拉
+  tier: 3
+  source_link_id: 42
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_052
+  name_zh_CN: 空弦
+  tier: 3
+  source_link_id: 52
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_053
+  name_zh_CN: 信仰搅拌机
+  tier: 4
+  source_link_id: 53
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_054
+  name_zh_CN: 莫斯提马
+  tier: 4
+  source_link_id: 54
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_130
+  name_zh_CN: 伊内丝
+  tier: 4
+  source_link_id: 130
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_099
+  name_zh_CN: 寒芒克洛丝
+  tier: 4
+  source_link_id: 99
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_033
+  name_zh_CN: 风笛
+  tier: 4
+  source_link_id: 33
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_066
+  name_zh_CN: 水月
+  tier: 4
+  source_link_id: 66
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_079
+  name_zh_CN: 阿罗玛
+  tier: 4
+  source_link_id: 79
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_034
+  name_zh_CN: 凯瑟琳
+  tier: 4
+  source_link_id: 34
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_067
+  name_zh_CN: 歌蕾蒂娅
+  tier: 4
+  source_link_id: 67
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_043
+  name_zh_CN: 灵知
+  tier: 4
+  source_link_id: 43
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_100
+  name_zh_CN: 莱恩哈特
+  tier: 4
+  source_link_id: 100
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_080
+  name_zh_CN: 缄默德克萨斯
+  tier: 4
+  source_link_id: 80
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_010
+  name_zh_CN: 星熊
+  tier: 4
+  source_link_id: 10
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_152
+  name_zh_CN: 泥岩
+  tier: 4
+  source_link_id: 152
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_091
+  name_zh_CN: 焰尾
+  tier: 4
+  source_link_id: 91
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_092
+  name_zh_CN: 远牙
+  tier: 4
+  source_link_id: 92
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_111
+  name_zh_CN: 白面鸮
+  tier: 4
+  source_link_id: 111
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_044
+  name_zh_CN: 银灰
+  tier: 4
+  source_link_id: 44
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_024
+  name_zh_CN: 百炼嘉维尔
+  tier: 4
+  source_link_id: 24
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_023
+  name_zh_CN: 卡涅利安
+  tier: 4
+  source_link_id: 23
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_148
+  name_zh_CN: 魔王
+  tier: 4
+  source_link_id: 148
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_134
+  name_zh_CN: 华法琳
+  tier: 4
+  source_link_id: 134
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_107
+  name_zh_CN: 妮芙
+  tier: 5
+  source_link_id: 107
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_055
+  name_zh_CN: 圣约送葬人
+  tier: 5
+  source_link_id: 55
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_025
+  name_zh_CN: 缇缇
+  tier: 5
+  source_link_id: 25
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_012
+  name_zh_CN: 烛煌
+  tier: 5
+  source_link_id: 12
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_068
+  name_zh_CN: 乌尔比安
+  tier: 5
+  source_link_id: 68
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_112
+  name_zh_CN: 隐德来希
+  tier: 5
+  source_link_id: 112
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_115
+  name_zh_CN: 史尔特尔
+  tier: 5
+  source_link_id: 115
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_035
+  name_zh_CN: 号角
+  tier: 5
+  source_link_id: 35
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_081
+  name_zh_CN: 铃兰
+  tier: 5
+  source_link_id: 81
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_120
+  name_zh_CN: 塞雷娅
+  tier: 5
+  source_link_id: 120
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_013
+  name_zh_CN: 夕
+  tier: 5
+  source_link_id: 13
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_069
+  name_zh_CN: 归溟幽灵鲨
+  tier: 5
+  source_link_id: 69
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_045
+  name_zh_CN: 凛御银灰
+  tier: 5
+  source_link_id: 45
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_106
+  name_zh_CN: 引星棘刺
+  tier: 5
+  source_link_id: 106
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_136
+  name_zh_CN: 山
+  tier: 5
+  source_link_id: 136
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_093
+  name_zh_CN: 玛恩纳
+  tier: 5
+  source_link_id: 93
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_082
+  name_zh_CN: 安洁莉娜
+  tier: 5
+  source_link_id: 82
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_131
+  name_zh_CN: 寒檀
+  tier: 5
+  source_link_id: 131
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_011
+  name_zh_CN: 录武官
+  tier: 5
+  source_link_id: 11
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_056
+  name_zh_CN: 蕾缪安
+  tier: 6
+  source_link_id: 56
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_046
+  name_zh_CN: 圣聆初雪
+  tier: 6
+  source_link_id: 46
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_014
+  name_zh_CN: 余
+  tier: 6
+  source_link_id: 14
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_070
+  name_zh_CN: 浊心斯卡蒂
+  tier: 6
+  source_link_id: 70
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_026
+  name_zh_CN: 异客
+  tier: 6
+  source_link_id: 26
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_027
+  name_zh_CN: 佩佩
+  tier: 6
+  source_link_id: 27
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_036
+  name_zh_CN: 维娜·维多利亚
+  tier: 6
+  source_link_id: 36
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_037
+  name_zh_CN: 焰影苇草
+  tier: 6
+  source_link_id: 37
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_057
+  name_zh_CN: 塑心
+  tier: 6
+  source_link_id: 57
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_146
+  name_zh_CN: 缪尔赛思
+  tier: 6
+  source_link_id: 146
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_101
+  name_zh_CN: 迷迭香
+  tier: 6
+  source_link_id: 101
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_058
+  name_zh_CN: 新约能天使
+  tier: 6
+  source_link_id: 58
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_125
+  name_zh_CN: 流明
+  tier: 6
+  source_link_id: 125
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_015
+  name_zh_CN: 仇白
+  tier: 6
+  source_link_id: 15
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_113
+  name_zh_CN: 溯光星源
+  tier: 6
+  source_link_id: 113
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_094
+  name_zh_CN: 耀骑士临光
+  tier: 6
+  source_link_id: 94
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_083
+  name_zh_CN: 荒芜拉普兰德
+  tier: 6
+  source_link_id: 83
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_047
+  name_zh_CN: 锏
+  tier: 6
+  source_link_id: 47
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.op_126
+  name_zh_CN: 纯烬艾雅法拉
+  tier: 6
+  source_link_id: 126
+  gameplay_profile:
+    status: pending_enrichment
+    profession: null
+    subprofession: null
+    rarity: null
+    traits: []
+    talents: []
+    skills: []
+    notes_zh_CN: 为未来局内干员查询预留。当前 v0.2 不猜测/抄录尚未核验的特性、天赋和技能资料。
+- operator_id: operator.covenant_latter.special_support
+  name_zh_CN: 盟约·辅助干员
+  source_display_label: 巫役
+  tier: null
+  gameplay_profile:
+    status: special_rule_entry
+    traits: []
+    talents: []
+    skills: []
+  notes: Not one of the 112 fixed tier roster entries.
+  special_entry: true

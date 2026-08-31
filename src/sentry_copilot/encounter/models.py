@@ -9,12 +9,37 @@ from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class EncounterCaptureItem(StrEnum):
-    """The four ordinary, player-count-independent encounter capture items."""
+    """The five ordinary, player-count-independent encounter capture items."""
 
-    MAP = "map"
+    DIFFICULTY = "difficulty"
     BOSS = "boss"
     ENEMY_TYPES = "enemy_types"
     BANNED_COVENANTS = "banned_covenants"
+    MAP = "map"
+
+
+class DifficultyCaptureSource(StrEnum):
+    """Truthful visual/OCR provenance for a durable Difficulty capture."""
+
+    UNKNOWN = "unknown"
+    INITIAL_INFO_VISUAL = "initial_info_visual"
+    POST_START_VISUAL = "post_start_visual"
+    OPERATION_SPLASH_VISUAL = "operation_splash_visual"
+    OPERATION_OCR = "operation_ocr"
+
+
+class BossCaptureSource(StrEnum):
+    """Visual source that first established the captured Boss identity."""
+
+    INITIAL_INFO_VISUAL = "initial_info_visual"
+    RETURNED_INFO_VISUAL = "returned_info_visual"
+
+
+class EnemyTypeCaptureSource(StrEnum):
+    """Visual source that first established the captured Enemy Type set."""
+
+    INITIAL_INFO_VISUAL = "initial_info_visual"
+    RETURNED_INFO_VISUAL = "returned_info_visual"
 
 
 class MapKnowledgeCategory(StrEnum):
@@ -113,6 +138,40 @@ class DifficultyDefinition(BaseModel):
         return self
 
 
+class BossDefinition(BaseModel):
+    """Stable Boss identity with localized presentation, independent from visual assets."""
+
+    model_config = ConfigDict(frozen=True)
+
+    boss_id: str
+    names: tuple[LocalizedText, ...]
+
+    @model_validator(mode="after")
+    def valid_locales(self) -> BossDefinition:
+        if not self.boss_id.strip():
+            raise ValueError("boss_id must not be blank")
+        if len(self.names) != len({item.locale_id for item in self.names}):
+            raise ValueError("boss definition name locales must be unique")
+        return self
+
+
+class EnemyCategoryDefinition(BaseModel):
+    """Stable enemy-category identity with localized presentation."""
+
+    model_config = ConfigDict(frozen=True)
+
+    enemy_category_id: str
+    names: tuple[LocalizedText, ...]
+
+    @model_validator(mode="after")
+    def valid_locales(self) -> EnemyCategoryDefinition:
+        if not self.enemy_category_id.strip():
+            raise ValueError("enemy_category_id must not be blank")
+        if len(self.names) != len({item.locale_id for item in self.names}):
+            raise ValueError("enemy category definition name locales must be unique")
+        return self
+
+
 class CapturedMap(BaseModel):
     """One durable, normalized map capture for an encounter session."""
 
@@ -130,6 +189,7 @@ class CapturedDifficulty(BaseModel):
     difficulty_id: str
     simulation_code: str
     observed_label: str | None = None
+    capture_source: DifficultyCaptureSource = DifficultyCaptureSource.UNKNOWN
 
     @model_validator(mode="after")
     def valid_identity(self) -> CapturedDifficulty:
@@ -156,6 +216,24 @@ class DifficultyCaptureConflict(BaseModel):
     conflicting_difficulty_id: str
 
 
+class BossCaptureConflict(BaseModel):
+    """A later reliable Boss observation that cannot silently replace the first capture."""
+
+    model_config = ConfigDict(frozen=True)
+
+    existing_boss_id: str
+    conflicting_boss_id: str
+
+
+class EnemyTypeCaptureConflict(BaseModel):
+    """A later reliable enemy-category set that cannot silently replace the first capture."""
+
+    model_config = ConfigDict(frozen=True)
+
+    existing_enemy_type_ids: tuple[str, ...]
+    conflicting_enemy_type_ids: tuple[str, ...]
+
+
 class EncounterSession(BaseModel):
     """Immutable encounter-static facts, deliberately independent from player count and slots."""
 
@@ -167,7 +245,11 @@ class EncounterSession(BaseModel):
     map_conflict: MapCaptureConflict | None = None
     difficulty_conflict: DifficultyCaptureConflict | None = None
     boss_id: str | None = None
-    enemy_type_ids: tuple[str, str, str] | None = None
+    boss_capture_source: BossCaptureSource | None = None
+    boss_conflict: BossCaptureConflict | None = None
+    enemy_type_ids: tuple[str, ...] | None = None
+    enemy_type_capture_source: EnemyTypeCaptureSource | None = None
+    enemy_type_conflict: EnemyTypeCaptureConflict | None = None
     banned_covenant_ids: tuple[str, ...] | None = None
     secret_boss_id: str | None = None
 
@@ -188,6 +270,8 @@ class EncounterSession(BaseModel):
             items.add(EncounterCaptureItem.ENEMY_TYPES)
         if self.banned_covenant_ids is not None:
             items.add(EncounterCaptureItem.BANNED_COVENANTS)
+        if self.captured_difficulty is not None:
+            items.add(EncounterCaptureItem.DIFFICULTY)
         return frozenset(items)
 
     @property

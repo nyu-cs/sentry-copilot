@@ -10,7 +10,8 @@ from sentry_copilot.capture.display_smoke import (
     DisplayCaptureSmokeConfig,
     run_display_capture_smoke_test,
 )
-from sentry_copilot.capture.frame_source import ImageSequenceFrameSource
+from sentry_copilot.capture.frame_source import FrameSource, ImageSequenceFrameSource
+from sentry_copilot.capture.mumu_ipc import MuMuIpcFrameSource
 from sentry_copilot.capture.video_frame_extraction import (
     VideoFrameExtractionConfig,
     VideoFrameRequest,
@@ -123,8 +124,25 @@ def build_parser() -> argparse.ArgumentParser:
         "live-encounter-preview",
         help="Show the bounded live Map/Difficulty encounter preview on Windows",
     )
+    live_preview.add_argument(
+        "--capture-backend",
+        choices=("windows-display", "mumu-ipc"),
+        default="windows-display",
+    )
     live_preview.add_argument("--monitor", type=int, default=1, metavar="INDEX")
+    live_preview.add_argument("--mumu-install-root", type=Path, metavar="PATH")
+    live_preview.add_argument("--mumu-ipc-dll", type=Path, metavar="PATH")
+    live_preview.add_argument("--mumu-instance-id", type=int, default=0, metavar="ID")
+    live_preview.add_argument("--mumu-display-id", type=int, default=0, metavar="ID")
     live_preview.add_argument("--locale", choices=("zh_CN", "en"), default="zh_CN")
+    live_preview.add_argument(
+        "--debug-skip-initial-enemy-capture",
+        action="store_true",
+        help=(
+            "debug validation only: observe initial INFO Enemy Types but suppress initial "
+            "Enemy persistence so returned-info recovery can be live-tested"
+        ),
+    )
     live_preview.add_argument("--no-topmost", action="store_true")
     live_preview.add_argument(
         "--diagnostic-output",
@@ -308,13 +326,29 @@ def main() -> None:
         )
         print(f"wrote {probe_result.result_path} ({probe_result.outcome.value})")
     elif args.command == "live-encounter-preview":
-        capability = check_windows_ocr_language("ja-JP")
+        live_source: FrameSource | None = None
+        monitor_index: int | None = args.monitor
+        if args.capture_backend == "mumu-ipc":
+            if args.mumu_install_root is None or args.mumu_ipc_dll is None:
+                parser.error(
+                    "--mumu-install-root and --mumu-ipc-dll are required for "
+                    "--capture-backend mumu-ipc"
+                )
+            live_source = MuMuIpcFrameSource(
+                install_root=args.mumu_install_root,
+                dll_path=args.mumu_ipc_dll,
+                instance_id=args.mumu_instance_id,
+                display_id=args.mumu_display_id,
+                target_fps=5.0,
+            )
+            monitor_index = None
         run_windows_live_encounter_preview(
-            monitor_index=args.monitor,
+            monitor_index=monitor_index,
             locale_id=args.locale,
             always_on_top=not args.no_topmost,
-            ocr_unavailable_reason=capability.reason if not capability.available else None,
             diagnostic_path=args.diagnostic_output,
+            source=live_source,
+            debug_skip_initial_enemy_capture=args.debug_skip_initial_enemy_capture,
         )
     elif args.command == "recognition-probe":
         try:

@@ -9,6 +9,9 @@ from sentry_copilot.services.live_encounter_preview import LiveEncounterPreviewS
 
 from .presentation import EncounterPanelView
 
+_LOCALE_OPTIONS = {"zh_CN": "简体中文", "en": "English"}
+_LOCALE_IDS_BY_LABEL = {label: locale_id for locale_id, label in _LOCALE_OPTIONS.items()}
+
 
 def show_encounter_panel(view: EncounterPanelView, *, always_on_top: bool = True) -> None:
     """Open a compact caller-owned panel; capture code never reads this window as input."""
@@ -31,11 +34,6 @@ def show_encounter_panel(view: EncounterPanelView, *, always_on_top: bool = True
             row=index, column=0, sticky="w", pady=2
         )
     row = len(view.items) + 1
-    if view.difficulty_value is not None:
-        ttk.Label(outer, text=f"{view.difficulty_label}: {view.difficulty_value}").grid(
-            row=row, column=0, sticky="w", pady=2
-        )
-        row += 1
     if view.map_knowledge_heading is not None:
         ttk.Label(outer, text=view.map_knowledge_heading).grid(
             row=row, column=0, sticky="w", pady=(8, 2)
@@ -92,11 +90,6 @@ def show_localized_encounter_panel(
                 row=index, column=0, sticky="w", pady=2
             )
         row = len(view.items) + 2
-        if view.difficulty_value is not None:
-            ttk.Label(outer, text=f"{view.difficulty_label}: {view.difficulty_value}").grid(
-                row=row, column=0, sticky="w", pady=2
-            )
-            row += 1
         if view.map_knowledge_heading is not None:
             ttk.Label(outer, text=view.map_knowledge_heading).grid(
                 row=row, column=0, sticky="w", pady=(8, 2)
@@ -137,16 +130,21 @@ class LiveEncounterPreviewWindow:
         self._diagnostic_text = diagnostic_text
         self._on_close = on_close
         self._root = tk.Tk()
+        # Keep the standard Windows title bar: it is the primary drag surface.
+        self._root.overrideredirect(False)
         self._root.attributes("-topmost", always_on_top)
         self._root.resizable(False, False)
+        self._root.minsize(400, 0)
         self._root.protocol("WM_DELETE_WINDOW", self._close)
-        self._outer = ttk.Frame(self._root, padding=10)
+        self._outer = ttk.Frame(self._root, padding=12)
         self._outer.grid()
-        self._locale = tk.StringVar(value=initial.locale_id)
+        self._outer.grid_columnconfigure(0, weight=1)
+        self._locale = tk.StringVar(value=_locale_label(initial.locale_id))
         self._title = tk.StringVar()
         self._status = tk.StringVar()
+        self._recovery_reminder = tk.StringVar()
         self._build = tk.StringVar()
-        self._difficulty = tk.StringVar()
+        self._diagnostics_label = tk.StringVar()
         self._items = [tk.StringVar() for _ in initial.presentation.items]
         self._build_widgets()
         self._render(initial)
@@ -162,48 +160,66 @@ class LiveEncounterPreviewWindow:
 
     def _build_widgets(self) -> None:
         ttk = self._ttk
-        ttk.Combobox(
-            self._outer,
+        style = ttk.Style(self._root)
+        style.configure("Live.Title.TLabel", font=("TkDefaultFont", 14, "bold"))
+        style.configure("Live.Item.TLabel", font=("TkDefaultFont", 12))
+        style.configure("Live.Status.TLabel", font=("TkDefaultFont", 11))
+        style.configure("Live.Reminder.TLabel", font=("TkDefaultFont", 11, "bold"))
+        style.configure("Live.Build.TLabel", font=("TkDefaultFont", 8))
+        selector_row = ttk.Frame(self._outer)
+        selector_row.grid(row=0, column=0, sticky="ew")
+        ttk.Label(selector_row, text="语言 / Language", style="Live.Status.TLabel").grid(
+            row=0, column=0, sticky="w", padx=(0, 8)
+        )
+        selector = ttk.Combobox(
+            selector_row,
             textvariable=self._locale,
-            values=("zh_CN", "en"),
+            values=tuple(_LOCALE_OPTIONS.values()),
             state="readonly",
-            width=10,
-        ).grid(row=0, column=0, sticky="w")
-        self._outer.winfo_children()[0].bind("<<ComboboxSelected>>", self._change_locale)
-        ttk.Label(self._outer, textvariable=self._title).grid(
-            row=1, column=0, sticky="w", pady=(6, 0)
+            width=12,
         )
-        ttk.Label(self._outer, textvariable=self._status, wraplength=340).grid(
-            row=2, column=0, sticky="w", pady=(4, 4)
+        selector.grid(row=0, column=1, sticky="w")
+        selector.bind("<<ComboboxSelected>>", self._change_locale)
+        ttk.Label(self._outer, textvariable=self._title, style="Live.Title.TLabel").grid(
+            row=1, column=0, sticky="w", pady=(8, 0)
         )
-        for index, item in enumerate(self._items, start=3):
-            ttk.Label(self._outer, textvariable=item).grid(row=index, column=0, sticky="w", pady=2)
-        row = len(self._items) + 3
-        ttk.Label(self._outer, textvariable=self._difficulty).grid(
-            row=row, column=0, sticky="w", pady=2
-        )
+        ttk.Label(
+            self._outer, textvariable=self._status, wraplength=420, style="Live.Status.TLabel"
+        ).grid(row=2, column=0, sticky="ew", pady=(5, 6))
+        ttk.Label(
+            self._outer,
+            textvariable=self._recovery_reminder,
+            wraplength=420,
+            style="Live.Reminder.TLabel",
+        ).grid(row=3, column=0, sticky="ew", pady=(0, 6))
+        for index, item in enumerate(self._items, start=4):
+            ttk.Label(self._outer, textvariable=item, style="Live.Item.TLabel").grid(
+                row=index, column=0, sticky="w", pady=3
+            )
+        row = len(self._items) + 4
         controls = ttk.Frame(self._outer)
-        controls.grid(row=row + 1, column=0, sticky="w", pady=(8, 0))
-        ttk.Button(controls, text="Copy Diagnostics", command=self._copy_diagnostics).grid(
-            row=0, column=0
-        )
-        ttk.Label(self._outer, textvariable=self._build).grid(
-            row=row + 2, column=0, sticky="w", pady=(6, 0)
+        controls.grid(row=row, column=0, sticky="w", pady=(8, 0))
+        ttk.Button(
+            controls, textvariable=self._diagnostics_label, command=self._copy_diagnostics
+        ).grid(row=0, column=0)
+        ttk.Label(self._outer, textvariable=self._build, style="Live.Build.TLabel").grid(
+            row=row + 1, column=0, sticky="w", pady=(6, 0)
         )
 
     def _render(self, snapshot: LiveEncounterPreviewSnapshot) -> None:
         view = snapshot.presentation
         self._root.title(view.title)
-        self._locale.set(snapshot.locale_id)
+        self._locale.set(_locale_label(snapshot.locale_id))
         self._title.set(f"{view.title}    {view.progress_label}")
         self._status.set(snapshot.status_message)
+        self._recovery_reminder.set(snapshot.recovery_reminder_text or "")
         for target, item in zip(self._items, view.items, strict=True):
             marker = "✓" if item.complete else "○"
             target.set(f"{marker} {item.label}: {item.value}")
-        self._difficulty.set(
-            f"{view.difficulty_label}: {view.difficulty_value}" if view.difficulty_value else ""
-        )
         self._build.set("Build: live-encounter-preview-v0.1")
+        self._diagnostics_label.set(
+            "复制诊断信息" if snapshot.locale_id == "zh_CN" else "Copy Diagnostics"
+        )
 
     def _drain(self) -> None:
         latest: LiveEncounterPreviewSnapshot | None = None
@@ -217,7 +233,9 @@ class LiveEncounterPreviewWindow:
         self._root.after(100, self._drain)
 
     def _change_locale(self, _event: object) -> None:
-        self._render(self._on_locale(self._locale.get()))
+        locale_id = _LOCALE_IDS_BY_LABEL.get(self._locale.get())
+        if locale_id is not None:
+            self._render(self._on_locale(locale_id))
 
     def _copy_diagnostics(self) -> None:
         self._root.clipboard_clear()
@@ -226,3 +244,9 @@ class LiveEncounterPreviewWindow:
     def _close(self) -> None:
         self._on_close()
         self._root.destroy()
+
+
+def _locale_label(locale_id: str) -> str:
+    """Map only the two existing locale IDs to friendly control text."""
+
+    return _LOCALE_OPTIONS.get(locale_id, locale_id)

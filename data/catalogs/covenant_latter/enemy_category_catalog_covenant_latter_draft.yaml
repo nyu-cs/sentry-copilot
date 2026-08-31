@@ -1,0 +1,76 @@
+catalog_version: "draft-2026-08-29"
+scope_id: "covenant_latter_half"
+status: "draft runtime identity catalog currently consumed by the bounded JP MuMu INFO 1/2 preview; not final"
+
+enemy_categories:
+  - enemy_category_id: "enemy_type.covenant_latter.exceptional"
+    names: { zh_CN: "特异", en: "Exceptional", ja_JP: "特異" }
+    visual_reference:
+      local_filename: "enemy_category_exceptional.png"
+      prts_file_title: "特训敌人_特异.png"
+
+  - enemy_category_id: "enemy_type.covenant_latter.flying"
+    names: { zh_CN: "飞行", en: "Flying", ja_JP: "飛行" }
+    visual_reference:
+      local_filename: "enemy_category_flying.png"
+      prts_file_title: "特训敌人_飞行.png"
+
+  - enemy_category_id: "enemy_type.covenant_latter.hit_count"
+    names: { zh_CN: "频次", en: "Hit Count", ja_JP: "頻度" }
+    visual_reference:
+      local_filename: "enemy_category_hit_count.png"
+      prts_file_title: "特训敌人_频次.png"
+
+  - enemy_category_id: "enemy_type.covenant_latter.elemental"
+    names: { zh_CN: "元素", en: "Elemental", ja_JP: "元素" }
+    visual_reference:
+      local_filename: "enemy_category_elemental.png"
+      prts_file_title: "特训敌人_元素.png"
+
+  - enemy_category_id: "enemy_type.covenant_latter.persistent"
+    names: { zh_CN: "持续", en: "Persistent", ja_JP: "持続" }
+    visual_reference:
+      local_filename: "enemy_category_persistent.png"
+      prts_file_title: "特训敌人_持续.png"
+
+  - enemy_category_id: "enemy_type.covenant_latter.stealth"
+    names: { zh_CN: "隐匿", en: "Stealth", ja_JP: "潜行" }
+    visual_reference:
+      local_filename: "enemy_category_stealth.png"
+      prts_file_title: "特训敌人_隐匿.png"
+
+  - enemy_category_id: "enemy_type.covenant_latter.refraction"
+    names: { zh_CN: "折射", en: "Refraction", ja_JP: "屈折" }
+    visual_reference:
+      local_filename: "enemy_category_refraction.png"
+      prts_file_title: "特训敌人_折射.png"
+
+recognition_notes:
+  info_page:
+    live_observed_layout:
+      solo:
+        simulation_codes: ["AC-1", "AC-2", "AC-3"]
+        slot_count: 2
+      coop:
+        simulation_codes: ["AC-1", "AC-2", "AC-3"]
+        slot_count: 3
+      determination: "third-slot visual presence; independent of Difficulty"
+      ac_4: "not calibrated; no claim"
+    no_duplicates_expected: true
+    method: "visual_reference_matching"
+    jp_ocr_required: false
+    icons_static: true
+    expected_pool_size: 7
+  source_images:
+    role: "candidate clean references"
+    requires_live_validation_against_info_page: true
+  live_positive_validated:
+    - "enemy_type.covenant_latter.flying"
+    - "enemy_type.covenant_latter.persistent"
+    - "enemy_type.covenant_latter.stealth"
+    - "enemy_type.covenant_latter.hit_count"
+    - "enemy_type.covenant_latter.elemental"
+    - "enemy_type.covenant_latter.refraction"
+  not_yet_live_positive_validated:
+    - "enemy_type.covenant_latter.exceptional"
+  calibration_scope: "JP MuMu 1920x1080 INFO 1/2; private references and calibration remain private"

@@ -15,6 +15,7 @@ import numpy as np
 import numpy.typing as npt
 
 type BgrImage = npt.NDArray[np.uint8]
+type BgraImage = npt.NDArray[np.uint8]
 
 
 class ImageDecodeError(ValueError):
@@ -38,6 +39,20 @@ def load_bgr_image(path: str | Path) -> BgrImage:
     if image is None or not _is_bgr_image(image):
         raise ImageDecodeError(f"cannot decode image: {source}")
     return cast(BgrImage, image)
+
+
+def load_bgra_image(path: str | Path) -> BgraImage:
+    """Decode one explicit image as BGRA, preserving source alpha for mask-based matching."""
+
+    source = Path(path)
+    try:
+        encoded = source.read_bytes()
+    except OSError as error:
+        raise ImageDecodeError(f"cannot read image: {source}") from error
+    image = cv2.imdecode(np.frombuffer(encoded, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
+    if image is None or not _is_bgra_image(image):
+        raise ImageDecodeError(f"cannot decode alpha-bearing image: {source}")
+    return cast(BgraImage, image)
 
 
 def write_bgr_png(path: str | Path, image: BgrImage) -> Path:
@@ -67,6 +82,17 @@ def _is_bgr_image(image: object) -> bool:
         and image.dtype == np.uint8
         and image.ndim == 3
         and image.shape[2] == 3
+        and image.shape[0] > 0
+        and image.shape[1] > 0
+    )
+
+
+def _is_bgra_image(image: object) -> bool:
+    return (
+        isinstance(image, np.ndarray)
+        and image.dtype == np.uint8
+        and image.ndim == 3
+        and image.shape[2] == 4
         and image.shape[0] > 0
         and image.shape[1] > 0
     )
