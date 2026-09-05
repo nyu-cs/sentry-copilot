@@ -108,5 +108,13 @@ JP_MUMU_ENCOUNTER_MAP_CATALOG = EncounterMapCatalog(
             ),
             source_note="JP MuMu OPERATION retained-frame calibration",
         ),
+        DifficultyDefinition(
+            difficulty_id="difficulty.covenant_latter.ultimate",
+            simulation_codes=("AC-4",),
+            names=(LocalizedText(locale_id="zh_CN", text="终极模拟"),),
+            source_note=(
+                "JP live difficulty identity metadata; visual calibration is pending real material"
+            ),
+        ),
     ),
 )

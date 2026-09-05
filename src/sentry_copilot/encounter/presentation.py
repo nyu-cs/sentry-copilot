@@ -5,6 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .catalog import EncounterMapCatalog
+from .confirmed_banned_operators import (
+    ConfirmedBannedOperatorCatalog,
+    project_confirmed_banned_operator_rows,
+)
+from .major_covenant_ban_catalog import MajorCovenantPresentationCatalog
 from .models import EncounterCaptureItem, EncounterSession, LocalizedText, MapKnowledgeEntry
 
 _UI_TEXT: dict[str, dict[str, str]] = {
@@ -17,6 +22,8 @@ _UI_TEXT: dict[str, dict[str, str]] = {
         "banned_covenants": "禁用盟约",
         "not_captured": "尚未识别",
         "upcoming": "本版本暂未支持",
+        "major_ban_unresolved": "主盟约：尚未识别；追加盟约：本版本暂未支持",
+        "major_ban_captured": "{disabled}",
         "map_intel": "地图情报",
     },
     "en": {
@@ -28,6 +35,8 @@ _UI_TEXT: dict[str, dict[str, str]] = {
         "banned_covenants": "Bans",
         "not_captured": "Not captured",
         "upcoming": "Not supported in this preview",
+        "major_ban_unresolved": "Major: Not captured; Additional: Not supported in this preview",
+        "major_ban_captured": "{disabled}",
         "map_intel": "Map Intel",
     },
 }
@@ -49,6 +58,25 @@ class MapKnowledgeView:
 
 
 @dataclass(frozen=True)
+class ConfirmedBannedOperatorCardView:
+    """One compact Ban-detail card, independent from local Tk image objects."""
+
+    operator_id: str
+    display_name: str
+    tier: int
+    portrait_key: str | None
+
+
+@dataclass(frozen=True)
+class ConfirmedBannedOperatorRowView:
+    """One Covenant row; membership-valid cards may intentionally repeat across rows."""
+
+    covenant_id: str
+    display_name: str
+    operators: tuple[ConfirmedBannedOperatorCardView, ...]
+
+
+@dataclass(frozen=True)
 class EncounterPanelView:
     title: str
     progress_label: str
@@ -57,6 +85,7 @@ class EncounterPanelView:
     map_knowledge_heading: str | None
     difficulty_label: str
     difficulty_value: str | None
+    confirmed_banned_operator_rows: tuple[ConfirmedBannedOperatorRowView, ...]
 
 
 def present_encounter(
@@ -64,6 +93,8 @@ def present_encounter(
     catalog: EncounterMapCatalog,
     *,
     locale_id: str,
+    major_covenant_catalog: MajorCovenantPresentationCatalog | None = None,
+    confirmed_banned_operator_catalog: ConfirmedBannedOperatorCatalog | None = None,
 ) -> EncounterPanelView:
     """Build an immutable preview view; absent knowledge is ordinary, not an error."""
 
@@ -86,6 +117,7 @@ def present_encounter(
                 EncounterCaptureItem.DIFFICULTY,
                 EncounterCaptureItem.BOSS,
                 EncounterCaptureItem.ENEMY_TYPES,
+                EncounterCaptureItem.BANNED_COVENANTS,
             },
             value=(
                 difficulty_value
@@ -101,14 +133,23 @@ def present_encounter(
                             if item is EncounterCaptureItem.ENEMY_TYPES
                             and session.enemy_type_ids is not None
                             else (
-                                strings["not_captured"]
-                                if item
-                                in {
-                                    EncounterCaptureItem.DIFFICULTY,
-                                    EncounterCaptureItem.BOSS,
-                                    EncounterCaptureItem.ENEMY_TYPES,
-                                }
-                                else strings["upcoming"]
+                                _major_ban_value(
+                                    session,
+                                    major_covenant_catalog,
+                                    locale_id,
+                                    strings,
+                                )
+                                if item is EncounterCaptureItem.BANNED_COVENANTS
+                                else (
+                                    strings["not_captured"]
+                                    if item
+                                    in {
+                                        EncounterCaptureItem.DIFFICULTY,
+                                        EncounterCaptureItem.BOSS,
+                                        EncounterCaptureItem.ENEMY_TYPES,
+                                    }
+                                    else strings["upcoming"]
+                                )
                             )
                         )
                     )
@@ -132,6 +173,10 @@ def present_encounter(
         map_knowledge_heading=strings["map_intel"] if views else None,
         difficulty_label=strings["difficulty"],
         difficulty_value=difficulty_value,
+        confirmed_banned_operator_rows=_confirmed_banned_operator_rows(
+            session,
+            confirmed_banned_operator_catalog,
+        ),
     )
 
 
@@ -199,3 +244,58 @@ def _enemy_value(session: EncounterSession, catalog: EncounterMapCatalog, locale
         for enemy_id in session.enemy_type_ids or ()
         for definition in (catalog.enemy_category_by_id(enemy_id),)
     )
+
+
+def _major_ban_value(
+    session: EncounterSession,
+    catalog: MajorCovenantPresentationCatalog | None,
+    locale_id: str,
+    strings: dict[str, str],
+) -> str:
+    snapshot = session.major_covenant_ban
+    if snapshot is None:
+        return strings["major_ban_unresolved"]
+    names = tuple(
+        _major_covenant_name(covenant_id, catalog, locale_id)
+        for covenant_id in snapshot.disabled_covenant_ids
+    )
+    separator = "、" if locale_id == "zh_CN" else ", "
+    return strings["major_ban_captured"].format(disabled=separator.join(names))
+
+
+def _confirmed_banned_operator_rows(
+    session: EncounterSession,
+    catalog: ConfirmedBannedOperatorCatalog | None,
+) -> tuple[ConfirmedBannedOperatorRowView, ...]:
+    """Project existing confirmed-Ban rows into presentation-only operator cards."""
+
+    snapshot = session.major_covenant_ban
+    if snapshot is None or catalog is None:
+        return ()
+    states = {item.covenant_id: item.state for item in snapshot.covenant_states}
+    rows = project_confirmed_banned_operator_rows(states, catalog)
+    return tuple(
+        ConfirmedBannedOperatorRowView(
+            covenant_id=row.covenant_id,
+            display_name=row.covenant_name_zh_CN,
+            operators=tuple(
+                ConfirmedBannedOperatorCardView(
+                    operator_id=operator.operator_id,
+                    display_name=operator.name_zh_CN,
+                    tier=operator.tier,
+                    portrait_key=f"prts:{operator.name_zh_CN}",
+                )
+                for operator in row.operators
+            ),
+        )
+        for row in rows
+    )
+
+
+def _major_covenant_name(
+    covenant_id: str,
+    catalog: MajorCovenantPresentationCatalog | None,
+    locale_id: str,
+) -> str:
+    definition = catalog.by_id(covenant_id) if catalog is not None else None
+    return _localized(definition.names, locale_id) if definition is not None else covenant_id

@@ -18,8 +18,6 @@ from sentry_copilot.vision.viewport import ContentViewport, PixelRoi
 JP_MUMU_DIFFICULTY_RECOVERY_PROFILE_ID = "jp_mumu_fullscreen_1920x1080.difficulty_recovery.v1"
 POST_START_DIFFICULTY_ROI = PixelRoi(145, 35, 220, 70)
 OPERATION_SPLASH_DIFFICULTY_ROI = PixelRoi(720, 470, 480, 300)
-POST_START_SCORE_THRESHOLD = 0.90
-POST_START_MARGIN_THRESHOLD = 0.15
 OPERATION_SPLASH_SCORE_THRESHOLD = 0.90
 OPERATION_SPLASH_MARGIN_THRESHOLD = 0.15
 
@@ -30,6 +28,7 @@ class DifficultyRecoverySource(StrEnum):
 
 
 class DifficultyRecoveryState(StrEnum):
+    CANDIDATE = "candidate"
     RELIABLE = "reliable"
     UNRESOLVED = "unresolved"
 
@@ -42,15 +41,15 @@ class DifficultyRecoveryReferencePack:
     operation_splash_templates: tuple[VisualReference, ...]
 
     def __post_init__(self) -> None:
-        for templates, label in (
-            (self.post_start_templates, "post-start"),
-            (self.operation_splash_templates, "OPERATION splash"),
-        ):
-            template_ids = {item.identity_id for item in templates}
-            if not templates or template_ids != set(INFO_DIFFICULTY_IDS):
-                raise ValueError(
-                    f"{label} Difficulty templates must cover exactly the supported IDs"
-                )
+        if {item.identity_id for item in self.post_start_templates} != set(INFO_DIFFICULTY_IDS):
+            raise ValueError(
+                "post-start Difficulty templates must cover all four supported identities"
+            )
+        operation_ids = {item.identity_id for item in self.operation_splash_templates}
+        if not self.operation_splash_templates or len(operation_ids) < 2:
+            raise ValueError(
+                "OPERATION splash Difficulty templates must cover at least two identities"
+            )
 
 
 @dataclass(frozen=True)
@@ -68,23 +67,40 @@ class DifficultyRecoveryObservation:
             return None
         return self.ranking[0].identity_id if self.ranking else None
 
+    @property
+    def candidate_id(self) -> str | None:
+        """Top color identity candidate; caller-owned page semantics authorize it."""
+
+        return self.ranking[0].identity_id if self.ranking else None
+
 
 def observe_jp_mumu_post_start_difficulty(
     frame: Frame,
     viewport: ContentViewport,
     references: DifficultyRecoveryReferencePack | None,
 ) -> DifficultyRecoveryObservation:
-    """Observe the visible top-left Difficulty only; no generic 2/2 page detector exists."""
+    """Rank frozen color identity evidence; semantic INFO-2/2 authorizes its use."""
 
-    return _observe(
-        frame,
-        viewport,
-        references,
+    if (
+        references is None
+        or (frame.width, frame.height) != (1920, 1080)
+        or viewport.pixel_roi != PixelRoi(0, 0, 1920, 1080)
+    ):
+        return DifficultyRecoveryObservation(
+            DifficultyRecoverySource.POST_START_VISUAL,
+            DifficultyRecoveryState.UNRESOLVED,
+            frame.frame_id,
+        )
+    from sentry_copilot.vision.color_difficulty import rank_frozen_color_difficulty
+
+    ranking = rank_frozen_color_difficulty(
+        _crop(frame, POST_START_DIFFICULTY_ROI), references.post_start_templates
+    )
+    return DifficultyRecoveryObservation(
         DifficultyRecoverySource.POST_START_VISUAL,
-        POST_START_DIFFICULTY_ROI,
-        POST_START_SCORE_THRESHOLD,
-        POST_START_MARGIN_THRESHOLD,
-        () if references is None else references.post_start_templates,
+        DifficultyRecoveryState.CANDIDATE if ranking else DifficultyRecoveryState.UNRESOLVED,
+        frame.frame_id,
+        ranking,
     )
 
 
@@ -148,7 +164,7 @@ def _rank_variants(
             for item in templates
             if item.identity_id == identity_id
         )
-        for identity_id in INFO_DIFFICULTY_IDS
+        for identity_id in dict.fromkeys(item.identity_id for item in templates)
     }
     return tuple(
         RankedVisualCandidate(identity_id, score)

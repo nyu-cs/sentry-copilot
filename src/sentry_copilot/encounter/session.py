@@ -20,6 +20,8 @@ from .models import (
     EncounterSession,
     EnemyTypeCaptureConflict,
     EnemyTypeCaptureSource,
+    MajorCovenantBanCaptureConflict,
+    MajorCovenantBanSnapshot,
 )
 
 
@@ -168,9 +170,7 @@ def apply_boss_capture(
         return EncounterSessionUpdate(session, EncounterUpdateStatus.UNRESOLVED)
     if session.boss_id is None:
         return EncounterSessionUpdate(
-            session.model_copy(
-                update={"boss_id": boss_id, "boss_capture_source": source}
-            ),
+            session.model_copy(update={"boss_id": boss_id, "boss_capture_source": source}),
             EncounterUpdateStatus.CAPTURED,
         )
     if session.boss_id == boss_id:
@@ -220,6 +220,39 @@ def apply_enemy_type_capture(
                 "enemy_type_conflict": EnemyTypeCaptureConflict(
                     existing_enemy_type_ids=session.enemy_type_ids,
                     conflicting_enemy_type_ids=enemy_type_ids,
+                )
+            }
+        ),
+        EncounterUpdateStatus.CONFLICT,
+    )
+
+
+def apply_major_covenant_ban_capture(
+    session: EncounterSession,
+    snapshot: MajorCovenantBanSnapshot | None,
+) -> EncounterSessionUpdate:
+    """Persist Major/Core Ban evidence without completing the global Ban item.
+
+    Additional Covenant Ban evidence is intentionally absent from this bounded slice, so this
+    function never writes ``banned_covenant_ids`` and never changes ordinary Ban progress.
+    """
+
+    if snapshot is None:
+        return EncounterSessionUpdate(session, EncounterUpdateStatus.UNRESOLVED)
+    if session.major_covenant_ban is None:
+        return EncounterSessionUpdate(
+            session.model_copy(update={"major_covenant_ban": snapshot}),
+            EncounterUpdateStatus.CAPTURED,
+        )
+    existing = session.major_covenant_ban
+    if existing.covenant_states == snapshot.covenant_states:
+        return EncounterSessionUpdate(session, EncounterUpdateStatus.PRESERVED)
+    return EncounterSessionUpdate(
+        session.model_copy(
+            update={
+                "major_covenant_ban_conflict": MajorCovenantBanCaptureConflict(
+                    existing_disabled_covenant_ids=existing.disabled_covenant_ids,
+                    conflicting_disabled_covenant_ids=snapshot.disabled_covenant_ids,
                 )
             }
         ),

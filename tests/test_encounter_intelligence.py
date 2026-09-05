@@ -245,6 +245,27 @@ def test_jp_catalog_does_not_define_ac_3_as_a_battlefield() -> None:
     assert definition.difficulty_id == "difficulty.covenant_latter.deadland"
 
 
+def test_jp_catalog_knows_ultimate_ac_4_without_treating_it_as_a_battlefield() -> None:
+    assert JP_MUMU_ENCOUNTER_MAP_CATALOG.by_code("AC-4") is None
+    definition = JP_MUMU_ENCOUNTER_MAP_CATALOG.difficulty_by_simulation_code("AC-4")
+
+    assert definition is not None
+    assert definition.difficulty_id == "difficulty.covenant_latter.ultimate"
+    assert definition.names == (LocalizedText(locale_id="zh_CN", text="终极模拟"),)
+
+    session = begin_encounter("encounter.ultimate.presentation").model_copy(
+        update={
+            "captured_difficulty": CapturedDifficulty(
+                difficulty_id=definition.difficulty_id,
+                simulation_code="AC-4",
+            )
+        }
+    )
+    view = present_encounter(session, JP_MUMU_ENCOUNTER_MAP_CATALOG, locale_id="zh_CN")
+    assert view.items[0].value == "终极模拟"
+    assert view.progress_label == "1 / 5"
+
+
 def test_initial_presentation_marks_difficulty_as_not_captured_not_unsupported() -> None:
     catalog = EncounterMapCatalog(definitions=())
 
@@ -254,10 +275,12 @@ def test_initial_presentation_marks_difficulty_as_not_captured_not_unsupported()
     assert zh_view.progress_label == "0 / 5"
     assert zh_view.items[0].label == "难度"
     assert zh_view.items[0].value == "尚未识别"
-    assert zh_view.items[3].value == "本版本暂未支持"
+    assert zh_view.items[3].value == "主盟约：尚未识别；追加盟约：本版本暂未支持"
     assert en_view.items[0].label == "Difficulty"
     assert en_view.items[0].value == "Not captured"
-    assert en_view.items[3].value == "Not supported in this preview"
+    assert en_view.items[3].value == (
+        "Major: Not captured; Additional: Not supported in this preview"
+    )
 
 
 def test_presentation_has_exactly_one_difficulty_in_the_five_ordinary_rows() -> None:

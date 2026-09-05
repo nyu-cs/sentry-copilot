@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import numpy as np
+import pytest
 
 from sentry_copilot.capture.frame_source import Frame, FrameSourceType
 from sentry_copilot.vision.difficulty_recovery import (
@@ -72,6 +73,38 @@ def _pack() -> DifficultyRecoveryReferencePack:
     return DifficultyRecoveryReferencePack(post, operation)
 
 
+def test_post_start_reference_pack_requires_all_four_logical_identities() -> None:
+    valid = _pack()
+
+    assert len(valid.post_start_templates) == 4
+    assert {item.identity_id for item in valid.post_start_templates} == set(INFO_DIFFICULTY_IDS)
+
+    with pytest.raises(ValueError, match="all four supported identities"):
+        DifficultyRecoveryReferencePack(
+            valid.post_start_templates[:-1], valid.operation_splash_templates
+        )
+
+
+def test_post_start_reference_pack_allows_duplicate_physical_variants() -> None:
+    valid = _pack()
+
+    pack = DifficultyRecoveryReferencePack(
+        (valid.post_start_templates[0],) + valid.post_start_templates,
+        valid.operation_splash_templates,
+    )
+
+    assert len(pack.post_start_templates) == 5
+    assert {item.identity_id for item in pack.post_start_templates} == set(INFO_DIFFICULTY_IDS)
+
+
+def test_operation_reference_pack_keeps_its_existing_independent_contract() -> None:
+    valid = _pack()
+
+    DifficultyRecoveryReferencePack(
+        valid.post_start_templates, valid.operation_splash_templates[:2]
+    )
+
+
 def _with_roi(frame: Frame, roi_x: int, roi_y: int, image: np.ndarray) -> Frame:
     payload = np.array(frame.image, copy=True)
     height, width = image.shape[:2]
@@ -90,7 +123,7 @@ def _with_roi(frame: Frame, roi_x: int, roi_y: int, image: np.ndarray) -> Frame:
     )
 
 
-def test_post_start_ranks_a_visible_top_bar_and_rejects_an_absent_region() -> None:
+def test_post_start_ranks_a_visible_top_bar_as_a_candidate_without_a_local_gate() -> None:
     pack = _pack()
     frame = _with_roi(
         _frame(1),
@@ -105,10 +138,10 @@ def test_post_start_ranks_a_visible_top_bar_and_rejects_an_absent_region() -> No
         absent_frame, ContentViewport.full_frame(absent_frame), pack
     )
 
-    assert present.state is DifficultyRecoveryState.RELIABLE
-    assert present.reliable_id == INFO_DIFFICULTY_IDS[1]
-    assert absent.state is DifficultyRecoveryState.UNRESOLVED
-    assert absent.reliable_id is None
+    assert present.state is DifficultyRecoveryState.CANDIDATE
+    assert present.candidate_id == INFO_DIFFICULTY_IDS[1]
+    assert absent.state is DifficultyRecoveryState.CANDIDATE
+    assert absent.candidate_id is not None
 
 
 def test_operation_splash_ranks_the_central_panel() -> None:
@@ -126,3 +159,35 @@ def test_operation_splash_ranks_the_central_panel() -> None:
 
     assert observation.state is DifficultyRecoveryState.RELIABLE
     assert observation.reliable_id == INFO_DIFFICULTY_IDS[2]
+
+
+def test_operation_splash_can_add_a_calibrated_identity_without_post_start_support() -> None:
+    base = _pack()
+    ultimate_id = "difficulty.covenant_latter.ultimate"
+    ultimate = VisualReference(
+        ultimate_id,
+        _image(
+            3,
+            size=(
+                OPERATION_SPLASH_DIFFICULTY_ROI.width,
+                OPERATION_SPLASH_DIFFICULTY_ROI.height,
+            ),
+        ),
+    )
+    pack = DifficultyRecoveryReferencePack(
+        base.post_start_templates,
+        base.operation_splash_templates + (ultimate,),
+    )
+    frame = _with_roi(
+        _frame(4),
+        OPERATION_SPLASH_DIFFICULTY_ROI.x,
+        OPERATION_SPLASH_DIFFICULTY_ROI.y,
+        ultimate.image,
+    )
+
+    observation = observe_jp_mumu_operation_splash_difficulty(
+        frame, ContentViewport.full_frame(frame), pack
+    )
+
+    assert observation.state is DifficultyRecoveryState.RELIABLE
+    assert observation.reliable_id == ultimate_id

@@ -42,6 +42,34 @@ class EnemyTypeCaptureSource(StrEnum):
     RETURNED_INFO_VISUAL = "returned_info_visual"
 
 
+class CovenantBanState(StrEnum):
+    """The pre-run Ban presentation for one Covenant, not runtime activation."""
+
+    UNRESTRICTED = "unrestricted"
+    DISABLED = "disabled"
+    UNRESOLVED = "unresolved"
+
+
+class MajorCovenantBanCaptureSource(StrEnum):
+    """Visual source for a complete Major/Core-only Ban snapshot."""
+
+    INITIAL_INFO_VISUAL = "initial_info_visual"
+
+
+MAJOR_COVENANT_IDS = frozenset(
+    {
+        "covenant.covenant_latter.sargon",
+        "covenant.covenant_latter.laterano",
+        "covenant.covenant_latter.aegir",
+        "covenant.covenant_latter.siracusa",
+        "covenant.covenant_latter.kazimierz",
+        "covenant.covenant_latter.yan",
+        "covenant.covenant_latter.victoria",
+        "covenant.covenant_latter.kjerag",
+    }
+)
+
+
 class MapKnowledgeCategory(StrEnum):
     TERRAIN = "terrain"
     DEPLOYMENT = "deployment"
@@ -172,6 +200,54 @@ class EnemyCategoryDefinition(BaseModel):
         return self
 
 
+class MajorCovenantBanStateEntry(BaseModel):
+    """One fully resolved Major/Core pre-run Ban state."""
+
+    model_config = ConfigDict(frozen=True)
+
+    covenant_id: str
+    state: CovenantBanState
+
+    @model_validator(mode="after")
+    def valid_resolved_major(self) -> MajorCovenantBanStateEntry:
+        if self.covenant_id not in MAJOR_COVENANT_IDS:
+            raise ValueError("Major Ban state must use one supported Major/Core Covenant ID")
+        if self.state is CovenantBanState.UNRESOLVED:
+            raise ValueError("captured Major Ban states must be resolved")
+        return self
+
+
+class MajorCovenantBanSnapshot(BaseModel):
+    """A complete eight-Core pre-run Ban observation; Additional remains deliberately absent."""
+
+    model_config = ConfigDict(frozen=True)
+
+    covenant_states: tuple[MajorCovenantBanStateEntry, ...]
+    capture_source: MajorCovenantBanCaptureSource = (
+        MajorCovenantBanCaptureSource.INITIAL_INFO_VISUAL
+    )
+
+    @model_validator(mode="after")
+    def complete_major_structure(self) -> MajorCovenantBanSnapshot:
+        identities = tuple(item.covenant_id for item in self.covenant_states)
+        if len(identities) != 8 or set(identities) != MAJOR_COVENANT_IDS:
+            raise ValueError("Major Ban snapshot requires every supported Major/Core Covenant once")
+        disabled = sum(item.state is CovenantBanState.DISABLED for item in self.covenant_states)
+        if disabled != 3:
+            raise ValueError(
+                "Major Ban snapshot requires exactly five unrestricted and three disabled"
+            )
+        return self
+
+    @property
+    def disabled_covenant_ids(self) -> tuple[str, ...]:
+        return tuple(
+            item.covenant_id
+            for item in self.covenant_states
+            if item.state is CovenantBanState.DISABLED
+        )
+
+
 class CapturedMap(BaseModel):
     """One durable, normalized map capture for an encounter session."""
 
@@ -234,6 +310,15 @@ class EnemyTypeCaptureConflict(BaseModel):
     conflicting_enemy_type_ids: tuple[str, ...]
 
 
+class MajorCovenantBanCaptureConflict(BaseModel):
+    """A later complete Major Ban observation that cannot replace captured evidence."""
+
+    model_config = ConfigDict(frozen=True)
+
+    existing_disabled_covenant_ids: tuple[str, ...]
+    conflicting_disabled_covenant_ids: tuple[str, ...]
+
+
 class EncounterSession(BaseModel):
     """Immutable encounter-static facts, deliberately independent from player count and slots."""
 
@@ -250,6 +335,8 @@ class EncounterSession(BaseModel):
     enemy_type_ids: tuple[str, ...] | None = None
     enemy_type_capture_source: EnemyTypeCaptureSource | None = None
     enemy_type_conflict: EnemyTypeCaptureConflict | None = None
+    major_covenant_ban: MajorCovenantBanSnapshot | None = None
+    major_covenant_ban_conflict: MajorCovenantBanCaptureConflict | None = None
     banned_covenant_ids: tuple[str, ...] | None = None
     secret_boss_id: str | None = None
 

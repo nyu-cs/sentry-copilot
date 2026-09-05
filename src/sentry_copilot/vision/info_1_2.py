@@ -25,15 +25,16 @@ BOSS_SCORE_THRESHOLD = 0.30
 BOSS_MARGIN_THRESHOLD = 0.035
 ENEMY_SCORE_THRESHOLD = 0.70
 ENEMY_MARGIN_THRESHOLD = 0.20
-INFO_DIFFICULTY_SCORE_THRESHOLD = 0.80
-INFO_DIFFICULTY_MARGIN_THRESHOLD = 0.20
 TWO_SLOT_RATIO_MAX = 0.01
 THREE_SLOT_RATIO_MIN = 0.10
-INFO_DIFFICULTY_IDS = (
+KNOWN_DIFFICULTY_IDS = (
     "difficulty.covenant_latter.standard",
     "difficulty.covenant_latter.adversity",
     "difficulty.covenant_latter.deadland",
+    "difficulty.covenant_latter.ultimate",
 )
+CALIBRATED_INFO_DIFFICULTY_IDS = KNOWN_DIFFICULTY_IDS
+INFO_DIFFICULTY_IDS = KNOWN_DIFFICULTY_IDS
 
 
 class Info12State(StrEnum):
@@ -100,7 +101,7 @@ class Info12ReferencePack:
         if self.difficulties and {
             item.identity_id for item in self.difficulties
         } != set(INFO_DIFFICULTY_IDS):
-            raise ValueError("INFO difficulty references must be Standard, Adversity, and Deadland")
+            raise ValueError("INFO difficulty references must cover all four supported identities")
 
 
 @dataclass(frozen=True)
@@ -137,11 +138,15 @@ class Info12Observation:
 
     @property
     def reliable_difficulty_id(self) -> str | None:
-        return _reliable(
-            self.difficulty_ranking,
-            INFO_DIFFICULTY_SCORE_THRESHOLD,
-            INFO_DIFFICULTY_MARGIN_THRESHOLD,
-        )
+        """Compatibility projection; callers must apply semantic authorization."""
+
+        return self.difficulty_candidate_id
+
+    @property
+    def difficulty_candidate_id(self) -> str | None:
+        """Frozen color identity candidate without a local score/margin gate."""
+
+        return self.difficulty_ranking[0].identity_id if self.difficulty_ranking else None
 
 
 def observe_jp_mumu_info_1_2(
@@ -174,7 +179,7 @@ def observe_jp_mumu_info_1_2(
         _rank_ncc(_crop(frame, BOSS_ROI), pack.bosses),
         tuple(_rank_shape(_crop(frame, roi), pack.enemy_categories) for roi in slots),
         layout,
-        _rank_ncc(_crop(frame, INFO_DIFFICULTY_ROI), pack.difficulties)
+        _rank_frozen_color_difficulty(_crop(frame, INFO_DIFFICULTY_ROI), pack.difficulties)
         if pack.difficulties
         else (),
         slot_three_ratio,
@@ -227,6 +232,16 @@ def _rank_ncc(
             reverse=True,
         )
     )
+
+
+def _rank_frozen_color_difficulty(
+    query: ImageArray, references: tuple[VisualReference, ...]
+) -> tuple[RankedVisualCandidate, ...]:
+    """Use the frozen four-way identity feature; no local acceptance threshold."""
+
+    from sentry_copilot.vision.color_difficulty import rank_frozen_color_difficulty
+
+    return rank_frozen_color_difficulty(query, references)
 
 
 def _query_mask(image: ImageArray) -> np.ndarray:

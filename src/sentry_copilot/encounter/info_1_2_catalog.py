@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, cast
 
@@ -13,11 +13,67 @@ from sentry_copilot.encounter.models import BossDefinition, EnemyCategoryDefinit
 from sentry_copilot.image_io import load_bgr_image, load_bgra_image
 from sentry_copilot.vision.info_1_2 import (
     INFO_DIFFICULTY_IDS,
+    KNOWN_DIFFICULTY_IDS,
     EnemyVisualReference,
     Info12ReferencePack,
     VisualReference,
     crop_info_difficulty_reference,
 )
+
+
+@dataclass(frozen=True)
+class PrivateInfoDifficultyReferenceRegistration:
+    """One declared private calibration asset; ``None`` reserves an uncalibrated identity."""
+
+    difficulty_id: str
+    relative_path: Path | None
+
+
+# Frozen before independent PARTY1/PARTY2 holdout validation. Paths are relative
+# to ``data/private`` and are explicit: this loader never discovers assets.
+PRIVATE_INFO_DIFFICULTY_REFERENCE_REGISTRATIONS = (
+    PrivateInfoDifficultyReferenceRegistration(
+        "difficulty.covenant_latter.standard",
+        Path("visual_catalogs/covenant_latter/calibration/solo_info_difficulty/adjacent/standard_solo/00-00-06-000_info-a.png"),
+    ),
+    PrivateInfoDifficultyReferenceRegistration(
+        "difficulty.covenant_latter.standard",
+        Path("visual_catalogs/covenant_latter/calibration/solo_info_difficulty/adjacent/standard_coop4/00-00-28-300_info-a.png"),
+    ),
+    PrivateInfoDifficultyReferenceRegistration(
+        "difficulty.covenant_latter.adversity",
+        Path("visual_catalogs/covenant_latter/calibration/solo_info_difficulty/adjacent/adversity_solo/00-00-05-300_info-a.png"),
+    ),
+    PrivateInfoDifficultyReferenceRegistration(
+        "difficulty.covenant_latter.deadland",
+        Path("visual_catalogs/covenant_latter/calibration/solo_info_difficulty/adjacent/deadland_solo/00-00-08-100_info-a.png"),
+    ),
+    PrivateInfoDifficultyReferenceRegistration(
+        "difficulty.covenant_latter.deadland",
+        Path("live_validation/info_1_2_deadland_variant_calibration/frames/deadland_coop3_transition/00-00-07-700_fade-b.png"),
+    ),
+    PrivateInfoDifficultyReferenceRegistration(
+        "difficulty.covenant_latter.ultimate",
+        Path("live_validation/ac4_ultimate_calibration/ac4_ultimate_solo_001_2026-09-04_16-12-33/frames/info_1_2/00-00-05-000_info_05_0.png"),
+    ),
+)
+
+
+def calibrated_info_difficulty_reference_registrations(
+) -> tuple[PrivateInfoDifficultyReferenceRegistration, ...]:
+    """Return only explicitly declared production-calibrated reference registrations."""
+
+    registrations = tuple(
+        item for item in PRIVATE_INFO_DIFFICULTY_REFERENCE_REGISTRATIONS if item.relative_path
+    )
+    if {item.difficulty_id for item in registrations} != set(INFO_DIFFICULTY_IDS):
+        raise ValueError("declared INFO Difficulty references do not match calibrated identities")
+    all_registered_ids = {
+        item.difficulty_id for item in PRIVATE_INFO_DIFFICULTY_REFERENCE_REGISTRATIONS
+    }
+    if all_registered_ids != set(KNOWN_DIFFICULTY_IDS):
+        raise ValueError("declared INFO Difficulty registrations do not match known identities")
+    return registrations
 
 
 def load_info_1_2_resources(
@@ -39,39 +95,24 @@ def load_info_1_2_resources(
             load_bgr_image(anchor),
             tuple(_reference(item, boss_root, "boss_id") for item in bosses_raw),
             tuple(_enemy_reference(item, enemy_root) for item in enemies_raw),
-            (
-                VisualReference(
-                    "difficulty.covenant_latter.standard",
-                    crop_info_difficulty_reference(
-                        load_bgr_image(
-                            anchor.parent.parent.parent
-                            / "solo_info_difficulty/adjacent/standard_solo/00-00-06-000_info-a.png"
-                        )
-                    ),
-                ),
-                VisualReference(
-                    "difficulty.covenant_latter.adversity",
-                    crop_info_difficulty_reference(
-                        load_bgr_image(
-                            anchor.parent.parent.parent
-                            / "solo_info_difficulty/adjacent/adversity_solo/00-00-05-300_info-a.png"
-                        )
-                    ),
-                ),
-                VisualReference(
-                    "difficulty.covenant_latter.deadland",
-                    crop_info_difficulty_reference(
-                        load_bgr_image(
-                            anchor.parent.parent.parent
-                            / "solo_info_difficulty/adjacent/deadland_solo/00-00-08-100_info-a.png"
-                        )
-                    ),
-                ),
-            ),
+            _load_declared_difficulty_references(Path("data/private")),
         )
         return replace(base, bosses=bosses, enemy_categories=enemies), pack
     except KeyError as error:
         raise ValueError("INFO catalog is missing a required record field") from error
+
+
+def _load_declared_difficulty_references(calibration_root: Path) -> tuple[VisualReference, ...]:
+    """Load only currently calibrated, explicitly named private assets."""
+
+    return tuple(
+        VisualReference(
+            item.difficulty_id,
+            crop_info_difficulty_reference(load_bgr_image(calibration_root / item.relative_path)),
+        )
+        for item in calibrated_info_difficulty_reference_registrations()
+        if item.relative_path is not None
+    )
 
 
 def load_default_private_info_1_2_resources(
@@ -89,20 +130,7 @@ def load_default_private_info_1_2_resources(
         root / "private/visual_catalogs/covenant_latter/enemy_category",
         base,
     )
-    deadland_variant = root / (
-        "private/live_validation/info_1_2_deadland_variant_calibration/"
-        "references/deadland_variant_coop3_00-00-07-700.png"
-    )
-    return catalog, replace(
-        pack,
-        difficulties=pack.difficulties
-        + (
-            VisualReference(
-                "difficulty.covenant_latter.deadland",
-                load_bgr_image(deadland_variant),
-            ),
-        ),
-    )
+    return catalog, pack
 
 
 def _mapping(path: Path) -> dict[str, Any]:

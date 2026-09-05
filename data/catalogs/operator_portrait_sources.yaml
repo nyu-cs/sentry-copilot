@@ -1,0 +1,675 @@
+schema_version: '0.1'
+catalog_kind: operator_portrait_sources
+portrait_sources:
+- portrait_key: prts:隐现
+  name_zh_CN: 隐现
+  provider: PRTS
+  file_title: 头像 隐现.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%9A%90%E7%8E%B0.png
+  base_variant: elite_0
+- portrait_key: prts:角峰
+  name_zh_CN: 角峰
+  provider: PRTS
+  file_title: 头像 角峰.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%A7%92%E5%B3%B0.png
+  base_variant: elite_0
+- portrait_key: prts:惊蛰
+  name_zh_CN: 惊蛰
+  provider: PRTS
+  file_title: 头像 惊蛰.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%83%8A%E8%9B%B0.png
+  base_variant: elite_0
+- portrait_key: prts:深巡
+  name_zh_CN: 深巡
+  provider: PRTS
+  file_title: 头像 深巡.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%B7%B1%E5%B7%A1.png
+  base_variant: elite_0
+- portrait_key: prts:刺玫
+  name_zh_CN: 刺玫
+  provider: PRTS
+  file_title: 头像 刺玫.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%88%BA%E7%8E%AB.png
+  base_variant: elite_0
+- portrait_key: prts:普罗旺斯
+  name_zh_CN: 普罗旺斯
+  provider: PRTS
+  file_title: 头像 普罗旺斯.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%99%AE%E7%BD%97%E6%97%BA%E6%96%AF.png
+  base_variant: elite_0
+- portrait_key: prts:德克萨斯
+  name_zh_CN: 德克萨斯
+  provider: PRTS
+  file_title: 头像 德克萨斯.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%BE%B7%E5%85%8B%E8%90%A8%E6%96%AF.png
+  base_variant: elite_0
+- portrait_key: prts:跃跃
+  name_zh_CN: 跃跃
+  provider: PRTS
+  file_title: 头像 跃跃.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%B7%83%E8%B7%83.png
+  base_variant: elite_0
+- portrait_key: prts:古米
+  name_zh_CN: 古米
+  provider: PRTS
+  file_title: 头像 古米.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%8F%A4%E7%B1%B3.png
+  base_variant: elite_0
+- portrait_key: prts:艾丝黛尔
+  name_zh_CN: 艾丝黛尔
+  provider: PRTS
+  file_title: 头像 艾丝黛尔.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%89%BE%E4%B8%9D%E9%BB%9B%E5%B0%94.png
+  base_variant: elite_0
+- portrait_key: prts:波登可
+  name_zh_CN: 波登可
+  provider: PRTS
+  file_title: 头像 波登可.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%B3%A2%E7%99%BB%E5%8F%AF.png
+  base_variant: elite_0
+- portrait_key: prts:格雷伊
+  name_zh_CN: 格雷伊
+  provider: PRTS
+  file_title: 头像 格雷伊.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%A0%BC%E9%9B%B7%E4%BC%8A.png
+  base_variant: elite_0
+- portrait_key: prts:深靛
+  name_zh_CN: 深靛
+  provider: PRTS
+  file_title: 头像 深靛.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%B7%B1%E9%9D%9B.png
+  base_variant: elite_0
+- portrait_key: prts:宴
+  name_zh_CN: 宴
+  provider: PRTS
+  file_title: 头像 宴.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%AE%B4.png
+  base_variant: elite_0
+- portrait_key: prts:野鬃
+  name_zh_CN: 野鬃
+  provider: PRTS
+  file_title: 头像 野鬃.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%87%8E%E9%AC%83.png
+  base_variant: elite_0
+- portrait_key: prts:雷蛇
+  name_zh_CN: 雷蛇
+  provider: PRTS
+  file_title: 头像 雷蛇.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%9B%B7%E8%9B%87.png
+  base_variant: elite_0
+- portrait_key: prts:送葬人
+  name_zh_CN: 送葬人
+  provider: PRTS
+  file_title: 头像 送葬人.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%80%81%E8%91%AC%E4%BA%BA.png
+  base_variant: elite_0
+- portrait_key: prts:赫默
+  name_zh_CN: 赫默
+  provider: PRTS
+  file_title: 头像 赫默.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%B5%AB%E9%BB%98.png
+  base_variant: elite_0
+- portrait_key: prts:小满
+  name_zh_CN: 小满
+  provider: PRTS
+  file_title: 头像 小满.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%B0%8F%E6%BB%A1.png
+  base_variant: elite_0
+- portrait_key: prts:哈洛德
+  name_zh_CN: 哈洛德
+  provider: PRTS
+  file_title: 头像 哈洛德.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%93%88%E6%B4%9B%E5%BE%B7.png
+  base_variant: elite_0
+- portrait_key: prts:莎草
+  name_zh_CN: 莎草
+  provider: PRTS
+  file_title: 头像 莎草.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%8E%8E%E8%8D%89.png
+  base_variant: elite_0
+- portrait_key: prts:幽灵鲨
+  name_zh_CN: 幽灵鲨
+  provider: PRTS
+  file_title: 头像 幽灵鲨.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%B9%BD%E7%81%B5%E9%B2%A8.png
+  base_variant: elite_0
+- portrait_key: prts:泡泡
+  name_zh_CN: 泡泡
+  provider: PRTS
+  file_title: 头像 泡泡.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%B3%A1%E6%B3%A1.png
+  base_variant: elite_0
+- portrait_key: prts:休谟斯
+  name_zh_CN: 休谟斯
+  provider: PRTS
+  file_title: 头像 休谟斯.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E4%BC%91%E8%B0%9F%E6%96%AF.png
+  base_variant: elite_0
+- portrait_key: prts:洛洛
+  name_zh_CN: 洛洛
+  provider: PRTS
+  file_title: 头像 洛洛.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%B4%9B%E6%B4%9B.png
+  base_variant: elite_0
+- portrait_key: prts:风丸
+  name_zh_CN: 风丸
+  provider: PRTS
+  file_title: 头像 风丸.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%A3%8E%E4%B8%B8.png
+  base_variant: elite_0
+- portrait_key: prts:砾
+  name_zh_CN: 砾
+  provider: PRTS
+  file_title: 头像 砾.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%A0%BE.png
+  base_variant: elite_0
+- portrait_key: prts:蒂比
+  name_zh_CN: 蒂比
+  provider: PRTS
+  file_title: 头像 蒂比.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%92%82%E6%AF%94.png
+  base_variant: elite_0
+- portrait_key: prts:调香师
+  name_zh_CN: 调香师
+  provider: PRTS
+  file_title: 头像 调香师.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%B0%83%E9%A6%99%E5%B8%88.png
+  base_variant: elite_0
+- portrait_key: prts:拉普兰德
+  name_zh_CN: 拉普兰德
+  provider: PRTS
+  file_title: 头像 拉普兰德.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%8B%89%E6%99%AE%E5%85%B0%E5%BE%B7.png
+  base_variant: elite_0
+- portrait_key: prts:折桠
+  name_zh_CN: 折桠
+  provider: PRTS
+  file_title: 头像 折桠.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%8A%98%E6%A1%A0.png
+  base_variant: elite_0
+- portrait_key: prts:灰毫
+  name_zh_CN: 灰毫
+  provider: PRTS
+  file_title: 头像 灰毫.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%81%B0%E6%AF%AB.png
+  base_variant: elite_0
+- portrait_key: prts:锡人
+  name_zh_CN: 锡人
+  provider: PRTS
+  file_title: 头像 锡人.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%94%A1%E4%BA%BA.png
+  base_variant: elite_0
+- portrait_key: prts:能天使
+  name_zh_CN: 能天使
+  provider: PRTS
+  file_title: 头像 能天使.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%83%BD%E5%A4%A9%E4%BD%BF.png
+  base_variant: elite_0
+- portrait_key: prts:断崖
+  name_zh_CN: 断崖
+  provider: PRTS
+  file_title: 头像 断崖.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%96%AD%E5%B4%96.png
+  base_variant: elite_0
+- portrait_key: prts:诗怀雅
+  name_zh_CN: 诗怀雅
+  provider: PRTS
+  file_title: 头像 诗怀雅.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%AF%97%E6%80%80%E9%9B%85.png
+  base_variant: elite_0
+- portrait_key: prts:琳琅诗怀雅
+  name_zh_CN: 琳琅诗怀雅
+  provider: PRTS
+  file_title: 头像 琳琅诗怀雅.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%90%B3%E7%90%85%E8%AF%97%E6%80%80%E9%9B%85.png
+  base_variant: elite_0
+- portrait_key: prts:斯卡蒂
+  name_zh_CN: 斯卡蒂
+  provider: PRTS
+  file_title: 头像 斯卡蒂.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%96%AF%E5%8D%A1%E8%92%82.png
+  base_variant: elite_0
+- portrait_key: prts:菲莱
+  name_zh_CN: 菲莱
+  provider: PRTS
+  file_title: 头像 菲莱.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%8F%B2%E8%8E%B1.png
+  base_variant: elite_0
+- portrait_key: prts:薄绿
+  name_zh_CN: 薄绿
+  provider: PRTS
+  file_title: 头像 薄绿.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%96%84%E7%BB%BF.png
+  base_variant: elite_0
+- portrait_key: prts:海霓
+  name_zh_CN: 海霓
+  provider: PRTS
+  file_title: 头像 海霓.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%B5%B7%E9%9C%93.png
+  base_variant: elite_0
+- portrait_key: prts:松果
+  name_zh_CN: 松果
+  provider: PRTS
+  file_title: 头像 松果.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%9D%BE%E6%9E%9C.png
+  base_variant: elite_0
+- portrait_key: prts:雪猎
+  name_zh_CN: 雪猎
+  provider: PRTS
+  file_title: 头像 雪猎.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%9B%AA%E7%8C%8E.png
+  base_variant: elite_0
+- portrait_key: prts:瑕光
+  name_zh_CN: 瑕光
+  provider: PRTS
+  file_title: 头像 瑕光.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%91%95%E5%85%89.png
+  base_variant: elite_0
+- portrait_key: prts:至简
+  name_zh_CN: 至简
+  provider: PRTS
+  file_title: 头像 至简.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%87%B3%E7%AE%80.png
+  base_variant: elite_0
+- portrait_key: prts:初雪
+  name_zh_CN: 初雪
+  provider: PRTS
+  file_title: 头像 初雪.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%88%9D%E9%9B%AA.png
+  base_variant: elite_0
+- portrait_key: prts:蛇屠箱
+  name_zh_CN: 蛇屠箱
+  provider: PRTS
+  file_title: 头像 蛇屠箱.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%9B%87%E5%B1%A0%E7%AE%B1.png
+  base_variant: elite_0
+- portrait_key: prts:流星
+  name_zh_CN: 流星
+  provider: PRTS
+  file_title: 头像 流星.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%B5%81%E6%98%9F.png
+  base_variant: elite_0
+- portrait_key: prts:忍冬
+  name_zh_CN: 忍冬
+  provider: PRTS
+  file_title: 头像 忍冬.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%BF%8D%E5%86%AC.png
+  base_variant: elite_0
+- portrait_key: prts:伺夜
+  name_zh_CN: 伺夜
+  provider: PRTS
+  file_title: 头像 伺夜.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E4%BC%BA%E5%A4%9C.png
+  base_variant: elite_0
+- portrait_key: prts:耶拉
+  name_zh_CN: 耶拉
+  provider: PRTS
+  file_title: 头像 耶拉.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%80%B6%E6%8B%89.png
+  base_variant: elite_0
+- portrait_key: prts:空弦
+  name_zh_CN: 空弦
+  provider: PRTS
+  file_title: 头像 空弦.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%A9%BA%E5%BC%A6.png
+  base_variant: elite_0
+- portrait_key: prts:信仰搅拌机
+  name_zh_CN: 信仰搅拌机
+  provider: PRTS
+  file_title: 头像 信仰搅拌机.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E4%BF%A1%E4%BB%B0%E6%90%85%E6%8B%8C%E6%9C%BA.png
+  base_variant: elite_0
+- portrait_key: prts:莫斯提马
+  name_zh_CN: 莫斯提马
+  provider: PRTS
+  file_title: 头像 莫斯提马.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%8E%AB%E6%96%AF%E6%8F%90%E9%A9%AC.png
+  base_variant: elite_0
+- portrait_key: prts:伊内丝
+  name_zh_CN: 伊内丝
+  provider: PRTS
+  file_title: 头像 伊内丝.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E4%BC%8A%E5%86%85%E4%B8%9D.png
+  base_variant: elite_0
+- portrait_key: prts:寒芒克洛丝
+  name_zh_CN: 寒芒克洛丝
+  provider: PRTS
+  file_title: 头像 寒芒克洛丝.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%AF%92%E8%8A%92%E5%85%8B%E6%B4%9B%E4%B8%9D.png
+  base_variant: elite_0
+- portrait_key: prts:风笛
+  name_zh_CN: 风笛
+  provider: PRTS
+  file_title: 头像 风笛.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%A3%8E%E7%AC%9B.png
+  base_variant: elite_0
+- portrait_key: prts:水月
+  name_zh_CN: 水月
+  provider: PRTS
+  file_title: 头像 水月.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%B0%B4%E6%9C%88.png
+  base_variant: elite_0
+- portrait_key: prts:阿罗玛
+  name_zh_CN: 阿罗玛
+  provider: PRTS
+  file_title: 头像 阿罗玛.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%98%BF%E7%BD%97%E7%8E%9B.png
+  base_variant: elite_0
+- portrait_key: prts:凯瑟琳
+  name_zh_CN: 凯瑟琳
+  provider: PRTS
+  file_title: 头像 凯瑟琳.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%87%AF%E7%91%9F%E7%90%B3.png
+  base_variant: elite_0
+- portrait_key: prts:歌蕾蒂娅
+  name_zh_CN: 歌蕾蒂娅
+  provider: PRTS
+  file_title: 头像 歌蕾蒂娅.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%AD%8C%E8%95%BE%E8%92%82%E5%A8%85.png
+  base_variant: elite_0
+- portrait_key: prts:灵知
+  name_zh_CN: 灵知
+  provider: PRTS
+  file_title: 头像 灵知.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%81%B5%E7%9F%A5.png
+  base_variant: elite_0
+- portrait_key: prts:莱恩哈特
+  name_zh_CN: 莱恩哈特
+  provider: PRTS
+  file_title: 头像 莱恩哈特.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%8E%B1%E6%81%A9%E5%93%88%E7%89%B9.png
+  base_variant: elite_0
+- portrait_key: prts:缄默德克萨斯
+  name_zh_CN: 缄默德克萨斯
+  provider: PRTS
+  file_title: 头像 缄默德克萨斯.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%BC%84%E9%BB%98%E5%BE%B7%E5%85%8B%E8%90%A8%E6%96%AF.png
+  base_variant: elite_0
+- portrait_key: prts:星熊
+  name_zh_CN: 星熊
+  provider: PRTS
+  file_title: 头像 星熊.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%98%9F%E7%86%8A.png
+  base_variant: elite_0
+- portrait_key: prts:泥岩
+  name_zh_CN: 泥岩
+  provider: PRTS
+  file_title: 头像 泥岩.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%B3%A5%E5%B2%A9.png
+  base_variant: elite_0
+- portrait_key: prts:焰尾
+  name_zh_CN: 焰尾
+  provider: PRTS
+  file_title: 头像 焰尾.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%84%B0%E5%B0%BE.png
+  base_variant: elite_0
+- portrait_key: prts:远牙
+  name_zh_CN: 远牙
+  provider: PRTS
+  file_title: 头像 远牙.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%BF%9C%E7%89%99.png
+  base_variant: elite_0
+- portrait_key: prts:白面鸮
+  name_zh_CN: 白面鸮
+  provider: PRTS
+  file_title: 头像 白面鸮.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%99%BD%E9%9D%A2%E9%B8%AE.png
+  base_variant: elite_0
+- portrait_key: prts:银灰
+  name_zh_CN: 银灰
+  provider: PRTS
+  file_title: 头像 银灰.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%93%B6%E7%81%B0.png
+  base_variant: elite_0
+- portrait_key: prts:百炼嘉维尔
+  name_zh_CN: 百炼嘉维尔
+  provider: PRTS
+  file_title: 头像 百炼嘉维尔.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%99%BE%E7%82%BC%E5%98%89%E7%BB%B4%E5%B0%94.png
+  base_variant: elite_0
+- portrait_key: prts:卡涅利安
+  name_zh_CN: 卡涅利安
+  provider: PRTS
+  file_title: 头像 卡涅利安.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%8D%A1%E6%B6%85%E5%88%A9%E5%AE%89.png
+  base_variant: elite_0
+- portrait_key: prts:魔王
+  name_zh_CN: 魔王
+  provider: PRTS
+  file_title: 头像 魔王.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%AD%94%E7%8E%8B.png
+  base_variant: elite_0
+- portrait_key: prts:华法琳
+  name_zh_CN: 华法琳
+  provider: PRTS
+  file_title: 头像 华法琳.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%8D%8E%E6%B3%95%E7%90%B3.png
+  base_variant: elite_0
+- portrait_key: prts:妮芙
+  name_zh_CN: 妮芙
+  provider: PRTS
+  file_title: 头像 妮芙.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%A6%AE%E8%8A%99.png
+  base_variant: elite_0
+- portrait_key: prts:圣约送葬人
+  name_zh_CN: 圣约送葬人
+  provider: PRTS
+  file_title: 头像 圣约送葬人.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%9C%A3%E7%BA%A6%E9%80%81%E8%91%AC%E4%BA%BA.png
+  base_variant: elite_0
+- portrait_key: prts:缇缇
+  name_zh_CN: 缇缇
+  provider: PRTS
+  file_title: 头像 缇缇.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%BC%87%E7%BC%87.png
+  base_variant: elite_0
+- portrait_key: prts:烛煌
+  name_zh_CN: 烛煌
+  provider: PRTS
+  file_title: 头像 烛煌.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%83%9B%E7%85%8C.png
+  base_variant: elite_0
+- portrait_key: prts:乌尔比安
+  name_zh_CN: 乌尔比安
+  provider: PRTS
+  file_title: 头像 乌尔比安.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E4%B9%8C%E5%B0%94%E6%AF%94%E5%AE%89.png
+  base_variant: elite_0
+- portrait_key: prts:隐德来希
+  name_zh_CN: 隐德来希
+  provider: PRTS
+  file_title: 头像 隐德来希.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%9A%90%E5%BE%B7%E6%9D%A5%E5%B8%8C.png
+  base_variant: elite_0
+- portrait_key: prts:史尔特尔
+  name_zh_CN: 史尔特尔
+  provider: PRTS
+  file_title: 头像 史尔特尔.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%8F%B2%E5%B0%94%E7%89%B9%E5%B0%94.png
+  base_variant: elite_0
+- portrait_key: prts:号角
+  name_zh_CN: 号角
+  provider: PRTS
+  file_title: 头像 号角.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%8F%B7%E8%A7%92.png
+  base_variant: elite_0
+- portrait_key: prts:铃兰
+  name_zh_CN: 铃兰
+  provider: PRTS
+  file_title: 头像 铃兰.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%93%83%E5%85%B0.png
+  base_variant: elite_0
+- portrait_key: prts:塞雷娅
+  name_zh_CN: 塞雷娅
+  provider: PRTS
+  file_title: 头像 塞雷娅.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%A1%9E%E9%9B%B7%E5%A8%85.png
+  base_variant: elite_0
+- portrait_key: prts:夕
+  name_zh_CN: 夕
+  provider: PRTS
+  file_title: 头像 夕.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%A4%95.png
+  base_variant: elite_0
+- portrait_key: prts:归溟幽灵鲨
+  name_zh_CN: 归溟幽灵鲨
+  provider: PRTS
+  file_title: 头像 归溟幽灵鲨.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%BD%92%E6%BA%9F%E5%B9%BD%E7%81%B5%E9%B2%A8.png
+  base_variant: elite_0
+- portrait_key: prts:凛御银灰
+  name_zh_CN: 凛御银灰
+  provider: PRTS
+  file_title: 头像 凛御银灰.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%87%9B%E5%BE%A1%E9%93%B6%E7%81%B0.png
+  base_variant: elite_0
+- portrait_key: prts:引星棘刺
+  name_zh_CN: 引星棘刺
+  provider: PRTS
+  file_title: 头像 引星棘刺.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%BC%95%E6%98%9F%E6%A3%98%E5%88%BA.png
+  base_variant: elite_0
+- portrait_key: prts:山
+  name_zh_CN: 山
+  provider: PRTS
+  file_title: 头像 山.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%B1%B1.png
+  base_variant: elite_0
+- portrait_key: prts:玛恩纳
+  name_zh_CN: 玛恩纳
+  provider: PRTS
+  file_title: 头像 玛恩纳.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%8E%9B%E6%81%A9%E7%BA%B3.png
+  base_variant: elite_0
+- portrait_key: prts:安洁莉娜
+  name_zh_CN: 安洁莉娜
+  provider: PRTS
+  file_title: 头像 安洁莉娜.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%AE%89%E6%B4%81%E8%8E%89%E5%A8%9C.png
+  base_variant: elite_0
+- portrait_key: prts:寒檀
+  name_zh_CN: 寒檀
+  provider: PRTS
+  file_title: 头像 寒檀.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%AF%92%E6%AA%80.png
+  base_variant: elite_0
+- portrait_key: prts:录武官
+  name_zh_CN: 录武官
+  provider: PRTS
+  file_title: 头像 录武官.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%BD%95%E6%AD%A6%E5%AE%98.png
+  base_variant: elite_0
+- portrait_key: prts:蕾缪安
+  name_zh_CN: 蕾缪安
+  provider: PRTS
+  file_title: 头像 蕾缪安.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%95%BE%E7%BC%AA%E5%AE%89.png
+  base_variant: elite_0
+- portrait_key: prts:圣聆初雪
+  name_zh_CN: 圣聆初雪
+  provider: PRTS
+  file_title: 头像 圣聆初雪.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%9C%A3%E8%81%86%E5%88%9D%E9%9B%AA.png
+  base_variant: elite_0
+- portrait_key: prts:余
+  name_zh_CN: 余
+  provider: PRTS
+  file_title: 头像 余.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E4%BD%99.png
+  base_variant: elite_0
+- portrait_key: prts:浊心斯卡蒂
+  name_zh_CN: 浊心斯卡蒂
+  provider: PRTS
+  file_title: 头像 浊心斯卡蒂.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%B5%8A%E5%BF%83%E6%96%AF%E5%8D%A1%E8%92%82.png
+  base_variant: elite_0
+- portrait_key: prts:异客
+  name_zh_CN: 异客
+  provider: PRTS
+  file_title: 头像 异客.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%BC%82%E5%AE%A2.png
+  base_variant: elite_0
+- portrait_key: prts:佩佩
+  name_zh_CN: 佩佩
+  provider: PRTS
+  file_title: 头像 佩佩.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E4%BD%A9%E4%BD%A9.png
+  base_variant: elite_0
+- portrait_key: prts:维娜·维多利亚
+  name_zh_CN: 维娜·维多利亚
+  provider: PRTS
+  file_title: 头像 维娜·维多利亚.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%BB%B4%E5%A8%9C%C2%B7%E7%BB%B4%E5%A4%9A%E5%88%A9%E4%BA%9A.png
+  base_variant: elite_0
+- portrait_key: prts:焰影苇草
+  name_zh_CN: 焰影苇草
+  provider: PRTS
+  file_title: 头像 焰影苇草.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%84%B0%E5%BD%B1%E8%8B%87%E8%8D%89.png
+  base_variant: elite_0
+- portrait_key: prts:塑心
+  name_zh_CN: 塑心
+  provider: PRTS
+  file_title: 头像 塑心.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E5%A1%91%E5%BF%83.png
+  base_variant: elite_0
+- portrait_key: prts:缪尔赛思
+  name_zh_CN: 缪尔赛思
+  provider: PRTS
+  file_title: 头像 缪尔赛思.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%BC%AA%E5%B0%94%E8%B5%9B%E6%80%9D.png
+  base_variant: elite_0
+- portrait_key: prts:迷迭香
+  name_zh_CN: 迷迭香
+  provider: PRTS
+  file_title: 头像 迷迭香.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%BF%B7%E8%BF%AD%E9%A6%99.png
+  base_variant: elite_0
+- portrait_key: prts:新约能天使
+  name_zh_CN: 新约能天使
+  provider: PRTS
+  file_title: 头像 新约能天使.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%96%B0%E7%BA%A6%E8%83%BD%E5%A4%A9%E4%BD%BF.png
+  base_variant: elite_0
+- portrait_key: prts:流明
+  name_zh_CN: 流明
+  provider: PRTS
+  file_title: 头像 流明.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%B5%81%E6%98%8E.png
+  base_variant: elite_0
+- portrait_key: prts:仇白
+  name_zh_CN: 仇白
+  provider: PRTS
+  file_title: 头像 仇白.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E4%BB%87%E7%99%BD.png
+  base_variant: elite_0
+- portrait_key: prts:溯光星源
+  name_zh_CN: 溯光星源
+  provider: PRTS
+  file_title: 头像 溯光星源.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E6%BA%AF%E5%85%89%E6%98%9F%E6%BA%90.png
+  base_variant: elite_0
+- portrait_key: prts:耀骑士临光
+  name_zh_CN: 耀骑士临光
+  provider: PRTS
+  file_title: 头像 耀骑士临光.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%80%80%E9%AA%91%E5%A3%AB%E4%B8%B4%E5%85%89.png
+  base_variant: elite_0
+- portrait_key: prts:荒芜拉普兰德
+  name_zh_CN: 荒芜拉普兰德
+  provider: PRTS
+  file_title: 头像 荒芜拉普兰德.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E8%8D%92%E8%8A%9C%E6%8B%89%E6%99%AE%E5%85%B0%E5%BE%B7.png
+  base_variant: elite_0
+- portrait_key: prts:锏
+  name_zh_CN: 锏
+  provider: PRTS
+  file_title: 头像 锏.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E9%94%8F.png
+  base_variant: elite_0
+- portrait_key: prts:纯烬艾雅法拉
+  name_zh_CN: 纯烬艾雅法拉
+  provider: PRTS
+  file_title: 头像 纯烬艾雅法拉.png
+  source_page: https://prts.wiki/w/%E6%96%87%E4%BB%B6:%E5%A4%B4%E5%83%8F_%E7%BA%AF%E7%83%AC%E8%89%BE%E9%9B%85%E6%B3%95%E6%8B%89.png
+  base_variant: elite_0
