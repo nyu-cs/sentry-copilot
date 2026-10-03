@@ -43,6 +43,10 @@ from sentry_copilot.services.live_encounter_preview import (
     _status_message,
     run_live_encounter_loop,
 )
+from sentry_copilot.vision.additional_covenant_ban import (
+    AdditionalCovenantBanObservation,
+    AdditionalCovenantBanObservationState,
+)
 from sentry_copilot.vision.difficulty_recovery import (
     OPERATION_SPLASH_DIFFICULTY_ROI,
     POST_START_DIFFICULTY_ROI,
@@ -371,6 +375,38 @@ def _set_recovery_page_states(
     )
 
 
+class _ReturnedAdditionalObserver:
+    def __init__(self) -> None:
+        self.scan_active_values: list[bool] = []
+
+    def observe_returned_info(
+        self,
+        frame: Frame,
+        viewport: ContentViewport,
+        *,
+        returned_info_state: InfoRecoveryPageState,
+        returned_info_scan_active: bool,
+        difficulty_id: str | None,
+    ) -> AdditionalCovenantBanObservation:
+        del viewport, returned_info_state, difficulty_id
+        self.scan_active_values.append(returned_info_scan_active)
+        return AdditionalCovenantBanObservation(
+            AdditionalCovenantBanObservationState.OBSERVED,
+            frame.frame_id,
+            (9, 6),
+            True,
+            candidate_disabled_covenant_ids=(
+                "covenant.covenant_latter.assault",
+                "covenant.covenant_latter.dexterity",
+                "covenant.covenant_latter.foresight",
+                "covenant.covenant_latter.lone_wolf",
+            ),
+            surface_mode="second_row_only",
+            selected_row_sizes=(6,),
+            ignored_row_sizes=(1,),
+        )
+
+
 def _info_frame(index: int = 0) -> Frame:
     frame = _frame(index)
     image = np.array(frame.image, copy=True)
@@ -422,6 +458,82 @@ def _active(controller: LiveEncounterPreviewController) -> LiveEncounterPreviewC
     """Explicit test-only established-start fixture; OPERATION never starts a session."""
     controller._session = begin_encounter("test:started")  # noqa: SLF001
     return controller
+
+
+def test_returned_info_scan_context_survives_scroll_and_authorizes_additional_recovery() -> None:
+    controller = _active(LiveEncounterPreviewController())
+    controller.apply_info_1_2_observation(_info_observation(Info12State.PRESENT))
+    for _ in range(3):
+        controller.apply_info_1_2_observation(_info_observation(Info12State.ABSENT))
+    assert controller._recovery_state.value == "open"  # noqa: SLF001
+    assert controller.session is not None
+    controller._session = controller.session.model_copy(  # noqa: SLF001
+        update={
+            "captured_difficulty": CapturedDifficulty(
+                difficulty_id="difficulty.covenant_latter.adversity",
+                simulation_code="AC-2",
+            )
+        }
+    )
+    observer = _ReturnedAdditionalObserver()
+    controller._additional_covenant_observer = observer  # type: ignore[assignment]  # noqa: SLF001
+
+    _set_recovery_page_states(
+        controller,
+        "returned-top",
+        phase=InfoRecoveryPageState.ABSENT,
+        returned=InfoRecoveryPageState.PRESENT,
+    )
+    controller._update_returned_info_scan_context("returned-top")  # noqa: SLF001
+    assert controller._returned_info_scan_active is True  # noqa: SLF001
+
+    frame_one = _frame(811)
+    _set_recovery_page_states(
+        controller,
+        frame_one.frame_id,
+        phase=InfoRecoveryPageState.ABSENT,
+        returned=InfoRecoveryPageState.ABSENT,
+    )
+    controller._update_returned_info_scan_context(frame_one.frame_id)  # noqa: SLF001
+    controller._observe_returned_info_additional_recovery(  # noqa: SLF001
+        frame_one, ContentViewport.full_frame(frame_one)
+    )
+    assert controller.session.additional_covenant_ban is None
+    first_diagnostic = json.loads(controller.diagnostic_json())
+    assert first_diagnostic["returned_info_additional_state"] == "observed"
+    assert first_diagnostic["returned_info_additional_surface_mode"] == "second_row_only"
+    assert first_diagnostic["returned_info_additional_row_sizes"] == [9, 6]
+    assert first_diagnostic["returned_info_additional_selected_row_sizes"] == [6]
+    assert first_diagnostic["returned_info_additional_ignored_row_sizes"] == [1]
+    assert first_diagnostic["returned_info_additional_pending_count"] == 1
+
+    frame_two = _frame(812)
+    _set_recovery_page_states(
+        controller,
+        frame_two.frame_id,
+        phase=InfoRecoveryPageState.ABSENT,
+        returned=InfoRecoveryPageState.ABSENT,
+    )
+    controller._update_returned_info_scan_context(frame_two.frame_id)  # noqa: SLF001
+    controller._observe_returned_info_additional_recovery(  # noqa: SLF001
+        frame_two, ContentViewport.full_frame(frame_two)
+    )
+    assert controller.session.additional_covenant_ban is not None
+    assert observer.scan_active_values == [True, True]
+    captured_diagnostic = json.loads(controller.diagnostic_json())
+    assert captured_diagnostic["additional_confirmed_disabled_ids"]
+
+    _set_recovery_page_states(
+        controller,
+        "info-2-2",
+        phase=InfoRecoveryPageState.PRESENT,
+        returned=InfoRecoveryPageState.ABSENT,
+    )
+    controller._update_returned_info_scan_context("info-2-2")  # noqa: SLF001
+    assert controller._returned_info_scan_active is False  # noqa: SLF001
+
+    controller._start_encounter()  # noqa: SLF001
+    assert controller._returned_info_scan_active is False  # noqa: SLF001
 
 
 def _info_observation(

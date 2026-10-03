@@ -546,11 +546,12 @@ def test_returned_major_two_frame_fill_missing_recovery_is_gated_and_sticky(
             self,
             frame: Frame,
             viewport: ContentViewport,
-            *,
-            returned_info_state: InfoRecoveryPageState,
-            difficulty_id: str | None,
-        ) -> MajorCovenantBanObservation:
-            del viewport, returned_info_state, difficulty_id
+        *,
+        returned_info_state: InfoRecoveryPageState,
+        returned_info_scan_active: bool,
+        difficulty_id: str | None,
+    ) -> MajorCovenantBanObservation:
+            del viewport, returned_info_state, returned_info_scan_active, difficulty_id
             self.calls += 1
             if self.unresolved:
                 return MajorCovenantBanObservation(
@@ -591,20 +592,14 @@ def test_returned_major_two_frame_fill_missing_recovery_is_gated_and_sticky(
             "enemy_type_ids": ("enemy.a", "enemy.b", "enemy.c"),
         }
     )
-
-    controller._latest_returned_info = InfoRecoveryPageObservation(  # noqa: SLF001
-        InfoRecoveryPageState.ABSENT,
-        frame.frame_id,
-        0.01,
-    )
-    controller._observe_returned_info_major_recovery(frame, viewport)  # noqa: SLF001
-    assert spy.calls == 0
+    controller._recovery_state = live_encounter_preview._RecoveryReminderState.OPEN  # noqa: SLF001
 
     controller._latest_returned_info = InfoRecoveryPageObservation(  # noqa: SLF001
         InfoRecoveryPageState.PRESENT,
         frame.frame_id,
         0.99,
     )
+    controller._update_returned_info_scan_context(frame.frame_id)  # noqa: SLF001
     controller._observe_returned_info_major_recovery(frame, viewport)  # noqa: SLF001
     assert spy.calls == 1
     assert controller.session is not None and controller.session.major_covenant_ban is None
@@ -622,31 +617,15 @@ def test_returned_major_two_frame_fill_missing_recovery_is_gated_and_sticky(
     )
     controller._observe_returned_info_major_recovery(frame, viewport)  # noqa: SLF001
     absent_diagnostics = json.loads(controller.diagnostic_json())
-    assert spy.calls == 1
-    assert absent_diagnostics["returned_info_major_state"] is None
-    assert absent_diagnostics["returned_info_major_candidate_count"] == 0
-    assert absent_diagnostics["returned_info_major_capture_attempted"] is False
-
-    spy.unresolved = True
-    controller._latest_returned_info = InfoRecoveryPageObservation(  # noqa: SLF001
-        InfoRecoveryPageState.PRESENT,
-        frame.frame_id,
-        0.99,
-    )
-    controller._observe_returned_info_major_recovery(frame, viewport)  # noqa: SLF001
     assert spy.calls == 2
-    assert controller._returned_info_major_pending_count == 0  # noqa: SLF001
-
-    spy.unresolved = False
-    controller._observe_returned_info_major_recovery(frame, viewport)  # noqa: SLF001
-    controller._observe_returned_info_major_recovery(frame, viewport)  # noqa: SLF001
-    assert spy.calls == 4
+    assert absent_diagnostics["returned_info_major_state"] == "observed"
+    assert absent_diagnostics["returned_info_major_capture_attempted"] is True
     assert controller.session is not None
     assert controller.session.major_covenant_ban == _snapshot()
     assert controller.session.ordinary_progress_count == 3
 
     controller._observe_returned_info_major_recovery(frame, viewport)  # noqa: SLF001
-    assert spy.calls == 4
+    assert spy.calls == 2
     assert controller._returned_info_major_capture_attempted is False  # noqa: SLF001
     after_capture_diagnostics = json.loads(controller.diagnostic_json())
     assert after_capture_diagnostics["returned_info_major_state"] is None
@@ -668,8 +647,10 @@ def test_returned_major_two_frame_fill_missing_recovery_is_gated_and_sticky(
         frame.frame_id,
         0.99,
     )
+    controller._recovery_state = live_encounter_preview._RecoveryReminderState.OPEN  # noqa: SLF001
+    controller._update_returned_info_scan_context(frame.frame_id)  # noqa: SLF001
     controller._observe_returned_info_major_recovery(frame, viewport)  # noqa: SLF001
-    assert spy.calls == 5
+    assert spy.calls == 3
 
 
 @pytest.mark.parametrize(
@@ -707,12 +688,108 @@ def test_missing_recoverable_major_is_limited_to_supported_difficulties(
     assert "additional_covenants" not in missing
 
 
-def test_ultimate_major_support_is_returned_info_only_until_initial_glyph_validation_passes(
-) -> None:
+def test_ultimate_major_supports_initial_and_returned_info_after_retained_validation() -> None:
     ultimate_id = "difficulty.covenant_latter.ultimate"
 
-    assert not supports_initial_major_covenant_ban(ultimate_id)
+    assert supports_initial_major_covenant_ban(ultimate_id)
     assert supports_returned_major_covenant_ban(ultimate_id)
+
+
+def test_initial_major_refines_only_one_uniquely_reliable_local_center(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observer = MajorCovenantBanObserver(_reference_pack())
+    image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+    unresolved = MajorCovenantIdentityObservation(
+        1,
+        (265, 832),
+        50,
+        CovenantBanState.DISABLED,
+        50.0,
+        (
+            RankedVisualCandidate(_IDS[0], 13.0),
+            RankedVisualCandidate(_IDS[1], 4.0),
+        ),
+    )
+
+    def observe_candidate(
+        candidate: tuple[int, tuple[int, int], int, np.ndarray],
+        *,
+        reference_cache: object,
+    ) -> MajorCovenantIdentityObservation:
+        del reference_cache
+        index, center, radius, _crop = candidate
+        if center == (265, 834):
+            return MajorCovenantIdentityObservation(
+                index,
+                center,
+                radius,
+                CovenantBanState.DISABLED,
+                50.0,
+                (
+                    RankedVisualCandidate(_IDS[0], 13.0),
+                    RankedVisualCandidate(_IDS[1], 0.0),
+                ),
+            )
+        return unresolved
+
+    monkeypatch.setattr(observer, "_observe_candidate", observe_candidate)
+
+    refined = observer._observe_candidate_with_optional_refinement(  # noqa: SLF001
+        (1, (265, 832), 50, image[776:888, 209:321]),
+        image,
+        reference_cache=observer._reference_cache,  # noqa: SLF001
+        refine_unresolved_query_center=True,
+    )
+
+    assert refined.covenant_id == _IDS[0]
+    assert refined.refined_center == (265, 834)
+    assert refined.margin == 13.0
+
+
+def test_initial_major_local_refinement_rejects_competing_reliable_identities(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observer = MajorCovenantBanObserver(_reference_pack())
+    image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+    unresolved = MajorCovenantIdentityObservation(
+        1,
+        (265, 832),
+        50,
+        CovenantBanState.DISABLED,
+        50.0,
+        (RankedVisualCandidate(_IDS[0], 13.0), RankedVisualCandidate(_IDS[1], 4.0)),
+    )
+
+    def observe_candidate(
+        candidate: tuple[int, tuple[int, int], int, np.ndarray],
+        *,
+        reference_cache: object,
+    ) -> MajorCovenantIdentityObservation:
+        del reference_cache
+        index, center, radius, _crop = candidate
+        identity = _IDS[0] if center[0] < 265 else _IDS[1]
+        if center != (265, 832):
+            return MajorCovenantIdentityObservation(
+                index,
+                center,
+                radius,
+                CovenantBanState.DISABLED,
+                50.0,
+                (RankedVisualCandidate(identity, 20.0), RankedVisualCandidate(_IDS[2], 0.0)),
+            )
+        return unresolved
+
+    monkeypatch.setattr(observer, "_observe_candidate", observe_candidate)
+
+    refined = observer._observe_candidate_with_optional_refinement(  # noqa: SLF001
+        (1, (265, 832), 50, image[776:888, 209:321]),
+        image,
+        reference_cache=observer._reference_cache,  # noqa: SLF001
+        refine_unresolved_query_center=True,
+    )
+
+    assert refined is unresolved
 
 
 def test_missing_supported_major_is_not_recoverable_without_available_observer() -> None:
@@ -754,7 +831,12 @@ def test_captured_major_is_not_recoverable_and_keeps_boss_enemy_composition() ->
     (
         (True, True, "盟约未识别", "Covenants not captured"),
         (True, False, "主盟约未识别", "Major Covenants not captured"),
-        (False, True, "追加盟约未识别", "Additional Covenants not captured"),
+        (
+            False,
+            True,
+            "追加盟约未识别；向下滑动查看，两行同时可见效果最佳，完整第二行也可识别",
+            "Additional Covenants not captured; scroll down to view them",
+        ),
         (False, False, None, None),
     ),
 )
@@ -776,10 +858,10 @@ def test_covenant_recovery_reminder_formats_major_and_additional_components() ->
         "待补充：主盟约未识别"
     )
     assert _recovery_reminder_text("zh_CN", ("additional_covenants",)).endswith(
-        "待补充：追加盟约未识别"
+        "待补充：追加盟约未识别；向下滑动查看，两行同时可见效果最佳，完整第二行也可识别"
     )
     assert _recovery_reminder_text("zh_CN", ("boss", "additional_covenants")).endswith(
-        "待补充：Boss / 追加盟约未识别"
+        "待补充：Boss / 追加盟约未识别；向下滑动查看，两行同时可见效果最佳，完整第二行也可识别"
     )
     assert _recovery_reminder_text("zh_CN", ("boss", "major_covenants")).endswith(
         "待补充：Boss / 主盟约未识别"

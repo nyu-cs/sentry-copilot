@@ -55,6 +55,7 @@ _INITIAL_SUPPORTED_DIFFICULTY_IDS = frozenset(
     {
         "difficulty.covenant_latter.adversity",
         "difficulty.covenant_latter.deadland",
+        "difficulty.covenant_latter.ultimate",
     }
 )
 _RETURNED_SUPPORTED_DIFFICULTY_IDS = _INITIAL_SUPPORTED_DIFFICULTY_IDS | frozenset(
@@ -272,6 +273,7 @@ class MajorCovenantBanObserver:
             MAJOR_NOMINAL_CENTERS,
             absent_reason="canonical_major_row_not_fully_visible",
             reference_cache=self._reference_cache,
+            refine_unresolved_query_centers=True,
         )
 
     def observe_returned_info(
@@ -280,6 +282,7 @@ class MajorCovenantBanObserver:
         viewport: ContentViewport,
         *,
         returned_info_state: InfoRecoveryPageState,
+        returned_info_scan_active: bool = False,
         difficulty_id: str | None,
     ) -> MajorCovenantBanObservation:
         """Observe the fixed default returned-INFO Major row with the shared glyph matcher."""
@@ -287,7 +290,10 @@ class MajorCovenantBanObserver:
         if (
             (frame.width, frame.height) != (1920, 1080)
             or viewport.pixel_roi != PixelRoi(0, 0, 1920, 1080)
-            or returned_info_state is not InfoRecoveryPageState.PRESENT
+            or (
+                returned_info_state is not InfoRecoveryPageState.PRESENT
+                and not returned_info_scan_active
+            )
         ):
             return MajorCovenantBanObservation(
                 MajorCovenantBanObservationState.UNRESOLVED,
@@ -320,6 +326,7 @@ class MajorCovenantBanObserver:
         *,
         absent_reason: str,
         reference_cache: tuple[_CachedMajorReference, ...],
+        refine_unresolved_query_centers: bool = False,
     ) -> MajorCovenantBanObservation:
         """Extract locally recentered candidates, then share the state and glyph pipeline."""
 
@@ -340,7 +347,12 @@ class MajorCovenantBanObserver:
             )
 
         observations = tuple(
-            self._observe_candidate(candidate, reference_cache=reference_cache)
+            self._observe_candidate_with_optional_refinement(
+                candidate,
+                frame.image,
+                reference_cache=reference_cache,
+                refine_unresolved_query_center=refine_unresolved_query_centers,
+            )
             for candidate in candidates
         )
         resolved_ids = tuple(item.covenant_id for item in observations)
@@ -380,6 +392,52 @@ class MajorCovenantBanObserver:
             disabled if structural_valid else (),
             structural_valid,
             None if structural_valid else "major_identity_or_state_structure_unresolved",
+        )
+
+    def _observe_candidate_with_optional_refinement(
+        self,
+        candidate: tuple[int, tuple[int, int], int, ImageArray],
+        image: ImageArray,
+        *,
+        reference_cache: tuple[_CachedMajorReference, ...],
+        refine_unresolved_query_center: bool,
+    ) -> MajorCovenantIdentityObservation:
+        observation = self._observe_candidate(candidate, reference_cache=reference_cache)
+        if observation.covenant_id is not None or not refine_unresolved_query_center:
+            return observation
+
+        index, center, radius, _crop = candidate
+        alternatives: list[MajorCovenantIdentityObservation] = []
+        for offset_x in (-2, 0, 2):
+            for offset_y in (-2, 0, 2):
+                if offset_x == 0 and offset_y == 0:
+                    continue
+                shifted_center = (center[0] + offset_x, center[1] + offset_y)
+                shifted_crop = cast(
+                    ImageArray,
+                    cv2.getRectSubPix(
+                        image,
+                        (MAJOR_RECENTERED_CROP_SIZE, MAJOR_RECENTERED_CROP_SIZE),
+                        shifted_center,
+                    ),
+                )
+                shifted = self._observe_candidate(
+                    (index, shifted_center, radius, shifted_crop),
+                    reference_cache=reference_cache,
+                )
+                if shifted.covenant_id is not None:
+                    alternatives.append(shifted)
+        reliable_ids = {item.covenant_id for item in alternatives}
+        if len(reliable_ids) != 1:
+            return observation
+        return max(
+            alternatives,
+            key=lambda item: (
+                item.margin if item.margin is not None else -1.0,
+                item.top_1_score if item.top_1_score is not None else -1.0,
+                -abs(item.refined_center[0] - center[0])
+                - abs(item.refined_center[1] - center[1]),
+            ),
         )
 
     def _observe_candidate(

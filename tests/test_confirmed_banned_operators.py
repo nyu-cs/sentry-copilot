@@ -21,6 +21,8 @@ from sentry_copilot.encounter.major_covenant_ban_catalog import (
 )
 from sentry_copilot.encounter.models import (
     MAJOR_COVENANT_IDS,
+    AdditionalCovenantBanCaptureSource,
+    AdditionalCovenantBanSnapshot,
     CovenantBanState,
     LocalizedText,
     MajorCovenantBanSnapshot,
@@ -40,6 +42,7 @@ _KAZIMIERZ = "covenant.covenant_latter.kazimierz"
 _ASSAULT = "covenant.covenant_latter.assault"
 _KJERAG = "covenant.covenant_latter.kjerag"
 _SWIFTNESS = "covenant.covenant_latter.swiftness"
+_FORESIGHT = "covenant.covenant_latter.foresight"
 _SIRACUSA = "covenant.covenant_latter.siracusa"
 _SUPPORT_OPERATOR = "covenant.covenant_latter.support_operator"
 
@@ -153,6 +156,14 @@ def _complete_major_snapshot() -> MajorCovenantBanSnapshot:
             )
             for covenant_id in sorted(MAJOR_COVENANT_IDS)
         )
+    )
+
+
+def _additional_snapshot() -> AdditionalCovenantBanSnapshot:
+    return AdditionalCovenantBanSnapshot(
+        disabled_covenant_ids=(_DEXTERITY, _ASSAULT, _SWIFTNESS, _FORESIGHT),
+        capture_source=AdditionalCovenantBanCaptureSource.INITIAL_INFO_VISUAL,
+        confirmed_frame_id="additional-confirmed",
     )
 
 
@@ -533,3 +544,60 @@ def test_catalog_diagnostics_are_derived_and_failures_are_path_safe() -> None:
     assert missing == InfoReferenceLoadFailure(
         category="missing_file", reason="required catalog unavailable: operator_catalog.yaml"
     )
+
+
+def _diagnostic_confirmed_covenant_ids(session: object) -> set[str]:
+    controller = LiveEncounterPreviewController(confirmed_banned_operator_catalog=_catalog())
+    controller._session = session  # type: ignore[assignment]  # noqa: SLF001
+    diagnostic = json.loads(controller.diagnostic_json())
+    return {row["covenant_id"] for row in diagnostic["confirmed_banned_operator_rows"]}
+
+
+def test_diagnostics_project_major_only_confirmed_ban_evidence() -> None:
+    session = begin_encounter("diagnostics.major-only").model_copy(
+        update={"major_covenant_ban": _complete_major_snapshot()}
+    )
+
+    diagnostic_ids = _diagnostic_confirmed_covenant_ids(session)
+
+    assert diagnostic_ids
+    assert diagnostic_ids <= MAJOR_COVENANT_IDS
+
+
+def test_diagnostics_project_additional_only_confirmed_ban_evidence() -> None:
+    snapshot = _additional_snapshot()
+    session = begin_encounter("diagnostics.additional-only").model_copy(
+        update={"additional_covenant_ban": snapshot}
+    )
+
+    diagnostic_ids = _diagnostic_confirmed_covenant_ids(session)
+
+    assert diagnostic_ids
+    assert diagnostic_ids <= set(snapshot.disabled_covenant_ids)
+
+
+def test_diagnostics_merge_partial_major_and_additional_ban_evidence() -> None:
+    snapshot = _additional_snapshot()
+    session = begin_encounter("diagnostics.partial-merge").model_copy(
+        update={
+            "major_covenant_ban": _complete_major_snapshot(),
+            "additional_covenant_ban": snapshot,
+        }
+    )
+
+    diagnostic_ids = _diagnostic_confirmed_covenant_ids(session)
+
+    assert diagnostic_ids & MAJOR_COVENANT_IDS
+    assert diagnostic_ids & set(snapshot.disabled_covenant_ids)
+
+
+def test_diagnostics_preserve_full_banned_covenant_projection() -> None:
+    disabled = (_YAN, _KAZIMIERZ)
+    session = begin_encounter("diagnostics.full").model_copy(
+        update={"banned_covenant_ids": disabled}
+    )
+
+    diagnostic_ids = _diagnostic_confirmed_covenant_ids(session)
+
+    assert diagnostic_ids <= set(disabled)
+    assert diagnostic_ids

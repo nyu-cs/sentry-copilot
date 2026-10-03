@@ -275,12 +275,10 @@ def test_initial_presentation_marks_difficulty_as_not_captured_not_unsupported()
     assert zh_view.progress_label == "0 / 5"
     assert zh_view.items[0].label == "难度"
     assert zh_view.items[0].value == "尚未识别"
-    assert zh_view.items[3].value == "主盟约：尚未识别；追加盟约：本版本暂未支持"
+    assert zh_view.items[3].value == "主盟约：尚未识别\n追加盟约：尚未识别"
     assert en_view.items[0].label == "Difficulty"
     assert en_view.items[0].value == "Not captured"
-    assert en_view.items[3].value == (
-        "Major: Not captured; Additional: Not supported in this preview"
-    )
+    assert en_view.items[3].value == "Major: Not captured\nAdditional: Not captured"
 
 
 def test_presentation_has_exactly_one_difficulty_in_the_five_ordinary_rows() -> None:

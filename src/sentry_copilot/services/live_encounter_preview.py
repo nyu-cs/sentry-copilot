@@ -22,6 +22,9 @@ from sentry_copilot.capture.windows_display import (
     WindowsDisplayCaptureError,
     WindowsDisplayFrameSource,
 )
+from sentry_copilot.encounter.additional_covenant_ban_catalog import (
+    AdditionalCovenantPresentationCatalog,
+)
 from sentry_copilot.encounter.catalog import JP_MUMU_ENCOUNTER_MAP_CATALOG, EncounterMapCatalog
 from sentry_copilot.encounter.confirmed_banned_operators import (
     ConfirmedBannedOperator,
@@ -35,7 +38,10 @@ from sentry_copilot.encounter.major_covenant_ban_catalog import (
     MajorCovenantPresentationCatalog,
 )
 from sentry_copilot.encounter.models import (
+    AdditionalCovenantBanCaptureSource,
+    AdditionalCovenantBanSnapshot,
     BossCaptureSource,
+    CovenantBanState,
     DifficultyCaptureSource,
     EncounterSession,
     EnemyTypeCaptureSource,
@@ -46,12 +52,19 @@ from sentry_copilot.encounter.presentation import EncounterPanelView, present_en
 from sentry_copilot.encounter.session import (
     EncounterSessionUpdate,
     EncounterUpdateStatus,
+    apply_additional_covenant_ban_capture,
     apply_boss_capture,
     apply_enemy_type_capture,
     apply_info_difficulty_capture,
     apply_major_covenant_ban_capture,
     apply_operation_difficulty_observation,
     apply_visual_difficulty_capture,
+)
+from sentry_copilot.vision.additional_covenant_ban import (
+    AdditionalCovenantBanObservation,
+    AdditionalCovenantBanObserver,
+    AdditionalCovenantReferencePack,
+    supports_additional_covenant_ban,
 )
 from sentry_copilot.vision.difficulty_recovery import (
     DifficultyRecoveryObservation,
@@ -244,9 +257,12 @@ class LiveEncounterPreviewController:
         info_recovery_page_failure: InfoReferenceLoadFailure | None = None,
         major_covenant_references: MajorCovenantReferencePack | None = None,
         major_covenant_catalog: MajorCovenantPresentationCatalog | None = None,
+        additional_covenant_references: AdditionalCovenantReferencePack | None = None,
+        additional_covenant_catalog: AdditionalCovenantPresentationCatalog | None = None,
         confirmed_banned_operator_catalog: ConfirmedBannedOperatorCatalog | None = None,
         confirmed_banned_operator_catalog_failure: InfoReferenceLoadFailure | None = None,
         major_covenant_reference_failure: InfoReferenceLoadFailure | None = None,
+        additional_covenant_reference_failure: InfoReferenceLoadFailure | None = None,
         debug_skip_initial_enemy_capture: bool = False,
     ) -> None:
         del (
@@ -295,12 +311,19 @@ class LiveEncounterPreviewController:
         self._info_recovery_page_references = info_recovery_page_references
         self._info_recovery_page_failure = info_recovery_page_failure
         self._major_covenant_catalog = major_covenant_catalog
+        self._additional_covenant_catalog = additional_covenant_catalog
         self._confirmed_banned_operator_catalog = confirmed_banned_operator_catalog
         self._confirmed_banned_operator_catalog_failure = confirmed_banned_operator_catalog_failure
         self._major_covenant_reference_failure = major_covenant_reference_failure
+        self._additional_covenant_reference_failure = additional_covenant_reference_failure
         self._major_covenant_observer = (
             MajorCovenantBanObserver(major_covenant_references)
             if major_covenant_references is not None
+            else None
+        )
+        self._additional_covenant_observer = (
+            AdditionalCovenantBanObserver(additional_covenant_references)
+            if additional_covenant_references is not None
             else None
         )
         self._encounter_count = 0
@@ -312,6 +335,9 @@ class LiveEncounterPreviewController:
         self._last_next_encounter_promotion_trace: _LastNextEncounterPromotionTrace | None = None
         self._next_encounter_promotion_reason: str | None = None
         self._latest_major_covenant_ban: MajorCovenantBanObservation | None = None
+        self._latest_additional_covenant_ban: AdditionalCovenantBanObservation | None = None
+        self._additional_ban_pending_disabled_ids: tuple[str, ...] | None = None
+        self._additional_ban_pending_count = 0
         self._major_ban_pending_disabled_ids: tuple[str, ...] | None = None
         self._major_ban_pending_count = 0
         self._difficulty_pending_id: str | None = None
@@ -330,6 +356,9 @@ class LiveEncounterPreviewController:
         self._phase_2_2_present_streak = 0
         self._latest_info_2_2_phase: InfoRecoveryPageObservation | None = None
         self._latest_returned_info: InfoRecoveryPageObservation | None = None
+        self._returned_info_scan_active = False
+        self._returned_info_scan_armed_frame_id: str | None = None
+        self._returned_info_scan_disarm_reason: str | None = None
         self._latest_returned_info_boss: ReturnedInfoBossObservation | None = None
         self._returned_info_boss_pending_id: str | None = None
         self._returned_info_boss_pending_count = 0
@@ -340,6 +369,9 @@ class LiveEncounterPreviewController:
         self._returned_info_major_pending_disabled_ids: tuple[str, ...] | None = None
         self._returned_info_major_pending_count = 0
         self._returned_info_major_capture_attempted = False
+        self._latest_returned_info_additional: AdditionalCovenantBanObservation | None = None
+        self._returned_info_additional_pending_disabled_ids: tuple[str, ...] | None = None
+        self._returned_info_additional_pending_count = 0
 
     @property
     def session(self) -> EncounterSession | None:
@@ -354,6 +386,7 @@ class LiveEncounterPreviewController:
             self._catalog,
             locale_id=self._locale_id,
             major_covenant_catalog=self._major_covenant_catalog,
+            additional_covenant_catalog=self._additional_covenant_catalog,
             confirmed_banned_operator_catalog=self._confirmed_banned_operator_catalog,
         )
         if self._end_watcher.ended:
@@ -417,12 +450,15 @@ class LiveEncounterPreviewController:
         self._latest_info_1_2 = observe_jp_mumu_info_1_2(frame, viewport, self._info_1_2_references)
         self._observe_info_recovery_pages(frame, viewport)
         self.apply_info_1_2_observation(self._latest_info_1_2)
+        self._update_returned_info_scan_context(frame.frame_id)
         self._observe_initial_info_major_ban(frame, viewport, self._latest_info_1_2)
+        self._observe_initial_info_additional_ban(frame, viewport, self._latest_info_1_2)
         self._observe_missing_difficulty_recovery(frame, viewport, self._latest_info_1_2)
         self._update_recovery_reminder()
         self._observe_returned_info_boss_recovery(frame, viewport)
         self._observe_returned_info_enemy_recovery(frame, viewport)
         self._observe_returned_info_major_recovery(frame, viewport)
+        self._observe_returned_info_additional_recovery(frame, viewport)
         if self._end_watcher.ended:
             return self.snapshot()
         if self._session is None:
@@ -543,9 +579,8 @@ class LiveEncounterPreviewController:
     def _is_genuine_initial_info(cls, observation: Info12Observation) -> bool:
         """Keep first-start and primary INFO fact eligibility on one semantic rule."""
 
-        return (
-            observation.state is Info12State.PRESENT
-            and cls._has_reliable_initial_enemy(observation)
+        return observation.state is Info12State.PRESENT and cls._has_reliable_initial_enemy(
+            observation
         )
 
     def _record_next_initial_info_trace(
@@ -642,12 +677,16 @@ class LiveEncounterPreviewController:
         self._phase_2_2_present_streak = 0
         self._latest_info_2_2_phase = None
         self._latest_returned_info = None
+        self._reset_returned_info_scan_context("new_encounter")
         self._latest_returned_info_boss = None
         self._latest_returned_info_enemy = None
         self._latest_returned_info_major = None
+        self._latest_returned_info_additional = None
         self._returned_info_major_capture_attempted = False
         self._latest_major_covenant_ban = None
+        self._latest_additional_covenant_ban = None
         self._reset_pending_major_covenant_ban()
+        self._reset_pending_additional_covenant_ban()
         self._reset_pending_returned_info_recognition()
 
     def _reset_pending_info_recognition(self) -> None:
@@ -659,6 +698,10 @@ class LiveEncounterPreviewController:
     def _reset_pending_major_covenant_ban(self) -> None:
         self._major_ban_pending_disabled_ids = None
         self._major_ban_pending_count = 0
+
+    def _reset_pending_additional_covenant_ban(self) -> None:
+        self._additional_ban_pending_disabled_ids = None
+        self._additional_ban_pending_count = 0
 
     def _reset_pending_difficulty_recovery(self) -> None:
         self._reset_pending_post_start_difficulty_recovery()
@@ -675,6 +718,7 @@ class LiveEncounterPreviewController:
         self._reset_pending_returned_info_boss_recognition()
         self._reset_pending_returned_info_enemy_recognition()
         self._reset_pending_returned_info_major_recognition()
+        self._reset_pending_returned_info_additional_recognition()
 
     def _reset_pending_returned_info_boss_recognition(self) -> None:
         self._returned_info_boss_pending_id = None
@@ -687,6 +731,10 @@ class LiveEncounterPreviewController:
     def _reset_pending_returned_info_major_recognition(self) -> None:
         self._returned_info_major_pending_disabled_ids = None
         self._returned_info_major_pending_count = 0
+
+    def _reset_pending_returned_info_additional_recognition(self) -> None:
+        self._returned_info_additional_pending_disabled_ids = None
+        self._returned_info_additional_pending_count = 0
 
     def _observe_missing_difficulty_recovery(
         self, frame: Frame, viewport: ContentViewport, info: Info12Observation
@@ -733,11 +781,12 @@ class LiveEncounterPreviewController:
             self._recovery_state = _RecoveryReminderState.CLOSED_FOR_RUN
         self._recovery_reminder_visible = False
         self._phase_2_2_present_streak = 0
+        self._reset_returned_info_scan_context("recovery_closed")
 
     def _missing_recoverable_items(self) -> tuple[str, ...]:
         if self._session is None:
             return ()
-        missing = tuple(
+        missing: tuple[str, ...] = tuple(
             item
             for item, complete in (
                 ("boss", self._session.boss_id is not None),
@@ -755,7 +804,13 @@ class LiveEncounterPreviewController:
             and supports_returned_major_covenant_ban(difficulty_id)
             and self._session.major_covenant_ban is None
         ):
-            return (*missing, "major_covenants")
+            missing = (*missing, "major_covenants")
+        if (
+            self._additional_covenant_observer is not None
+            and supports_additional_covenant_ban(difficulty_id)
+            and self._session.additional_covenant_ban is None
+        ):
+            missing = (*missing, "additional_covenants")
         return missing
 
     def _observe_info_recovery_pages(self, frame: Frame, viewport: ContentViewport) -> None:
@@ -768,6 +823,32 @@ class LiveEncounterPreviewController:
             frame, viewport, self._info_recovery_page_references
         )
 
+    def _reset_returned_info_scan_context(self, reason: str) -> None:
+        """Discard controller-owned returned-INFO scan authorization without session mutation."""
+
+        self._returned_info_scan_active = False
+        self._returned_info_scan_armed_frame_id = None
+        self._returned_info_scan_disarm_reason = reason
+        self._reset_pending_returned_info_recognition()
+
+    def _update_returned_info_scan_context(self, frame_id: str) -> None:
+        """Keep a returned-INFO scan authorized while its scrollable Covenant surface is visible."""
+
+        if self._session is None:
+            self._reset_returned_info_scan_context("no_encounter")
+            return
+        if self._recovery_state is not _RecoveryReminderState.OPEN:
+            self._reset_returned_info_scan_context("recovery_not_open")
+            return
+        if self._page_is_present(self._latest_info_2_2_phase, frame_id):
+            self._reset_returned_info_scan_context("info_2_2_present")
+            return
+        if self._page_is_present(self._latest_returned_info, frame_id):
+            if not self._returned_info_scan_active:
+                self._returned_info_scan_active = True
+                self._returned_info_scan_armed_frame_id = frame_id
+                self._returned_info_scan_disarm_reason = None
+
     def _update_recovery_reminder(self) -> None:
         """Apply recovery reminder behavior to the current frame's page observations."""
 
@@ -776,7 +857,7 @@ class LiveEncounterPreviewController:
         if self._recovery_state is not _RecoveryReminderState.OPEN:
             self._phase_2_2_present_streak = 0
             return
-        if self._latest_returned_info.state is InfoRecoveryPageState.PRESENT:
+        if self._returned_info_scan_active:
             self._recovery_reminder_visible = False
             self._phase_2_2_present_streak = 0
             return
@@ -878,8 +959,8 @@ class LiveEncounterPreviewController:
             self._major_covenant_observer is None
             or self._session is None
             or self._session.major_covenant_ban is not None
-            or self._latest_returned_info is None
-            or self._latest_returned_info.state is not InfoRecoveryPageState.PRESENT
+            or self._recovery_state is not _RecoveryReminderState.OPEN
+            or not self._returned_info_scan_active
         ):
             self._latest_returned_info_major = None
             self._reset_pending_returned_info_major_recognition()
@@ -897,7 +978,12 @@ class LiveEncounterPreviewController:
         observation = self._major_covenant_observer.observe_returned_info(
             frame,
             viewport,
-            returned_info_state=self._latest_returned_info.state,
+            returned_info_state=(
+                self._latest_returned_info.state
+                if self._latest_returned_info is not None
+                else InfoRecoveryPageState.ABSENT
+            ),
+            returned_info_scan_active=self._returned_info_scan_active,
             difficulty_id=difficulty_id,
         )
         self._latest_returned_info_major = observation
@@ -916,6 +1002,48 @@ class LiveEncounterPreviewController:
         update = apply_major_covenant_ban_capture(self._session, snapshot)
         self._session, self._update_status = update.session, update.status
         self._reset_pending_returned_info_major_recognition()
+
+    def _observe_returned_info_additional_recovery(
+        self, frame: Frame, viewport: ContentViewport
+    ) -> None:
+        """Fill missing Additional Ban evidence after independent returned-INFO confirmation."""
+
+        if (
+            self._additional_covenant_observer is None
+            or self._session is None
+            or self._session.additional_covenant_ban is not None
+            or self._recovery_state is not _RecoveryReminderState.OPEN
+            or not self._returned_info_scan_active
+        ):
+            self._latest_returned_info_additional = None
+            self._reset_pending_returned_info_additional_recognition()
+            return
+        difficulty_id = (
+            self._session.captured_difficulty.difficulty_id
+            if self._session.captured_difficulty is not None
+            else None
+        )
+        if not supports_additional_covenant_ban(difficulty_id):
+            self._latest_returned_info_additional = None
+            self._reset_pending_returned_info_additional_recognition()
+            return
+        observation = self._additional_covenant_observer.observe_returned_info(
+            frame,
+            viewport,
+            returned_info_state=(
+                self._latest_returned_info.state
+                if self._latest_returned_info is not None
+                else InfoRecoveryPageState.ABSENT
+            ),
+            returned_info_scan_active=self._returned_info_scan_active,
+            difficulty_id=difficulty_id,
+        )
+        self._latest_returned_info_additional = observation
+        self._apply_additional_covenant_ban_observation(
+            observation,
+            source=AdditionalCovenantBanCaptureSource.RETURNED_INFO_VISUAL,
+            returned=True,
+        )
 
     def _apply_difficulty_recovery(self, observation: DifficultyRecoveryObservation) -> None:
         assert self._session is not None
@@ -1040,6 +1168,87 @@ class LiveEncounterPreviewController:
         update = apply_major_covenant_ban_capture(self._session, snapshot)
         self._session, self._update_status = update.session, update.status
 
+    def _observe_initial_info_additional_ban(
+        self,
+        frame: Frame,
+        viewport: ContentViewport,
+        info: Info12Observation,
+    ) -> None:
+        """Observe a complete Additional scroll surface during canonical initial INFO only."""
+
+        if (
+            self._additional_covenant_observer is None
+            or self._session is None
+            or self._info_lifecycle_state is not _InfoEncounterLifecycleState.INITIAL_INFO
+            or self._session.additional_covenant_ban is not None
+        ):
+            self._latest_additional_covenant_ban = None
+            self._reset_pending_additional_covenant_ban()
+            return
+        difficulty_id = (
+            self._session.captured_difficulty.difficulty_id
+            if self._session.captured_difficulty is not None
+            else None
+        )
+        observation = self._additional_covenant_observer.observe(
+            frame,
+            viewport,
+            info_state=info.state,
+            difficulty_id=difficulty_id,
+        )
+        self._latest_additional_covenant_ban = observation
+        self._apply_additional_covenant_ban_observation(
+            observation,
+            source=AdditionalCovenantBanCaptureSource.INITIAL_INFO_VISUAL,
+            returned=False,
+        )
+
+    def _apply_additional_covenant_ban_observation(
+        self,
+        observation: AdditionalCovenantBanObservation,
+        *,
+        source: AdditionalCovenantBanCaptureSource,
+        returned: bool,
+    ) -> None:
+        """Require two identical complete four-ID sets before persisting one sticky fact."""
+
+        if self._session is None or not observation.complete_reliable:
+            if returned:
+                self._reset_pending_returned_info_additional_recognition()
+            else:
+                self._reset_pending_additional_covenant_ban()
+            return
+        candidate = observation.candidate_disabled_covenant_ids
+        if returned:
+            pending = self._returned_info_additional_pending_disabled_ids
+            count = self._returned_info_additional_pending_count
+        else:
+            pending = self._additional_ban_pending_disabled_ids
+            count = self._additional_ban_pending_count
+        if candidate == pending:
+            count += 1
+        else:
+            pending, count = candidate, 1
+        if returned:
+            self._returned_info_additional_pending_disabled_ids = pending
+            self._returned_info_additional_pending_count = count
+        else:
+            self._additional_ban_pending_disabled_ids = pending
+            self._additional_ban_pending_count = count
+        if count < 2:
+            return
+        snapshot = AdditionalCovenantBanSnapshot(
+            disabled_covenant_ids=candidate,
+            capture_source=source,
+            confirmed_frame_id=observation.frame_id,
+        )
+        update = apply_additional_covenant_ban_capture(self._session, snapshot)
+        self._session, self._update_status = update.session, update.status
+        if returned:
+            self._reset_pending_returned_info_additional_recognition()
+        else:
+            self._reset_pending_additional_covenant_ban()
+
     def apply_outside_run_observations(
         self,
         observations: tuple[OutsideRunPageObservation, ...],
@@ -1071,17 +1280,16 @@ class LiveEncounterPreviewController:
         snapshot = self.snapshot()
         info = self._latest_info_1_2
         major_ban = self._latest_major_covenant_ban
+        additional_ban = self._latest_additional_covenant_ban
+        returned_additional_ban = self._latest_returned_info_additional
         confirmed_banned: tuple[ConfirmedBannedOperator, ...] = ()
         confirmed_banned_rows: tuple[ConfirmedBannedOperatorRow, ...] = ()
-        if (
-            snapshot.session is not None
-            and snapshot.session.major_covenant_ban is not None
-            and self._confirmed_banned_operator_catalog is not None
-        ):
-            known_states = {
-                item.covenant_id: item.state
-                for item in snapshot.session.major_covenant_ban.covenant_states
-            }
+        known_states = (
+            _known_confirmed_ban_states(snapshot.session)
+            if snapshot.session is not None
+            else {}
+        )
+        if known_states and self._confirmed_banned_operator_catalog is not None:
             confirmed_banned = resolve_confirmed_banned_operators(
                 known_states, self._confirmed_banned_operator_catalog
             )
@@ -1139,6 +1347,14 @@ class LiveEncounterPreviewController:
                 "major_ban_reference_error": (
                     self._major_covenant_reference_failure.reason
                     if self._major_covenant_reference_failure is not None
+                    else None
+                ),
+                "additional_ban_reference_status": (
+                    "available" if self._additional_covenant_observer is not None else "unavailable"
+                ),
+                "additional_ban_reference_error": (
+                    self._additional_covenant_reference_failure.reason
+                    if self._additional_covenant_reference_failure is not None
                     else None
                 ),
                 "confirmed_banned_operator_catalog_status": (
@@ -1243,6 +1459,100 @@ class LiveEncounterPreviewController:
                 "disabled_major_covenant_ids": (
                     major_ban.disabled_major_covenant_ids if major_ban is not None else ()
                 ),
+                "additional_ban_state": (
+                    additional_ban.state.value if additional_ban is not None else None
+                ),
+                "additional_surface_state": (
+                    additional_ban.reason if additional_ban is not None else None
+                ),
+                "additional_row_count": (
+                    len(additional_ban.row_sizes) if additional_ban is not None else 0
+                ),
+                "additional_row_sizes": (
+                    additional_ban.row_sizes if additional_ban is not None else ()
+                ),
+                "additional_surface_mode": (
+                    additional_ban.surface_mode if additional_ban is not None else None
+                ),
+                "additional_selected_row_sizes": (
+                    additional_ban.selected_row_sizes if additional_ban is not None else ()
+                ),
+                "additional_ignored_row_sizes": (
+                    additional_ban.ignored_row_sizes if additional_ban is not None else ()
+                ),
+                "additional_grouped_circle_centers": (
+                    additional_ban.grouped_circle_centers
+                    if additional_ban is not None
+                    else ()
+                ),
+                "additional_lower_row_recovery_attempted": (
+                    additional_ban.lower_row_recovery_attempted
+                    if additional_ban is not None
+                    else False
+                ),
+                "additional_lower_row_recovery_grouped_circle_centers": (
+                    additional_ban.lower_row_recovery_grouped_circle_centers
+                    if additional_ban is not None
+                    else ()
+                ),
+                "additional_logical_row_candidates": (
+                    _additional_logical_row_candidate_summaries(additional_ban)
+                    if additional_ban is not None
+                    else ()
+                ),
+                "additional_selected_logical_row_centers": (
+                    additional_ban.selected_logical_row_centers
+                    if additional_ban is not None
+                    else ()
+                ),
+                "additional_selected_logical_row_source": (
+                    additional_ban.selected_logical_row_source
+                    if additional_ban is not None
+                    else None
+                ),
+                "additional_six_identity_top_two": (
+                    tuple(
+                        _top_two_summary(item.ranking)
+                        for item in additional_ban.selected_row_observations
+                    )
+                    if additional_ban is not None
+                    else ()
+                ),
+                "additional_extra_detections_ignored": (
+                    additional_ban.extra_detections_ignored
+                    if additional_ban is not None
+                    else False
+                ),
+                "additional_second_row_visible": (
+                    additional_ban.second_row_visible if additional_ban is not None else False
+                ),
+                "additional_target_rankings": (
+                    tuple(
+                        _top_two_summary(item.ranking)
+                        for item in additional_ban.target_observations
+                    )
+                    if additional_ban is not None
+                    else ()
+                ),
+                "additional_candidate_disabled_ids": (
+                    additional_ban.candidate_disabled_covenant_ids
+                    if additional_ban is not None
+                    else ()
+                ),
+                "additional_pending_count": self._additional_ban_pending_count,
+                "additional_confirmed_disabled_ids": (
+                    snapshot.session.additional_covenant_ban.disabled_covenant_ids
+                    if snapshot.session is not None
+                    and snapshot.session.additional_covenant_ban is not None
+                    else ()
+                ),
+                "additional_conflict": (
+                    snapshot.session.additional_covenant_ban_conflict is not None
+                    if snapshot.session is not None
+                    else False
+                ),
+                "additional_recenter_used": False,
+                "additional_recenter_delta_summary": None,
                 "major_structural_validity": (
                     major_ban.structural_valid if major_ban is not None else False
                 ),
@@ -1327,6 +1637,9 @@ class LiveEncounterPreviewController:
                     if self._latest_returned_info is not None
                     else None
                 ),
+                "returned_info_scan_active": self._returned_info_scan_active,
+                "returned_info_scan_armed_frame_id": self._returned_info_scan_armed_frame_id,
+                "returned_info_scan_disarm_reason": self._returned_info_scan_disarm_reason,
                 "returned_info_boss_state": (
                     self._latest_returned_info_boss.state.value
                     if self._latest_returned_info_boss is not None
@@ -1374,6 +1687,87 @@ class LiveEncounterPreviewController:
                 "returned_info_enemy_complete_candidate": (
                     self._latest_returned_info_enemy.complete_candidate
                     if self._latest_returned_info_enemy is not None
+                    else None
+                ),
+                "returned_info_additional_state": (
+                    returned_additional_ban.state.value
+                    if returned_additional_ban is not None
+                    else None
+                ),
+                "returned_info_additional_surface_mode": (
+                    returned_additional_ban.surface_mode
+                    if returned_additional_ban is not None
+                    else None
+                ),
+                "returned_info_additional_row_sizes": (
+                    returned_additional_ban.row_sizes
+                    if returned_additional_ban is not None
+                    else ()
+                ),
+                "returned_info_additional_selected_row_sizes": (
+                    returned_additional_ban.selected_row_sizes
+                    if returned_additional_ban is not None
+                    else ()
+                ),
+                "returned_info_additional_ignored_row_sizes": (
+                    returned_additional_ban.ignored_row_sizes
+                    if returned_additional_ban is not None
+                    else ()
+                ),
+                "returned_info_additional_grouped_circle_centers": (
+                    returned_additional_ban.grouped_circle_centers
+                    if returned_additional_ban is not None
+                    else ()
+                ),
+                "returned_info_additional_lower_row_recovery_attempted": (
+                    returned_additional_ban.lower_row_recovery_attempted
+                    if returned_additional_ban is not None
+                    else False
+                ),
+                "returned_info_additional_lower_row_recovery_grouped_circle_centers": (
+                    returned_additional_ban.lower_row_recovery_grouped_circle_centers
+                    if returned_additional_ban is not None
+                    else ()
+                ),
+                "returned_info_additional_logical_row_candidates": (
+                    _additional_logical_row_candidate_summaries(returned_additional_ban)
+                    if returned_additional_ban is not None
+                    else ()
+                ),
+                "returned_info_additional_selected_logical_row_centers": (
+                    returned_additional_ban.selected_logical_row_centers
+                    if returned_additional_ban is not None
+                    else ()
+                ),
+                "returned_info_additional_selected_logical_row_source": (
+                    returned_additional_ban.selected_logical_row_source
+                    if returned_additional_ban is not None
+                    else None
+                ),
+                "returned_info_additional_six_identity_top_two": (
+                    tuple(
+                        _top_two_summary(item.ranking)
+                        for item in returned_additional_ban.selected_row_observations
+                    )
+                    if returned_additional_ban is not None
+                    else ()
+                ),
+                "returned_info_additional_extra_detections_ignored": (
+                    returned_additional_ban.extra_detections_ignored
+                    if returned_additional_ban is not None
+                    else False
+                ),
+                "returned_info_additional_candidate_disabled_ids": (
+                    returned_additional_ban.candidate_disabled_covenant_ids
+                    if returned_additional_ban is not None
+                    else ()
+                ),
+                "returned_info_additional_pending_count": (
+                    self._returned_info_additional_pending_count
+                ),
+                "returned_info_additional_reason": (
+                    returned_additional_ban.reason
+                    if returned_additional_ban is not None
                     else None
                 ),
                 "returned_info_enemy_pending_candidate": (
@@ -1578,6 +1972,9 @@ def run_windows_live_encounter_preview(
     confirmed_banned_operator_catalog: ConfirmedBannedOperatorCatalog | None = None
     confirmed_banned_operator_catalog_failure: InfoReferenceLoadFailure | None = None
     major_covenant_reference_failure: InfoReferenceLoadFailure | None = None
+    additional_covenant_catalog: AdditionalCovenantPresentationCatalog | None = None
+    additional_covenant_references: AdditionalCovenantReferencePack | None = None
+    additional_covenant_reference_failure: InfoReferenceLoadFailure | None = None
     try:
         from sentry_copilot.encounter.major_covenant_ban_catalog import (
             load_default_private_major_covenant_ban_resources,
@@ -1588,6 +1985,16 @@ def run_windows_live_encounter_preview(
         )
     except (FileNotFoundError, OSError, ValueError) as error:
         major_covenant_reference_failure = _sanitize_reference_load_failure(error)
+    try:
+        from sentry_copilot.encounter.additional_covenant_ban_catalog import (
+            load_default_private_additional_covenant_ban_resources,
+        )
+
+        additional_covenant_catalog, additional_covenant_references = (
+            load_default_private_additional_covenant_ban_resources()
+        )
+    except (FileNotFoundError, OSError, ValueError) as error:
+        additional_covenant_reference_failure = _sanitize_reference_load_failure(error)
     try:
         from sentry_copilot.encounter.confirmed_banned_operators import (
             load_default_confirmed_banned_operator_catalog,
@@ -1611,9 +2018,12 @@ def run_windows_live_encounter_preview(
         info_recovery_page_failure=info_recovery_page_failure,
         major_covenant_references=major_covenant_references,
         major_covenant_catalog=major_covenant_catalog,
+        additional_covenant_references=additional_covenant_references,
+        additional_covenant_catalog=additional_covenant_catalog,
         confirmed_banned_operator_catalog=confirmed_banned_operator_catalog,
         confirmed_banned_operator_catalog_failure=confirmed_banned_operator_catalog_failure,
         major_covenant_reference_failure=major_covenant_reference_failure,
+        additional_covenant_reference_failure=additional_covenant_reference_failure,
         debug_skip_initial_enemy_capture=debug_skip_initial_enemy_capture,
     )
     initial = controller.snapshot()
@@ -1686,6 +2096,32 @@ def _status_message(status: LiveEncounterPreviewStatus, locale_id: str) -> str:
     return messages.get(locale_id, messages["en"])[status]
 
 
+def _known_confirmed_ban_states(session: EncounterSession) -> dict[str, CovenantBanState]:
+    """Return only the current confirmed Ban evidence for local diagnostics."""
+
+    if session.banned_covenant_ids is not None:
+        return {
+            covenant_id: CovenantBanState.DISABLED
+            for covenant_id in session.banned_covenant_ids
+        }
+    states = (
+        {
+            item.covenant_id: item.state
+            for item in session.major_covenant_ban.covenant_states
+        }
+        if session.major_covenant_ban is not None
+        else {}
+    )
+    if session.additional_covenant_ban is not None:
+        states.update(
+            {
+                covenant_id: CovenantBanState.DISABLED
+                for covenant_id in session.additional_covenant_ban.disabled_covenant_ids
+            }
+        )
+    return states
+
+
 def _recovery_reminder_text(locale_id: str, missing_items: tuple[str, ...]) -> str:
     """Present the controller-derived recovery reminder without adding a Tk-owned flag."""
 
@@ -1726,12 +2162,12 @@ def _covenant_missing_label(
         "zh_CN": {
             (True, True): "盟约未识别",
             (True, False): "主盟约未识别",
-            (False, True): "追加盟约未识别",
+            (False, True): "追加盟约未识别；向下滑动查看，两行同时可见效果最佳，完整第二行也可识别",
         },
         "en": {
             (True, True): "Covenants not captured",
             (True, False): "Major Covenants not captured",
-            (False, True): "Additional Covenants not captured",
+            (False, True): "Additional Covenants not captured; scroll down to view them",
         },
     }
     return labels.get(locale_id, labels["en"]).get((major_missing, additional_missing))
@@ -1785,6 +2221,30 @@ def _top_two_summary(
         "second_score": second.score if second is not None else None,
         "margin": first.score - second.score if second is not None else None,
     }
+
+
+def _additional_logical_row_candidate_summaries(
+    observation: AdditionalCovenantBanObservation,
+) -> tuple[dict[str, object], ...]:
+    """Expose compact geometry decisions without retaining frame pixels."""
+
+    return tuple(
+        {
+            "detection_source": item.detection_source,
+            "source_row_index": item.source_row_index,
+            "detected_centers": item.detected_centers,
+            "completed_centers": item.completed_centers,
+            "matched_slot_count": item.matched_slot_count,
+            "maximum_x_residual": item.maximum_x_residual,
+            "inferred_missing_slot_index": item.inferred_missing_slot_index,
+            "ignored_detection_count": item.ignored_detection_count,
+            "rejection_reason": item.rejection_reason,
+            "identity_top_two": tuple(
+                _top_two_summary(ranking) for ranking in item.identity_rankings
+            ),
+        }
+        for item in observation.logical_row_candidates
+    )
 
 
 def _major_snapshot_from_observation(

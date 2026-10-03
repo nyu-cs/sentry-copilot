@@ -56,6 +56,13 @@ class MajorCovenantBanCaptureSource(StrEnum):
     INITIAL_INFO_VISUAL = "initial_info_visual"
 
 
+class AdditionalCovenantBanCaptureSource(StrEnum):
+    """Visual source for a complete Additional-Covenant disabled set."""
+
+    INITIAL_INFO_VISUAL = "initial_info_visual"
+    RETURNED_INFO_VISUAL = "returned_info_visual"
+
+
 MAJOR_COVENANT_IDS = frozenset(
     {
         "covenant.covenant_latter.sargon",
@@ -66,6 +73,26 @@ MAJOR_COVENANT_IDS = frozenset(
         "covenant.covenant_latter.yan",
         "covenant.covenant_latter.victoria",
         "covenant.covenant_latter.kjerag",
+    }
+)
+
+ADDITIONAL_COVENANT_IDS = frozenset(
+    {
+        "covenant.covenant_latter.precision",
+        "covenant.covenant_latter.arcane",
+        "covenant.covenant_latter.steadfast",
+        "covenant.covenant_latter.support",
+        "covenant.covenant_latter.foresight",
+        "covenant.covenant_latter.investor",
+        "covenant.covenant_latter.assault",
+        "covenant.covenant_latter.harmony",
+        "covenant.covenant_latter.support_operator",
+        "covenant.covenant_latter.lone_wolf",
+        "covenant.covenant_latter.ultimate_technique",
+        "covenant.covenant_latter.swiftness",
+        "covenant.covenant_latter.dexterity",
+        "covenant.covenant_latter.miracle",
+        "covenant.covenant_latter.unyielding",
     }
 )
 
@@ -248,6 +275,27 @@ class MajorCovenantBanSnapshot(BaseModel):
         )
 
 
+class AdditionalCovenantBanSnapshot(BaseModel):
+    """A complete four-ID Additional Ban observation, independent from Major evidence."""
+
+    model_config = ConfigDict(frozen=True)
+
+    disabled_covenant_ids: tuple[str, ...]
+    capture_source: AdditionalCovenantBanCaptureSource
+    confirmed_frame_id: str
+
+    @model_validator(mode="after")
+    def complete_additional_structure(self) -> AdditionalCovenantBanSnapshot:
+        if (
+            len(self.disabled_covenant_ids) != 4
+            or len(set(self.disabled_covenant_ids)) != 4
+            or not set(self.disabled_covenant_ids) <= ADDITIONAL_COVENANT_IDS
+            or not self.confirmed_frame_id.strip()
+        ):
+            raise ValueError("Additional Ban snapshot requires four distinct known Additional IDs")
+        return self
+
+
 class CapturedMap(BaseModel):
     """One durable, normalized map capture for an encounter session."""
 
@@ -319,6 +367,15 @@ class MajorCovenantBanCaptureConflict(BaseModel):
     conflicting_disabled_covenant_ids: tuple[str, ...]
 
 
+class AdditionalCovenantBanCaptureConflict(BaseModel):
+    """A later complete Additional Ban observation that cannot replace captured evidence."""
+
+    model_config = ConfigDict(frozen=True)
+
+    existing_disabled_covenant_ids: tuple[str, ...]
+    conflicting_disabled_covenant_ids: tuple[str, ...]
+
+
 class EncounterSession(BaseModel):
     """Immutable encounter-static facts, deliberately independent from player count and slots."""
 
@@ -337,6 +394,8 @@ class EncounterSession(BaseModel):
     enemy_type_conflict: EnemyTypeCaptureConflict | None = None
     major_covenant_ban: MajorCovenantBanSnapshot | None = None
     major_covenant_ban_conflict: MajorCovenantBanCaptureConflict | None = None
+    additional_covenant_ban: AdditionalCovenantBanSnapshot | None = None
+    additional_covenant_ban_conflict: AdditionalCovenantBanCaptureConflict | None = None
     banned_covenant_ids: tuple[str, ...] | None = None
     secret_boss_id: str | None = None
 

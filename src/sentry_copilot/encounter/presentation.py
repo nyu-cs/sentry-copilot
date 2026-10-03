@@ -4,13 +4,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .additional_covenant_ban_catalog import AdditionalCovenantPresentationCatalog
 from .catalog import EncounterMapCatalog
 from .confirmed_banned_operators import (
     ConfirmedBannedOperatorCatalog,
     project_confirmed_banned_operator_rows,
 )
 from .major_covenant_ban_catalog import MajorCovenantPresentationCatalog
-from .models import EncounterCaptureItem, EncounterSession, LocalizedText, MapKnowledgeEntry
+from .models import (
+    MAJOR_COVENANT_IDS,
+    CovenantBanState,
+    EncounterCaptureItem,
+    EncounterSession,
+    LocalizedText,
+    MapKnowledgeEntry,
+)
 
 _UI_TEXT: dict[str, dict[str, str]] = {
     "zh_CN": {
@@ -22,8 +30,12 @@ _UI_TEXT: dict[str, dict[str, str]] = {
         "banned_covenants": "禁用盟约",
         "not_captured": "尚未识别",
         "upcoming": "本版本暂未支持",
-        "major_ban_unresolved": "主盟约：尚未识别；追加盟约：本版本暂未支持",
-        "major_ban_captured": "{disabled}",
+        "major_ban_unresolved": "主盟约：尚未识别",
+        "major_ban_captured": "主盟约：{disabled}",
+        "additional_ban_unresolved": "追加盟约：尚未识别",
+        "additional_ban_captured": "追加盟约：{disabled}",
+        "additional_ban_pending": "追加盟约：识别中，请继续向下查看",
+        "ban_standard_unsupported": "本模式暂未制作该功能，可忽略",
         "map_intel": "地图情报",
     },
     "en": {
@@ -35,8 +47,12 @@ _UI_TEXT: dict[str, dict[str, str]] = {
         "banned_covenants": "Bans",
         "not_captured": "Not captured",
         "upcoming": "Not supported in this preview",
-        "major_ban_unresolved": "Major: Not captured; Additional: Not supported in this preview",
-        "major_ban_captured": "{disabled}",
+        "major_ban_unresolved": "Major: Not captured",
+        "major_ban_captured": "Major: {disabled}",
+        "additional_ban_unresolved": "Additional: Not captured",
+        "additional_ban_captured": "Additional: {disabled}",
+        "additional_ban_pending": "Additional: recognizing; continue scrolling down",
+        "ban_standard_unsupported": "Not supported for this mode; can be ignored",
         "map_intel": "Map Intel",
     },
 }
@@ -94,6 +110,7 @@ def present_encounter(
     *,
     locale_id: str,
     major_covenant_catalog: MajorCovenantPresentationCatalog | None = None,
+    additional_covenant_catalog: AdditionalCovenantPresentationCatalog | None = None,
     confirmed_banned_operator_catalog: ConfirmedBannedOperatorCatalog | None = None,
 ) -> EncounterPanelView:
     """Build an immutable preview view; absent knowledge is ordinary, not an error."""
@@ -136,6 +153,7 @@ def present_encounter(
                                 _major_ban_value(
                                     session,
                                     major_covenant_catalog,
+                                    additional_covenant_catalog,
                                     locale_id,
                                     strings,
                                 )
@@ -248,19 +266,41 @@ def _enemy_value(session: EncounterSession, catalog: EncounterMapCatalog, locale
 
 def _major_ban_value(
     session: EncounterSession,
-    catalog: MajorCovenantPresentationCatalog | None,
+    major_catalog: MajorCovenantPresentationCatalog | None,
+    additional_catalog: AdditionalCovenantPresentationCatalog | None,
     locale_id: str,
     strings: dict[str, str],
 ) -> str:
-    snapshot = session.major_covenant_ban
-    if snapshot is None:
-        return strings["major_ban_unresolved"]
-    names = tuple(
-        _major_covenant_name(covenant_id, catalog, locale_id)
-        for covenant_id in snapshot.disabled_covenant_ids
+    difficulty_id = (
+        session.captured_difficulty.difficulty_id
+        if session.captured_difficulty is not None
+        else None
     )
+    if difficulty_id == "difficulty.covenant_latter.standard":
+        return strings["ban_standard_unsupported"]
     separator = "、" if locale_id == "zh_CN" else ", "
-    return strings["major_ban_captured"].format(disabled=separator.join(names))
+    snapshot = session.major_covenant_ban
+    major_value = (
+        strings["major_ban_captured"].format(
+            disabled=separator.join(
+                _major_covenant_name(covenant_id, major_catalog, locale_id)
+                for covenant_id in snapshot.disabled_covenant_ids
+            )
+        )
+        if snapshot is not None
+        else strings["major_ban_unresolved"]
+    )
+    additional = session.additional_covenant_ban
+    if additional is None:
+        additional_value = strings["additional_ban_unresolved"]
+    else:
+        additional_value = strings["additional_ban_captured"].format(
+            disabled=separator.join(
+                _additional_covenant_name(covenant_id, additional_catalog, locale_id)
+                for covenant_id in additional.disabled_covenant_ids
+            )
+        )
+    return f"{major_value}\n{additional_value}"
 
 
 def _confirmed_banned_operator_rows(
@@ -269,11 +309,41 @@ def _confirmed_banned_operator_rows(
 ) -> tuple[ConfirmedBannedOperatorRowView, ...]:
     """Project existing confirmed-Ban rows into presentation-only operator cards."""
 
-    snapshot = session.major_covenant_ban
-    if snapshot is None or catalog is None:
+    if catalog is None:
         return ()
-    states = {item.covenant_id: item.state for item in snapshot.covenant_states}
-    rows = project_confirmed_banned_operator_rows(states, catalog)
+    states: dict[str, CovenantBanState] = (
+        {
+            covenant_id: CovenantBanState.DISABLED
+            for covenant_id in session.banned_covenant_ids
+        }
+        if session.banned_covenant_ids is not None
+        else {}
+    )
+    if session.major_covenant_ban is not None:
+        states.update(
+            {
+                item.covenant_id: item.state
+                for item in session.major_covenant_ban.covenant_states
+            }
+        )
+    if session.additional_covenant_ban is not None:
+        states.update(
+            {
+                covenant_id: CovenantBanState.DISABLED
+                for covenant_id in session.additional_covenant_ban.disabled_covenant_ids
+            }
+        )
+    if not states:
+        return ()
+    rows = tuple(
+        sorted(
+            project_confirmed_banned_operator_rows(states, catalog),
+            key=lambda row: (
+                0 if row.covenant_id in MAJOR_COVENANT_IDS else 1,
+                row.covenant_id,
+            ),
+        )
+    )
     return tuple(
         ConfirmedBannedOperatorRowView(
             covenant_id=row.covenant_id,
@@ -295,6 +365,15 @@ def _confirmed_banned_operator_rows(
 def _major_covenant_name(
     covenant_id: str,
     catalog: MajorCovenantPresentationCatalog | None,
+    locale_id: str,
+) -> str:
+    definition = catalog.by_id(covenant_id) if catalog is not None else None
+    return _localized(definition.names, locale_id) if definition is not None else covenant_id
+
+
+def _additional_covenant_name(
+    covenant_id: str,
+    catalog: AdditionalCovenantPresentationCatalog | None,
     locale_id: str,
 ) -> str:
     definition = catalog.by_id(covenant_id) if catalog is not None else None

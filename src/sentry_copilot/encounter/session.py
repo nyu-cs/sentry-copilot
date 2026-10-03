@@ -12,6 +12,8 @@ from sentry_copilot.vision.operation_difficulty import (
 
 from .catalog import EncounterMapCatalog
 from .models import (
+    AdditionalCovenantBanCaptureConflict,
+    AdditionalCovenantBanSnapshot,
     BossCaptureConflict,
     BossCaptureSource,
     CapturedDifficulty,
@@ -231,17 +233,14 @@ def apply_major_covenant_ban_capture(
     session: EncounterSession,
     snapshot: MajorCovenantBanSnapshot | None,
 ) -> EncounterSessionUpdate:
-    """Persist Major/Core Ban evidence without completing the global Ban item.
-
-    Additional Covenant Ban evidence is intentionally absent from this bounded slice, so this
-    function never writes ``banned_covenant_ids`` and never changes ordinary Ban progress.
-    """
+    """Persist Major/Core Ban evidence; only the Additional component can complete Ban with it."""
 
     if snapshot is None:
         return EncounterSessionUpdate(session, EncounterUpdateStatus.UNRESOLVED)
     if session.major_covenant_ban is None:
+        updated = session.model_copy(update={"major_covenant_ban": snapshot})
         return EncounterSessionUpdate(
-            session.model_copy(update={"major_covenant_ban": snapshot}),
+            _complete_bans_if_ready(updated),
             EncounterUpdateStatus.CAPTURED,
         )
     existing = session.major_covenant_ban
@@ -258,3 +257,46 @@ def apply_major_covenant_ban_capture(
         ),
         EncounterUpdateStatus.CONFLICT,
     )
+
+
+def apply_additional_covenant_ban_capture(
+    session: EncounterSession,
+    snapshot: AdditionalCovenantBanSnapshot | None,
+) -> EncounterSessionUpdate:
+    """Persist a complete Additional disabled set; only Major+Additional completes Ban."""
+
+    if snapshot is None:
+        return EncounterSessionUpdate(session, EncounterUpdateStatus.UNRESOLVED)
+    if session.additional_covenant_ban is None:
+        updated = session.model_copy(update={"additional_covenant_ban": snapshot})
+        return EncounterSessionUpdate(
+            _complete_bans_if_ready(updated), EncounterUpdateStatus.CAPTURED
+        )
+    existing = session.additional_covenant_ban
+    if set(existing.disabled_covenant_ids) == set(snapshot.disabled_covenant_ids):
+        return EncounterSessionUpdate(session, EncounterUpdateStatus.PRESERVED)
+    return EncounterSessionUpdate(
+        session.model_copy(
+            update={
+                "additional_covenant_ban_conflict": AdditionalCovenantBanCaptureConflict(
+                    existing_disabled_covenant_ids=existing.disabled_covenant_ids,
+                    conflicting_disabled_covenant_ids=snapshot.disabled_covenant_ids,
+                )
+            }
+        ),
+        EncounterUpdateStatus.CONFLICT,
+    )
+
+
+def _complete_bans_if_ready(session: EncounterSession) -> EncounterSession:
+    """Derive the ordinary Ban item only from both independently sticky components."""
+
+    if session.major_covenant_ban is None or session.additional_covenant_ban is None:
+        return session
+    disabled = tuple(
+        sorted(
+            session.major_covenant_ban.disabled_covenant_ids
+            + session.additional_covenant_ban.disabled_covenant_ids
+        )
+    )
+    return session.model_copy(update={"banned_covenant_ids": disabled})

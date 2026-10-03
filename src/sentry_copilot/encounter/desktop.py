@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import base64
-from collections.abc import Callable
+import json
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -20,6 +21,7 @@ from sentry_copilot.catalogs.operator_portrait_sources import (
 )
 from sentry_copilot.services.live_encounter_preview import LiveEncounterPreviewSnapshot
 
+from .models import MAJOR_COVENANT_IDS
 from .presentation import ConfirmedBannedOperatorCardView, EncounterPanelView
 
 _LOCALE_OPTIONS = {"zh_CN": "简体中文", "en": "English"}
@@ -44,7 +46,7 @@ class PreviewPageGeometry:
 
 
 _PAGE_GEOMETRIES = {
-    PreviewPage.MAIN: PreviewPageGeometry(width=460, height=450),
+    PreviewPage.MAIN: PreviewPageGeometry(width=460, height=485),
     PreviewPage.BAN_DETAIL: PreviewPageGeometry(width=780, height=560),
 }
 
@@ -57,11 +59,17 @@ class _MainContentLayout:
     header_height: int = 28
     reminder_height: int = 42
     item_height: int = 34
+    ban_item_height: int = 66
     details_button_height: int = 32
     footer_height: int = 32
 
 
 _MAIN_CONTENT_LAYOUT = _MainContentLayout()
+_BAN_DETAIL_MAX_CARDS_PER_ROW = 7
+_BAN_DETAIL_COVENANT_HEADER_WIDTH = 88
+_COVENANT_UI_ICON_ROOT = (
+    Path(__file__).resolve().parents[3] / "data" / "private" / "ui" / "covenant_icons_prts"
+)
 
 
 @dataclass(frozen=True)
@@ -124,6 +132,60 @@ def _ban_detail_content_signature(
     )
 
 
+def _ban_detail_group_label(covenant_id: str, locale_id: str) -> str:
+    """Return the localized presentation group without changing Covenant ordering or semantics."""
+
+    is_major = covenant_id in MAJOR_COVENANT_IDS
+    if locale_id == "zh_CN":
+        return "主盟约" if is_major else "追加盟约"
+    return "Major Covenants" if is_major else "Additional Covenants"
+
+
+def _ban_card_grid_position(card_index: int) -> tuple[int, int]:
+    """Wrap Ban Detail cards into bounded rows instead of widening the page."""
+
+    if card_index < 0:
+        raise ValueError("Ban Detail card index must not be negative")
+    return divmod(card_index, _BAN_DETAIL_MAX_CARDS_PER_ROW)
+
+
+def _covenant_icon_source(
+    covenant_icon_sources: Mapping[str, Path], covenant_id: str
+) -> Path | None:
+    """Resolve an optional neutral UI icon only by its normalized Covenant ID."""
+
+    return covenant_icon_sources.get(covenant_id)
+
+
+def _load_covenant_ui_icon_sources(
+    root: Path = _COVENANT_UI_ICON_ROOT,
+) -> dict[str, Path]:
+    """Load only declared local UI icon paths; unavailable assets remain an optional decoration."""
+
+    try:
+        manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    records = manifest.get("records") if isinstance(manifest, dict) else None
+    if not isinstance(records, list):
+        return {}
+    sources: dict[str, Path] = {}
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        covenant_id = record.get("covenant_id")
+        ui_path = record.get("ui_path")
+        if not isinstance(covenant_id, str) or not isinstance(ui_path, str):
+            continue
+        relative_path = Path(ui_path)
+        if relative_path.is_absolute() or ".." in relative_path.parts:
+            continue
+        path = root / relative_path
+        if path.is_file():
+            sources[covenant_id] = path
+    return sources
+
+
 @dataclass(frozen=True)
 class _BanDetailRenderState:
     """Track the last materialized detail view without making it controller state."""
@@ -139,6 +201,19 @@ class _BanDetailRenderState:
 
     def after_render(self, signature: BanDetailContentSignature) -> _BanDetailRenderState:
         return _BanDetailRenderState(rendered_signature=signature)
+
+
+@dataclass(frozen=True)
+class _BanDetailScrollState:
+    """Keep same-encounter scrolling stable while requesting a reset for a new encounter."""
+
+    encounter_id: str | None = None
+
+    def needs_reset(self, encounter_id: str | None) -> bool:
+        return self.encounter_id is not None and encounter_id != self.encounter_id
+
+    def after_snapshot(self, encounter_id: str | None) -> _BanDetailScrollState:
+        return _BanDetailScrollState(encounter_id=encounter_id)
 
 
 class _PortraitImageCache:
@@ -306,6 +381,7 @@ class LiveEncounterPreviewWindow:
         always_on_top: bool = True,
         portrait_sources: OperatorPortraitSourceCatalog | None = None,
         portrait_cache_root: Path | None = None,
+        covenant_icon_sources: Mapping[str, Path] | None = None,
     ) -> None:
         import tkinter as tk
         from tkinter import ttk
@@ -327,11 +403,18 @@ class LiveEncounterPreviewWindow:
         self._outer.grid_columnconfigure(0, weight=1)
         self._page_state = PreviewPageState()
         self._ban_detail_render_state = _BanDetailRenderState()
+        self._ban_detail_scroll_state = _BanDetailScrollState()
         self._portrait_sources = portrait_sources or _try_load_portrait_sources()
         self._portrait_cache_root = (
             portrait_cache_root or default_operator_portrait_private_cache_root()
         )
         self._portrait_images = _PortraitImageCache()
+        self._covenant_icon_sources = (
+            dict(covenant_icon_sources)
+            if covenant_icon_sources is not None
+            else _load_covenant_ui_icon_sources()
+        )
+        self._covenant_images = _PortraitImageCache()
         self._locale = tk.StringVar(value=_locale_label(initial.locale_id))
         self._title = tk.StringVar()
         self._status = tk.StringVar()
@@ -400,7 +483,11 @@ class LiveEncounterPreviewWindow:
         for index, item in enumerate(self._items, start=2):
             self._fixed_main_text_slot(
                 row=index,
-                height=_MAIN_CONTENT_LAYOUT.item_height,
+                height=(
+                    _MAIN_CONTENT_LAYOUT.ban_item_height
+                    if index == 5
+                    else _MAIN_CONTENT_LAYOUT.item_height
+                ),
                 variable=item,
                 style="Live.Item.TLabel",
                 pady=3,
@@ -443,8 +530,24 @@ class LiveEncounterPreviewWindow:
         ).grid(
             row=1, column=0, sticky="w"
         )
-        self._ban_rows = ttk.Frame(self._ban_detail_page)
-        self._ban_rows.grid(row=1, column=0, columnspan=2, sticky="nw", pady=(14, 0))
+        scroll_shell = ttk.Frame(self._ban_detail_page)
+        scroll_shell.grid(row=1, column=0, columnspan=2, sticky="nsew", pady=(14, 0))
+        self._ban_scroll_canvas = self._tk.Canvas(
+            scroll_shell, width=730, height=420, highlightthickness=0
+        )
+        self._ban_scrollbar = ttk.Scrollbar(
+            scroll_shell, orient="vertical", command=self._ban_scroll_canvas.yview
+        )
+        self._ban_scroll_canvas.configure(yscrollcommand=self._ban_scrollbar.set)
+        self._ban_scroll_canvas.grid(row=0, column=0, sticky="nsew")
+        self._ban_scrollbar.grid(row=0, column=1, sticky="ns")
+        self._ban_rows = ttk.Frame(self._ban_scroll_canvas)
+        self._ban_rows_window = self._ban_scroll_canvas.create_window(
+            (0, 0), window=self._ban_rows, anchor="nw"
+        )
+        self._ban_rows.bind("<Configure>", self._on_ban_rows_configure)
+        self._ban_scroll_canvas.bind("<MouseWheel>", self._on_ban_mousewheel)
+        self._ban_rows.bind("<MouseWheel>", self._on_ban_mousewheel)
         ttk.Label(
             self._ban_detail_page,
             textvariable=self._ban_detail_empty,
@@ -503,6 +606,10 @@ class LiveEncounterPreviewWindow:
 
     def _render(self, snapshot: LiveEncounterPreviewSnapshot) -> None:
         view = snapshot.presentation
+        encounter_id = snapshot.session.encounter_id if snapshot.session is not None else None
+        if self._ban_detail_scroll_state.needs_reset(encounter_id):
+            self._ban_scroll_canvas.yview_moveto(0.0)
+        self._ban_detail_scroll_state = self._ban_detail_scroll_state.after_snapshot(encounter_id)
         self._latest_ban_view = view
         self._latest_ban_locale_id = snapshot.locale_id
         self._root.title(view.title)
@@ -527,7 +634,7 @@ class LiveEncounterPreviewWindow:
         )
         _set_if_changed(
             self._ban_detail_subtitle,
-            "当前仅主盟约" if snapshot.locale_id == "zh_CN" else "Major Covenants only"
+            "当前已确认禁用" if snapshot.locale_id == "zh_CN" else "Currently confirmed bans"
         )
         _set_if_changed(
             self._ban_detail_empty,
@@ -584,30 +691,67 @@ class LiveEncounterPreviewWindow:
             return
         for child in self._ban_rows.winfo_children():
             child.destroy()
-        for row_index, row in enumerate(view.confirmed_banned_operator_rows):
+        current_group: str | None = None
+        row_index = 0
+        for row in view.confirmed_banned_operator_rows:
+            group = _ban_detail_group_label(row.covenant_id, locale_id)
+            if group != current_group:
+                self._ttk.Label(
+                    self._ban_rows, text=group, style="Live.Title.TLabel"
+                ).grid(row=row_index, column=0, sticky="w", pady=(0, 6))
+                row_index += 1
+                current_group = group
             row_frame = self._ttk.Frame(self._ban_rows)
             row_frame.grid(row=row_index, column=0, sticky="w", pady=(0, 12))
+            covenant_icon = self._covenant_icon_for(row.covenant_id)
+            header = self._ttk.Frame(row_frame, width=_BAN_DETAIL_COVENANT_HEADER_WIDTH)
+            header.grid(row=0, column=0, sticky="n", padx=(0, 8))
+            header.grid_columnconfigure(0, weight=1)
+            name_row = 0
+            if covenant_icon is not None:
+                self._ttk.Label(header, image=covenant_icon).grid(row=0, column=0)
+                name_row = 1
             self._ttk.Label(
-                row_frame,
+                header,
                 text=row.display_name,
                 style="Live.Item.TLabel",
-                width=12,
-            ).grid(row=0, column=0, sticky="n", padx=(0, 10))
+                wraplength=_BAN_DETAIL_COVENANT_HEADER_WIDTH,
+                justify="center",
+                anchor="center",
+            ).grid(row=name_row, column=0, sticky="ew")
             cards = self._ttk.Frame(row_frame)
             cards.grid(row=0, column=1, sticky="w")
             for card_index, card in enumerate(row.operators):
                 self._render_ban_card(cards, card, locale_id, card_index)
+            row_index += 1
+        self._bind_ban_mousewheel_recursive(self._ban_rows)
         self._ban_detail_render_state = self._ban_detail_render_state.after_render(signature)
+
+    def _on_ban_rows_configure(self, _event: object) -> None:
+        self._ban_scroll_canvas.configure(scrollregion=self._ban_scroll_canvas.bbox("all"))
+
+    def _on_ban_mousewheel(self, event: object) -> None:
+        delta = getattr(event, "delta", 0)
+        if delta:
+            self._ban_scroll_canvas.yview_scroll(-int(delta / 120), "units")
+
+    def _bind_ban_mousewheel_recursive(self, widget: Any) -> None:
+        """Keep wheel scrolling local to Ban Detail content, including portrait-card children."""
+
+        widget.bind("<MouseWheel>", self._on_ban_mousewheel)
+        for child in widget.winfo_children():
+            self._bind_ban_mousewheel_recursive(child)
 
     def _render_ban_card(
         self,
         parent: Any,
         card: ConfirmedBannedOperatorCardView,
         locale_id: str,
-        column: int,
+        card_index: int,
     ) -> None:
         frame = self._ttk.Frame(parent)
-        frame.grid(row=0, column=column, padx=(0, 10))
+        row, column = _ban_card_grid_position(card_index)
+        frame.grid(row=row, column=column, padx=(0, 10), pady=(0, 8))
         image = self._portrait_for(card)
         if image is None:
             self._ttk.Label(frame, text="—", width=8, anchor="center").grid(row=0, column=0)
@@ -628,6 +772,31 @@ class LiveEncounterPreviewWindow:
             60,
             lambda: self._load_portrait_photoimage(portrait_key),
         )
+
+    def _covenant_icon_for(self, covenant_id: str) -> Any | None:
+        source = _covenant_icon_source(self._covenant_icon_sources, covenant_id)
+        if source is None:
+            return None
+        return self._covenant_images.get_or_load(
+            f"covenant:{covenant_id}",
+            40,
+            lambda: self._load_covenant_icon_photoimage(source),
+        )
+
+    def _load_covenant_icon_photoimage(self, source: Path) -> Any | None:
+        try:
+            decoded = cv2.imdecode(
+                np.frombuffer(source.read_bytes(), dtype=np.uint8), cv2.IMREAD_UNCHANGED
+            )
+            if decoded is None:
+                return None
+            resized = _resize_portrait_image(decoded, 40)
+            success, encoded = cv2.imencode(".png", resized)
+            if not success:
+                return None
+            return self._tk.PhotoImage(data=base64.b64encode(encoded.tobytes()))
+        except (OSError, ValueError, cv2.error, self._tk.TclError):
+            return None
 
     def _load_portrait_photoimage(self, portrait_key: str) -> Any | None:
         source = (
