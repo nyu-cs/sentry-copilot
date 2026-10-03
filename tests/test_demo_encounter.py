@@ -99,12 +99,91 @@ def test_ban_detail_uses_only_synthetic_text_and_no_portrait_keys() -> None:
     )
 
 
-def test_chinese_shell_retains_synthetic_entity_labels() -> None:
+@pytest.mark.parametrize(
+    "locale,difficulty,boss,enemies,major,extra,operator",
+    [
+        ("en", "Demo Challenge", "Demo Warden", "Aerial / Stealth", "Major", "Extra", "Demo Op"),
+        ("zh_CN", "演示难度", "演示首领", "空中 / 潜行", "主盟约", "追加盟约", "演示干员"),
+    ],
+)
+def test_entity_and_ban_detail_labels_follow_demo_locale(
+    locale: str, difficulty: str, boss: str, enemies: str, major: str, extra: str, operator: str
+) -> None:
+    view = build_demo_timeline(locale)[-1].presentation
+    assert view.difficulty_value == difficulty
+    values = {item.item: item.value for item in view.items}
+    assert values[EncounterCaptureItem.DIFFICULTY] == difficulty
+    assert values[EncounterCaptureItem.BOSS] == boss
+    assert values[EncounterCaptureItem.ENEMY_TYPES] == enemies
+    rows = view.confirmed_banned_operator_rows
+    assert [row.display_name for row in rows[:3]] == [f"{major} {letter}" for letter in "ABC"]
+    assert [row.display_name for row in rows[3:]] == [f"{extra} {letter}" for letter in "ABCD"]
+    assert all(row.display_name in values[EncounterCaptureItem.BANNED_COVENANTS] for row in rows)
+    assert {card.display_name for row in rows for card in row.operators} == {
+        f"{operator} {letter}" for letter in "ABCD"
+    }
+
+
+def test_chinese_synthetic_status_and_recovery_are_localized() -> None:
     timeline = build_demo_timeline("zh_CN")
     assert timeline[-1].presentation.progress_label == "4 / 4"
     assert timeline[-1].presentation.title == "合成对局演示"
-    assert "Demo Warden" in timeline[-1].presentation.items[1].value
-    assert timeline[5].recovery_reminder_text is not None
+    assert timeline[5].recovery_reminder_text == "合成补采提示：Boss 缺失，可返回情报页。"
+    assert all(step.status_message.startswith("合成演示：") for step in timeline)
+    assert "演示难度" in timeline[1].status_message
+    assert "空中 / 潜行" in timeline[2].status_message
+    visible = "\n".join(
+        f"{step.status_message}\n{step.recovery_reminder_text or ''}" for step in timeline
+    )
+    assert "SYNTHETIC DEMO" not in visible
+    assert all(label not in visible for label in ("Demo Challenge", "Aerial", "Stealth"))
+    assert format_demo_timeline(timeline).startswith("合成对局演示\n")
+
+
+def test_locale_switch_preserves_sessions_and_every_media_identity() -> None:
+    from sentry_copilot.demo.media import build_demo_media
+
+    english, chinese = build_demo_timeline(), build_demo_timeline("zh_CN")
+    for before, after in zip(english, chinese, strict=True):
+        assert before.session == after.session
+        assert before.presentation.progress_label == after.presentation.progress_label
+        assert [row.covenant_id for row in before.presentation.confirmed_banned_operator_rows] == [
+            row.covenant_id for row in after.presentation.confirmed_banned_operator_rows
+        ]
+        for old_row, new_row in zip(
+            before.presentation.confirmed_banned_operator_rows,
+            after.presentation.confirmed_banned_operator_rows,
+            strict=True,
+        ):
+            assert [
+                (card.operator_id, card.tier, card.portrait_key) for card in old_row.operators
+            ] == [(card.operator_id, card.tier, card.portrait_key) for card in new_row.operators]
+    old_media, new_media = (
+        build_demo_media(english[-1].presentation),
+        build_demo_media(chinese[-1].presentation),
+    )
+    for old_images, new_images in (
+        (old_media.covenant_icons, new_media.covenant_icons),
+        (old_media.operator_portraits, new_media.operator_portraits),
+    ):
+        assert old_images.keys() == new_images.keys()
+        assert all(
+            image.tobytes() == new_images[key].tobytes() for key, image in old_images.items()
+        )
+
+
+def test_default_english_headless_transcript_is_unchanged() -> None:
+    assert format_demo_timeline(build_demo_timeline()) == (
+        "SYNTHETIC ENCOUNTER DEMO\n"
+        "Project-authored confirmed facts; no live computer vision or capture.\n"
+        "0: 0 / 4  Waiting for confirmed synthetic facts\n"
+        "1: 1 / 4  Difficulty captured: Demo Challenge\n"
+        "2: 2 / 4  Enemy Types captured: Aerial / Stealth\n"
+        "3: 2 / 4  Major snapshot captured; Bans incomplete\n"
+        "4: 3 / 4  Major + Additional captured; Banned Covenants complete\n"
+        "5: 3 / 4  Boss missing; recovery available\n"
+        "6: 4 / 4  Boss recovered from synthetic returned-INFO fact"
+    )
 
 
 def test_unknown_locale_is_rejected() -> None:
@@ -242,7 +321,7 @@ def test_gui_playback_reuses_real_window_contract_without_tk_or_sleep(
     assert window.delays == [1250] * 6
     assert window.steps[-1].presentation.progress_label == "4 / 4"
     assert window.steps[-1].locale_id == "zh_CN"
-    assert "SYNTHETIC" in window.options["diagnostic_text"]()
+    assert "合成对局演示" in window.options["diagnostic_text"]()
 
 
 @pytest.mark.parametrize("seconds", [0.0, -1.0, float("nan"), float("inf")])
@@ -260,6 +339,7 @@ def test_desktop_scheduling_seam_forwards_to_tk_without_a_display() -> None:
 
     window = desktop.LiveEncounterPreviewWindow.__new__(desktop.LiveEncounterPreviewWindow)
     window._root = FakeRoot()
+
     def callback() -> None:
         pass
 

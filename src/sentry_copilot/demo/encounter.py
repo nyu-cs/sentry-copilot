@@ -75,20 +75,30 @@ class DemoEncounterStep:
     def status_message(self) -> str:
         """Keep synthetic provenance visible throughout GUI playback, including the final step."""
 
-        return f"SYNTHETIC DEMO: {self.description}"
+        prefix = "合成演示：" if self.locale_id == "zh_CN" else "SYNTHETIC DEMO: "
+        return f"{prefix}{self.description}"
 
 
-def _names(text: str) -> tuple[LocalizedText, ...]:
-    return (LocalizedText(locale_id="en", text=text),)
+def _names(english: str, chinese: str) -> tuple[LocalizedText, ...]:
+    return (
+        LocalizedText(locale_id="en", text=english),
+        LocalizedText(locale_id="zh_CN", text=chinese),
+    )
 
 
-def _demo_catalogs() -> tuple[
+def _demo_catalogs(
+    locale_id: str,
+) -> tuple[
     EncounterMapCatalog,
     MajorCovenantPresentationCatalog,
     AdditionalCovenantPresentationCatalog,
     ConfirmedBannedOperatorCatalog,
 ]:
-    """Construct tiny fictional catalogs in memory, with no filesystem/media dependency."""
+    """Build localized fictional catalogs without files or changes to real catalog contracts.
+
+    The Ban catalog's legacy single-label fields receive the selected demo locale; the
+    other catalogs use normal LocalizedText selection in the production presentation path.
+    """
 
     catalog = EncounterMapCatalog(
         definitions=(),
@@ -96,24 +106,30 @@ def _demo_catalogs() -> tuple[
             DifficultyDefinition(
                 difficulty_id=_DIFFICULTY_ID,
                 simulation_codes=("DEMO-3",),
-                names=_names("Demo Challenge"),
+                names=_names("Demo Challenge", "演示难度"),
             ),
         ),
-        bosses=(BossDefinition(boss_id=_BOSS_ID, names=_names("Demo Warden")),),
+        bosses=(BossDefinition(boss_id=_BOSS_ID, names=_names("Demo Warden", "演示首领")),),
         enemy_categories=tuple(
-            EnemyCategoryDefinition(enemy_category_id=item, names=_names(name))
-            for item, name in zip(_ENEMY_IDS, ("Aerial", "Stealth"), strict=True)
+            EnemyCategoryDefinition(enemy_category_id=item, names=_names(english, chinese))
+            for item, english, chinese in zip(
+                _ENEMY_IDS, ("Aerial", "Stealth"), ("空中", "潜行"), strict=True
+            )
         ),
     )
     major = MajorCovenantPresentationCatalog(
         tuple(
-            MajorCovenantPresentationDefinition(item, _names(f"Major {chr(65 + index)}"))
+            MajorCovenantPresentationDefinition(
+                item, _names(f"Major {chr(65 + index)}", f"主盟约 {chr(65 + index)}")
+            )
             for index, item in enumerate(_MAJOR_IDS)
         )
     )
     additional = AdditionalCovenantPresentationCatalog(
         tuple(
-            AdditionalCovenantPresentationDefinition(item, _names(f"Extra {chr(65 + index)}"))
+            AdditionalCovenantPresentationDefinition(
+                item, _names(f"Extra {chr(65 + index)}", f"追加盟约 {chr(65 + index)}")
+            )
             for index, item in enumerate(_ADDITIONAL_IDS)
         )
     )
@@ -123,14 +139,20 @@ def _demo_catalogs() -> tuple[
     operators = ConfirmedBannedOperatorCatalog(
         operators=tuple(
             BannedOperatorDefinition(
-                f"operator.demo.{index}", f"Demo Op {chr(65 + index)}", 4 - index
+                f"operator.demo.{index}",
+                (
+                    f"演示干员 {chr(65 + index)}"
+                    if locale_id == "zh_CN"
+                    else f"Demo Op {chr(65 + index)}"
+                ),
+                4 - index,
             )
             for index in range(4)
         ),
         covenant_definitions=tuple(
             CovenantDefinition(
                 item.covenant_id,
-                item.names[0].text,
+                next(name.text for name in item.names if name.locale_id == locale_id),
                 static_recruitment_route=not item.covenant_id.endswith(".ultimate_technique"),
                 disableable_ban_target=not item.covenant_id.endswith(
                     (".support_operator", ".ultimate_technique")
@@ -154,7 +176,7 @@ def build_demo_timeline(locale_id: str = "en") -> tuple[DemoEncounterStep, ...]:
 
     if locale_id not in {"en", "zh_CN"}:
         raise ValueError("demo locale must be en or zh_CN")
-    catalog, major, additional, operators = _demo_catalogs()
+    catalog, major, additional, operators = _demo_catalogs(locale_id)
     session = EncounterSession(encounter_id="synthetic-demo:encounter-1")
     steps: list[DemoEncounterStep] = []
     messages = (
@@ -170,8 +192,8 @@ def build_demo_timeline(locale_id: str = "en") -> tuple[DemoEncounterStep, ...]:
         if locale_id == "en"
         else (
             "等待已确认的合成情报",
-            "已采集合成难度：Demo Challenge",
-            "已采集合成敌人类型：Aerial / Stealth",
+            "已采集合成难度：演示难度",
+            "已采集合成敌人类型：空中 / 潜行",
             "已采集主盟约；禁用盟约仍不完整",
             "主盟约与追加盟约均已采集；禁用盟约完整",
             "Boss 缺失；可返回情报页补采",
@@ -248,10 +270,15 @@ def build_demo_timeline(locale_id: str = "en") -> tuple[DemoEncounterStep, ...]:
 def format_demo_timeline(timeline: tuple[DemoEncounterStep, ...]) -> str:
     """Return deterministic text for the same states shown in GUI playback."""
 
+    chinese = bool(timeline and timeline[0].locale_id == "zh_CN")
     return "\n".join(
         (
-            "SYNTHETIC ENCOUNTER DEMO",
-            "Project-authored confirmed facts; no live computer vision or capture.",
+            "合成对局演示" if chinese else "SYNTHETIC ENCOUNTER DEMO",
+            (
+                "项目原创的已确认合成情报；不运行实时视觉识别或捕获。"
+                if chinese
+                else "Project-authored confirmed facts; no live computer vision or capture."
+            ),
             *(
                 f"{step.index}: {step.presentation.progress_label}  {step.description}"
                 for step in timeline
