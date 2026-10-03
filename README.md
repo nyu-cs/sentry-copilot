@@ -13,6 +13,16 @@ scroll out of view, or reappear during the same encounter. The application separ
 observations, encounter lifecycle, confirmed state, and presentation so that a weak frame does
 not erase a previously confirmed result. It never clicks, deploys units, or controls the game.
 
+For a no-game preview of the four-fact Encounter flow, install the source checkout and run:
+
+```bash
+python -m sentry_copilot.cli demo-encounter --headless
+```
+
+This public demo uses project-authored synthetic facts rather than live computer vision and
+requires no private reference pack. The repository does not redistribute game artwork,
+recognition crops, recordings, or private portrait/icon caches.
+
 ## Current Live Encounter Intelligence
 
 The live product has exactly four information items:
@@ -64,16 +74,30 @@ engineering subsystem; neither is presented as fully wired into the live encount
 
 See [Architecture](docs/architecture.md) and the [documentation index](docs/README.md).
 
-## Running / Development
+## Installation / Development
+
+### Source checkout
 
 Requires **Python 3.12 or newer**. Run from the repository root in an editable development
 checkout; live capture and the desktop preview require Windows.
 
+```powershell
+# Windows PowerShell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.\.venv\Scripts\Activate.ps1
+```
+
 ```bash
-python -m venv .venv
-# Windows PowerShell: .\.venv\Scripts\Activate.ps1
-# macOS/Linux: source .venv/bin/activate
-python -m pip install -e ".[dev]"
+# macOS/Linux (public tests and headless demo)
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -e ".[dev]"
+source .venv/bin/activate
+```
+
+With the environment activated, the public development checks are:
+
+```bash
 pytest
 ruff check .
 python -m mypy
@@ -81,8 +105,23 @@ python tools/validate_repository.py
 python -m sentry_copilot.cli --help
 ```
 
-The installed CLI is also available as `sentry-copilot`. For live recognition, locally supplied
-private reference packs are required. On the calibrated JP MuMu 1920x1080 profile:
+### Local built wheel
+
+The project is not presented as a PyPI package. To verify a wheel built from this checkout,
+build it locally and install that file into a separate environment:
+
+```bash
+python -m pip wheel --no-deps --wheel-dir dist .
+python -m venv .wheel-venv
+# Windows: .\.wheel-venv\Scripts\python.exe -m pip install .\dist\sentry_copilot-0.1.0-py3-none-any.whl
+# macOS/Linux: .wheel-venv/bin/python -m pip install dist/sentry_copilot-0.1.0-py3-none-any.whl
+```
+
+The wheel environment exposes `sentry-copilot` under its `Scripts` directory on Windows or
+`bin` directory on macOS/Linux; the synthetic headless demo still needs no private resources.
+
+For live recognition, locally supplied private reference packs are required. On the calibrated
+JP MuMu 1920x1080 profile:
 
 ```powershell
 python -m sentry_copilot.cli live-encounter-preview `

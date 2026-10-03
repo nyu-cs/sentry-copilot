@@ -15,7 +15,8 @@ python -m sentry_copilot.cli validate-data --maps data/maps
 python -m sentry_copilot.cli demo-route-overlay --map-file data/maps/demo.synthetic_training_map.yaml --output outputs/demo_route_overlay.png
 ```
 
-GitHub Actions runs pytest, Ruff, and strict mypy on Ubuntu/Python 3.12.
+GitHub Actions runs pytest, Ruff, strict mypy, repository validation, the source-checkout
+synthetic demo, and an isolated build/install/run check of the wheel on Ubuntu/Python 3.12.
 A configured workflow is not a claim about the status of an uninspected remote run.
 
 The public suite uses synthetic pixels, typed observations, fake capture/native adapters,
