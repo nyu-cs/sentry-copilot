@@ -46,7 +46,7 @@ class PreviewPageGeometry:
 
 
 _PAGE_GEOMETRIES = {
-    PreviewPage.MAIN: PreviewPageGeometry(width=460, height=485),
+    PreviewPage.MAIN: PreviewPageGeometry(width=460, height=445),
     PreviewPage.BAN_DETAIL: PreviewPageGeometry(width=780, height=560),
 }
 
@@ -293,16 +293,6 @@ def show_encounter_panel(view: EncounterPanelView, *, always_on_top: bool = True
         ttk.Label(outer, text=f"{marker} {item.label}: {item.value}").grid(
             row=index, column=0, sticky="w", pady=2
         )
-    row = len(view.items) + 1
-    if view.map_knowledge_heading is not None:
-        ttk.Label(outer, text=view.map_knowledge_heading).grid(
-            row=row, column=0, sticky="w", pady=(8, 2)
-        )
-        for entry in view.map_knowledge:
-            row += 1
-            ttk.Label(outer, text=f"• {entry.title}: {entry.description}", wraplength=320).grid(
-                row=row, column=0, sticky="w"
-            )
     root.mainloop()
 
 
@@ -349,18 +339,6 @@ def show_localized_encounter_panel(
             ttk.Label(outer, text=f"{marker} {item.label}: {item.value}").grid(
                 row=index, column=0, sticky="w", pady=2
             )
-        row = len(view.items) + 2
-        if view.map_knowledge_heading is not None:
-            ttk.Label(outer, text=view.map_knowledge_heading).grid(
-                row=row, column=0, sticky="w", pady=(8, 2)
-            )
-            for entry in view.map_knowledge:
-                row += 1
-                ttk.Label(
-                    outer,
-                    text=f"• {entry.title}: {entry.description}",
-                    wraplength=320,
-                ).grid(row=row, column=0, sticky="w")
         selector = outer.winfo_children()[0]
         selector.bind("<<ComboboxSelected>>", lambda _event: render())
 

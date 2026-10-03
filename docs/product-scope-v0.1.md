@@ -2,6 +2,12 @@
 
 ## Included
 
+### Live encounter product
+
+- Exactly four information items: Difficulty, Boss, Enemy Types, and Banned Covenants.
+- Complete supported progress is `4 / 4`; Bans requires both Major and Additional snapshots.
+- Map is outside encounter product scope. Route projection/rendering is an independent module.
+
 ### Player status
 
 - Read four fixed player slots.
@@ -11,7 +17,7 @@
 - Guide the user through inspecting another player's strategy.
 - Keep manual correction and confidence visible.
 
-### Route panel
+### Independent route module / panel prototype
 
 - Show recognized/manual map name and ruleset.
 - Show current round and selected enemy/Boss.
@@ -35,6 +41,8 @@
 - Fully automatic route learning.
 
 ## Suggested desktop layout
+
+The following is the independent player/route prototype, not the four-item live encounter panel.
 
 ```text
 ┌──────────────── Sentry Copilot ────────────────┐

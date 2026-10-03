@@ -122,7 +122,7 @@ def build_parser() -> argparse.ArgumentParser:
     roi.add_argument("--pixel-roi", nargs=4, type=int, metavar=("X", "Y", "W", "H"))
     live_preview = commands.add_parser(
         "live-encounter-preview",
-        help="Show the bounded live Map/Difficulty encounter preview on Windows",
+        help="Show the four-item live encounter preview on Windows",
     )
     live_preview.add_argument(
         "--capture-backend",

@@ -677,7 +677,7 @@ def test_live_controller_starts_empty_and_has_no_manual_new_encounter_api() -> N
     )
 
     initial = controller.snapshot()
-    assert initial.presentation.progress_label == "0 / 5"
+    assert initial.presentation.progress_label == "0 / 4"
     assert initial.status is LiveEncounterPreviewStatus.WAITING_FOR_SUPPORTED_FRAME
     assert initial.presentation.items[1].implemented is True
     assert initial.presentation.items[1].value == "尚未识别"
@@ -693,7 +693,7 @@ def test_live_controller_starts_empty_and_has_no_manual_new_encounter_api() -> N
     )
     assert replacement_process.session is None
     assert initial.session is None
-    assert replacement_process.snapshot().presentation.progress_label == "0 / 5"
+    assert replacement_process.snapshot().presentation.progress_label == "0 / 4"
 
 
 def test_live_controller_uses_info_visual_recognition_without_operation_ocr() -> None:
@@ -703,11 +703,12 @@ def test_live_controller_uses_info_visual_recognition_without_operation_ocr() ->
 
     unsupported = _process(controller, _frame(size=(1280, 720)))
     assert unsupported.status is LiveEncounterPreviewStatus.WAITING_FOR_SUPPORTED_FRAME
-    assert unsupported.presentation.progress_label == "0 / 5"
+    assert unsupported.presentation.progress_label == "0 / 4"
 
     initial = _process(controller, _info_frame(1))
-    assert initial.presentation.progress_label == "0 / 5"
-    assert initial.latest_map_id is None
+    assert initial.presentation.progress_label == "0 / 4"
+    assert len(initial.presentation.items) == 4
+    assert not hasattr(initial, "latest_map_id")
     assert initial.latest_difficulty_id is None
     assert initial.status is LiveEncounterPreviewStatus.RUNNING
 
@@ -1769,7 +1770,8 @@ def test_live_controller_presentation_locale_only_changes_the_view_and_diagnosti
     assert payload["info_state"] == "present"
     assert payload["pending_difficulty_count"] == 1
     assert payload["pending_boss_count"] == 0
-    assert payload["map_id"] is None
+    assert "map_id" not in payload
+    assert "latest_map_id" not in payload
     assert payload["simulation_code"] is None
     assert payload["observed_difficulty"] is None
     assert "player" not in payload
@@ -1978,7 +1980,7 @@ def test_live_loop_stops_cleanly_after_one_frame() -> None:
     run_live_encounter_loop(_Frames((_info_frame(),)), controller, snapshots.append)
 
     assert snapshots[-1].status is LiveEncounterPreviewStatus.STOPPED
-    assert snapshots[0].presentation.progress_label == "0 / 5"
+    assert snapshots[0].presentation.progress_label == "0 / 4"
 
 
 def test_supported_frame_waits_for_initial_info_with_a_distinct_status() -> None:
@@ -2111,7 +2113,7 @@ def test_live_preview_does_not_apply_outside_run_pages_to_end_watcher(
     assert called is False
 
 
-def test_live_controller_keeps_same_map_difficulty_conflict_visible() -> None:
+def test_live_controller_keeps_difficulty_conflict_visible() -> None:
     catalog = EncounterMapCatalog(
         definitions=(),
         difficulties=(
@@ -2144,7 +2146,6 @@ def test_live_controller_keeps_same_map_difficulty_conflict_visible() -> None:
 
     assert conflict.status is EncounterUpdateStatus.CONFLICT
     assert controller.session is not None
-    assert controller.session.captured_map is None
     assert controller.session.captured_difficulty is not None
     assert controller.session.captured_difficulty.difficulty_id == "difficulty.synthetic.a"
     assert controller.session.difficulty_conflict is not None

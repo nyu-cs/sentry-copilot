@@ -338,6 +338,10 @@ domain exit events or battle death/spectating/runtime-participation facts.
 
 ## Route subsystem boundaries
 
+This supporting subsystem is independent from the live encounter product. Encounter state and
+progress contain only Difficulty, Boss, Enemy Types, and Banned Covenants; route map IDs do not
+add a product information item.
+
 1. **Map recognition**: identify `map_id`.
 2. **Calibration**: locate the battlefield in the current frame.
 3. **Route selection**: select map-specific routes for the current encounter.

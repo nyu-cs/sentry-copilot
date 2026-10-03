@@ -38,8 +38,6 @@ def _ban_view(
         title="",
         progress_label="",
         items=(),
-        map_knowledge=(),
-        map_knowledge_heading=None,
         difficulty_label="",
         difficulty_value=None,
         confirmed_banned_operator_rows=(
@@ -70,7 +68,7 @@ def test_preview_navigation_has_explicit_fixed_main_and_ban_detail_geometries() 
     assert detail.geometry == _PAGE_GEOMETRIES[PreviewPage.BAN_DETAIL]
     assert detail.geometry.tk_geometry == "780x560"
     assert returned.page is PreviewPage.MAIN
-    assert returned.geometry.tk_geometry == "460x485"
+    assert returned.geometry.tk_geometry == "460x445"
 
 
 def test_live_updates_and_locale_changes_preserve_the_current_ui_page() -> None:
@@ -226,7 +224,7 @@ def test_main_layout_reserves_the_same_slots_for_empty_or_long_live_text() -> No
     assert _MAIN_CONTENT_LAYOUT.reminder_height == 42
     assert _MAIN_CONTENT_LAYOUT.item_height == 34
     assert _MAIN_CONTENT_LAYOUT.ban_item_height == 66
-    assert _PAGE_GEOMETRIES[PreviewPage.MAIN].tk_geometry == "460x485"
+    assert _PAGE_GEOMETRIES[PreviewPage.MAIN].tk_geometry == "460x445"
 
 
 def test_live_string_variables_are_only_written_when_value_changes() -> None:

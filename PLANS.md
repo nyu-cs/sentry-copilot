@@ -321,20 +321,21 @@
 
 ## M0.8 — Encounter intelligence / playable preview
 
-- [x] Add a player-count-independent encounter model with Map, Boss, Enemy Types, and Banned
-  Covenants as the four ordinary capture items.
+- [x] Keep Difficulty, Boss, Enemy Types, and Banned Covenants as the four player-count-independent
+  encounter product items, with complete supported progress of `4 / 4`.
 - [x] Add a fixed-layout JP MuMu `OPERATION` observer for calibrated simulation-code/difficulty
   evidence (`AC-3` / `死地`) that enriches—not resets—the current encounter, preserves prior
   difficulty facts through later unresolved observations, and surfaces difficulty contradictions.
-- [x] Separate immutable map identity, map facts, and difficulty definitions; expose pure zh_CN/en
-  presentation and an optional caller-owned desktop panel.
+- [x] Keep immutable difficulty definitions independent from reusable map-library metadata;
+  expose pure zh_CN/en presentation and an optional caller-owned desktop panel.
 - [x] Connect existing Windows capture, OPERATION difficulty observation, presentation, and existing
-  outside-run END evidence as a compact live preview; randomized battlefield recognition and
-  next-start detection remain deferred.
+  outside-run END evidence as a compact live preview; next-start detection remains deferred.
 - [ ] Calibrate and debounce `情報確認 1/2` as the authoritative encounter-start boundary, including
   revisits from `2/2` without creating a duplicate session.
 - [ ] Add Boss, Enemy Types, Banned Covenants, optional Secret Boss, and real difficulty evidence.
-- [ ] Populate curated map facts from bounded, provenance-bearing external sources.
+
+Map is outside encounter product scope. Independent route schemas, synthetic map data, calibration,
+projection, and rendering remain supporting engineering modules.
 
 ## M1 — Replay route overlay
 

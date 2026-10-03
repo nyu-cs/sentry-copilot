@@ -226,7 +226,6 @@ class LiveEncounterPreviewSnapshot:
     frame_size: tuple[int, int] | None
     operation_state: OperationDifficultyState | None
     update_status: EncounterUpdateStatus | None
-    latest_map_id: str | None
     latest_difficulty_id: str | None
     latest_simulation_code: str | None
     latest_observed_difficulty: str | None
@@ -379,7 +378,6 @@ class LiveEncounterPreviewController:
 
     def snapshot(self) -> LiveEncounterPreviewSnapshot:
         session = self._session or begin_encounter("live-encounter:waiting")
-        map_capture = session.captured_map
         difficulty_capture = session.captured_difficulty
         presentation = present_encounter(
             session,
@@ -407,7 +405,6 @@ class LiveEncounterPreviewController:
             frame_size=self._frame_size,
             operation_state=self._operation_state,
             update_status=self._update_status,
-            latest_map_id=map_capture.map_id if map_capture is not None else None,
             latest_difficulty_id=(
                 difficulty_capture.difficulty_id if difficulty_capture is not None else None
             ),
@@ -1814,7 +1811,6 @@ class LiveEncounterPreviewController:
                 "operation_state": (
                     snapshot.operation_state.value if snapshot.operation_state is not None else None
                 ),
-                "map_id": snapshot.latest_map_id,
                 "boss_id": snapshot.session.boss_id if snapshot.session is not None else None,
                 "boss_capture_source": (
                     snapshot.session.boss_capture_source.value

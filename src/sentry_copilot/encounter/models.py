@@ -9,13 +9,12 @@ from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class EncounterCaptureItem(StrEnum):
-    """The five ordinary, player-count-independent encounter capture items."""
+    """The four player-count-independent encounter product items."""
 
     DIFFICULTY = "difficulty"
     BOSS = "boss"
     ENEMY_TYPES = "enemy_types"
     BANNED_COVENANTS = "banned_covenants"
-    MAP = "map"
 
 
 class DifficultyCaptureSource(StrEnum):
@@ -296,15 +295,6 @@ class AdditionalCovenantBanSnapshot(BaseModel):
         return self
 
 
-class CapturedMap(BaseModel):
-    """One durable, normalized map capture for an encounter session."""
-
-    model_config = ConfigDict(frozen=True)
-
-    map_id: str
-    map_code: str
-
-
 class CapturedDifficulty(BaseModel):
     """One durable simulation-difficulty capture, independent from battlefield identity."""
 
@@ -320,15 +310,6 @@ class CapturedDifficulty(BaseModel):
         if not self.difficulty_id.strip() or not _SIMULATION_CODE.fullmatch(self.simulation_code):
             raise ValueError("captured difficulty must have an ID and normalized simulation code")
         return self
-
-
-class MapCaptureConflict(BaseModel):
-    """A later reliable map fact that cannot silently replace the first capture."""
-
-    model_config = ConfigDict(frozen=True)
-
-    existing_map_id: str
-    conflicting_map_code: str
 
 
 class DifficultyCaptureConflict(BaseModel):
@@ -382,9 +363,7 @@ class EncounterSession(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     encounter_id: str
-    captured_map: CapturedMap | None = None
     captured_difficulty: CapturedDifficulty | None = None
-    map_conflict: MapCaptureConflict | None = None
     difficulty_conflict: DifficultyCaptureConflict | None = None
     boss_id: str | None = None
     boss_capture_source: BossCaptureSource | None = None
@@ -408,8 +387,6 @@ class EncounterSession(BaseModel):
     @property
     def complete_items(self) -> frozenset[EncounterCaptureItem]:
         items: set[EncounterCaptureItem] = set()
-        if self.captured_map is not None:
-            items.add(EncounterCaptureItem.MAP)
         if self.boss_id is not None:
             items.add(EncounterCaptureItem.BOSS)
         if self.enemy_type_ids is not None:

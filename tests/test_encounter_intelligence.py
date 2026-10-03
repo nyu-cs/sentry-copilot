@@ -15,7 +15,6 @@ from sentry_copilot.encounter.lifecycle import begin_encounter
 from sentry_copilot.encounter.models import (
     BossDefinition,
     CapturedDifficulty,
-    CapturedMap,
     DifficultyCaptureSource,
     DifficultyDefinition,
     EncounterCaptureItem,
@@ -115,7 +114,7 @@ def test_operation_difficulty_observer_is_conservative_for_unknown_code_or_label
     assert wrong_layout.state is OperationDifficultyState.UNRESOLVED
 
 
-def test_operation_difficulty_captures_without_a_battlefield_or_progress() -> None:
+def test_operation_difficulty_capture_contributes_one_product_item() -> None:
     observed = _observe(_frame(), _OperationOcrBackend())
     captured = apply_operation_difficulty_observation(
         begin_encounter("encounter.synthetic.1"), observed, JP_MUMU_ENCOUNTER_MAP_CATALOG
@@ -130,7 +129,6 @@ def test_operation_difficulty_captures_without_a_battlefield_or_progress() -> No
     )
 
     assert captured.status is EncounterUpdateStatus.CAPTURED
-    assert captured.session.captured_map is None
     assert captured.session.captured_difficulty == CapturedDifficulty(
         difficulty_id="difficulty.covenant_latter.deadland",
         simulation_code="AC-3",
@@ -180,7 +178,7 @@ def test_contradictory_validated_difficulty_preserves_first_capture_and_conflict
     assert result.session.difficulty_conflict is not None
 
 
-def test_presentation_keeps_map_and_difficulty_independent() -> None:
+def test_reusable_map_catalog_metadata_does_not_affect_encounter_presentation_or_progress() -> None:
     catalog = EncounterMapCatalog(
         definitions=(
             EncounterMapDefinition(
@@ -220,22 +218,24 @@ def test_presentation_keeps_map_and_difficulty_independent() -> None:
     view = present_encounter(difficulty_only, catalog, locale_id="zh_CN")
     assert view.items[0].complete is True
     assert view.items[0].value == "死地"
-    assert view.items[-1].value == "本版本暂未支持"
-    assert view.progress_label == "1 / 5"
+    assert len(view.items) == 4
+    assert view.progress_label == "1 / 4"
     assert view.difficulty_value == "死地"
     english_view = present_encounter(difficulty_only, catalog, locale_id="en")
     assert english_view.title == "Encounter Intel"
     assert english_view.items[0].label == "Difficulty"
     assert english_view.items[0].value == "Deadland"
     assert english_view.items[1].value == "Not captured"
-    assert english_view.items[-1].value == "Not supported in this preview"
-
-    with_map = difficulty_only.model_copy(
-        update={"captured_map": CapturedMap(map_id="map.synthetic.battlefield", map_code="BF-1")}
-    )
-    map_view = present_encounter(with_map, catalog, locale_id="zh_CN")
-    assert map_view.items[-1].value == "BF-1 · 合成地图"
-    assert map_view.progress_label == "2 / 5"
+    map_definition = catalog.by_id("map.synthetic.battlefield")
+    assert map_definition is not None
+    assert catalog.by_code("BF-1") == map_definition
+    assert map_definition.knowledge_entries
+    catalog_without_maps = EncounterMapCatalog(definitions=(), difficulties=catalog.difficulties)
+    assert present_encounter(difficulty_only, catalog_without_maps, locale_id="zh_CN") == view
+    assert "captured_map" not in type(difficulty_only).model_fields
+    assert "map_conflict" not in type(difficulty_only).model_fields
+    assert not hasattr(view, "map_knowledge")
+    assert not hasattr(view, "map_knowledge_heading")
 
 
 def test_jp_catalog_does_not_define_ac_3_as_a_battlefield() -> None:
@@ -263,7 +263,7 @@ def test_jp_catalog_knows_ultimate_ac_4_without_treating_it_as_a_battlefield() -
     )
     view = present_encounter(session, JP_MUMU_ENCOUNTER_MAP_CATALOG, locale_id="zh_CN")
     assert view.items[0].value == "终极模拟"
-    assert view.progress_label == "1 / 5"
+    assert view.progress_label == "1 / 4"
 
 
 def test_initial_presentation_marks_difficulty_as_not_captured_not_unsupported() -> None:
@@ -272,7 +272,7 @@ def test_initial_presentation_marks_difficulty_as_not_captured_not_unsupported()
     zh_view = present_encounter(begin_encounter("encounter.initial"), catalog, locale_id="zh_CN")
     en_view = present_encounter(begin_encounter("encounter.initial"), catalog, locale_id="en")
 
-    assert zh_view.progress_label == "0 / 5"
+    assert zh_view.progress_label == "0 / 4"
     assert zh_view.items[0].label == "难度"
     assert zh_view.items[0].value == "尚未识别"
     assert zh_view.items[3].value == "主盟约：尚未识别\n追加盟约：尚未识别"
@@ -281,7 +281,7 @@ def test_initial_presentation_marks_difficulty_as_not_captured_not_unsupported()
     assert en_view.items[3].value == "Major: Not captured\nAdditional: Not captured"
 
 
-def test_presentation_has_exactly_one_difficulty_in_the_five_ordinary_rows() -> None:
+def test_initial_presentation_has_exactly_four_product_items_and_no_map() -> None:
     view = present_encounter(
         begin_encounter("encounter.rows"), EncounterMapCatalog(definitions=()), locale_id="en"
     )
@@ -291,9 +291,12 @@ def test_presentation_has_exactly_one_difficulty_in_the_five_ordinary_rows() -> 
         EncounterCaptureItem.BOSS,
         EncounterCaptureItem.ENEMY_TYPES,
         EncounterCaptureItem.BANNED_COVENANTS,
-        EncounterCaptureItem.MAP,
     ]
     assert sum(item.item is EncounterCaptureItem.DIFFICULTY for item in view.items) == 1
+    assert len(EncounterCaptureItem) == len(view.items) == 4
+    assert all(item.implemented for item in view.items)
+    assert all(item.item.value != "map" and item.label != "Map" for item in view.items)
+    assert begin_encounter("encounter.missing").missing_items == tuple(EncounterCaptureItem)
 
 
 def test_public_info_catalog_english_labels_drive_presentation_without_chinese_fallback() -> None:

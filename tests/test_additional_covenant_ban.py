@@ -170,7 +170,41 @@ def test_major_and_additional_are_both_required_for_the_ordinary_ban_item() -> N
         }
     )
     assert supported_capture.ordinary_progress_count == 4
-    assert supported_capture.captured_map is None
+    view = present_encounter(supported_capture, EncounterMapCatalog(definitions=()), locale_id="en")
+    assert view.progress_label == "4 / 4"
+    assert len(view.items) == 4
+    assert all(item.complete for item in view.items)
+    assert len(full.session.complete_items) == 1  # Major + Additional is one Ban product item.
+    reverse = apply_major_covenant_ban_capture(additional_only.session, _major_snapshot())
+    assert reverse.session.banned_covenant_ids == full.session.banned_covenant_ids
+
+
+def test_complete_supported_live_snapshot_and_diagnostics_reach_four_of_four() -> None:
+    session = begin_encounter("encounter.complete").model_copy(
+        update={
+            "captured_difficulty": CapturedDifficulty(
+                difficulty_id="difficulty.covenant_latter.adversity",
+                simulation_code="AC-2",
+            ),
+            "boss_id": "boss.synthetic",
+            "enemy_type_ids": ("enemy.one", "enemy.two"),
+        }
+    )
+    session = apply_major_covenant_ban_capture(session, _major_snapshot()).session
+    session = apply_additional_covenant_ban_capture(session, _additional_snapshot()).session
+    controller = LiveEncounterPreviewController()
+    controller._session = session  # noqa: SLF001
+
+    snapshot = controller.snapshot()
+    diagnostic = json.loads(controller.diagnostic_json())
+
+    assert snapshot.presentation.progress_label == diagnostic["progress"] == "4 / 4"
+    assert len(snapshot.presentation.items) == 4
+    assert all(item.complete for item in snapshot.presentation.items)
+    assert session.missing_items == ()
+    assert "map_id" not in diagnostic
+    assert "captured_map" not in session.model_dump()
+    assert not hasattr(snapshot, "latest_map_id")
 
 
 def test_ban_presentation_keeps_major_and_additional_snapshots_independent() -> None:
@@ -287,7 +321,7 @@ def test_standard_is_explicitly_unsupported_without_running_matching() -> None:
     assert supports_additional_covenant_ban("difficulty.covenant_latter.adversity") is True
 
 
-def test_standard_presentation_marks_ban_unsupported_but_keeps_five_item_progress() -> None:
+def test_standard_presentation_marks_ban_unsupported_but_keeps_four_item_progress() -> None:
     session = begin_encounter("additional.standard").model_copy(
         update={
             "captured_difficulty": CapturedDifficulty(
@@ -299,7 +333,7 @@ def test_standard_presentation_marks_ban_unsupported_but_keeps_five_item_progres
 
     view = present_encounter(session, EncounterMapCatalog(definitions=()), locale_id="zh_CN")
 
-    assert view.progress_label == "1 / 5"
+    assert view.progress_label == "1 / 4"
     assert view.items[3].complete is False
     assert view.items[3].value == "本模式暂未制作该功能，可忽略"
 

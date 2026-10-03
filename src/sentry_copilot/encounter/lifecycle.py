@@ -1,4 +1,4 @@
-"""Encounter-start boundary abstraction, separate from OPERATION map enrichment."""
+"""Encounter-start boundary abstraction, separate from OPERATION difficulty enrichment."""
 
 from __future__ import annotations
 

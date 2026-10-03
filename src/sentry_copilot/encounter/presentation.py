@@ -17,43 +17,36 @@ from .models import (
     EncounterCaptureItem,
     EncounterSession,
     LocalizedText,
-    MapKnowledgeEntry,
 )
 
 _UI_TEXT: dict[str, dict[str, str]] = {
     "zh_CN": {
         "title": "本局情报",
-        "map": "地图",
         "difficulty": "难度",
         "boss": "Boss",
         "enemy_types": "敌人类型",
         "banned_covenants": "禁用盟约",
         "not_captured": "尚未识别",
-        "upcoming": "本版本暂未支持",
         "major_ban_unresolved": "主盟约：尚未识别",
         "major_ban_captured": "主盟约：{disabled}",
         "additional_ban_unresolved": "追加盟约：尚未识别",
         "additional_ban_captured": "追加盟约：{disabled}",
         "additional_ban_pending": "追加盟约：识别中，请继续向下查看",
         "ban_standard_unsupported": "本模式暂未制作该功能，可忽略",
-        "map_intel": "地图情报",
     },
     "en": {
         "title": "Encounter Intel",
-        "map": "Map",
         "difficulty": "Difficulty",
         "boss": "Boss",
         "enemy_types": "Enemy Types",
         "banned_covenants": "Bans",
         "not_captured": "Not captured",
-        "upcoming": "Not supported in this preview",
         "major_ban_unresolved": "Major: Not captured",
         "major_ban_captured": "Major: {disabled}",
         "additional_ban_unresolved": "Additional: Not captured",
         "additional_ban_captured": "Additional: {disabled}",
         "additional_ban_pending": "Additional: recognizing; continue scrolling down",
         "ban_standard_unsupported": "Not supported for this mode; can be ignored",
-        "map_intel": "Map Intel",
     },
 }
 
@@ -65,12 +58,6 @@ class EncounterCaptureItemView:
     complete: bool
     implemented: bool
     value: str
-
-
-@dataclass(frozen=True)
-class MapKnowledgeView:
-    title: str
-    description: str
 
 
 @dataclass(frozen=True)
@@ -97,8 +84,6 @@ class EncounterPanelView:
     title: str
     progress_label: str
     items: tuple[EncounterCaptureItemView, ...]
-    map_knowledge: tuple[MapKnowledgeView, ...]
-    map_knowledge_heading: str | None
     difficulty_label: str
     difficulty_value: str | None
     confirmed_banned_operator_rows: tuple[ConfirmedBannedOperatorRowView, ...]
@@ -118,77 +103,41 @@ def present_encounter(
     strings = _UI_TEXT.get(locale_id, _UI_TEXT["en"])
     mapping = {
         EncounterCaptureItem.DIFFICULTY: "difficulty",
-        EncounterCaptureItem.MAP: "map",
         EncounterCaptureItem.BOSS: "boss",
         EncounterCaptureItem.ENEMY_TYPES: "enemy_types",
         EncounterCaptureItem.BANNED_COVENANTS: "banned_covenants",
     }
-    map_value, difficulty_value, entries = _map_value_and_knowledge(session, catalog, locale_id)
+    difficulty_value = _difficulty_value(session, catalog, locale_id)
+    values = {
+        EncounterCaptureItem.DIFFICULTY: difficulty_value or strings["not_captured"],
+        EncounterCaptureItem.BOSS: (
+            _boss_value(session, catalog, locale_id)
+            if session.boss_id is not None
+            else strings["not_captured"]
+        ),
+        EncounterCaptureItem.ENEMY_TYPES: (
+            _enemy_value(session, catalog, locale_id)
+            if session.enemy_type_ids is not None
+            else strings["not_captured"]
+        ),
+        EncounterCaptureItem.BANNED_COVENANTS: _major_ban_value(
+            session, major_covenant_catalog, additional_covenant_catalog, locale_id, strings
+        ),
+    }
     items = tuple(
         EncounterCaptureItemView(
             item=item,
             label=strings[mapping[item]],
             complete=item in session.complete_items,
-            implemented=item
-            in {
-                EncounterCaptureItem.DIFFICULTY,
-                EncounterCaptureItem.BOSS,
-                EncounterCaptureItem.ENEMY_TYPES,
-                EncounterCaptureItem.BANNED_COVENANTS,
-            },
-            value=(
-                difficulty_value
-                if item is EncounterCaptureItem.DIFFICULTY and difficulty_value is not None
-                else (
-                    map_value
-                    if item is EncounterCaptureItem.MAP and map_value is not None
-                    else (
-                        _boss_value(session, catalog, locale_id)
-                        if item is EncounterCaptureItem.BOSS and session.boss_id is not None
-                        else (
-                            _enemy_value(session, catalog, locale_id)
-                            if item is EncounterCaptureItem.ENEMY_TYPES
-                            and session.enemy_type_ids is not None
-                            else (
-                                _major_ban_value(
-                                    session,
-                                    major_covenant_catalog,
-                                    additional_covenant_catalog,
-                                    locale_id,
-                                    strings,
-                                )
-                                if item is EncounterCaptureItem.BANNED_COVENANTS
-                                else (
-                                    strings["not_captured"]
-                                    if item
-                                    in {
-                                        EncounterCaptureItem.DIFFICULTY,
-                                        EncounterCaptureItem.BOSS,
-                                        EncounterCaptureItem.ENEMY_TYPES,
-                                    }
-                                    else strings["upcoming"]
-                                )
-                            )
-                        )
-                    )
-                )
-            ),
+            implemented=True,
+            value=values[item],
         )
         for item in EncounterCaptureItem
-    )
-    views = tuple(
-        MapKnowledgeView(
-            title=_localized(entry.titles, locale_id),
-            description=_localized(entry.descriptions, locale_id),
-        )
-        for entry in entries
     )
     return EncounterPanelView(
         title=strings["title"],
         progress_label=f"{session.ordinary_progress_count} / {len(EncounterCaptureItem)}",
         items=items,
-        map_knowledge=views,
-        map_knowledge_heading=strings["map_intel"] if views else None,
         difficulty_label=strings["difficulty"],
         difficulty_value=difficulty_value,
         confirmed_banned_operator_rows=_confirmed_banned_operator_rows(
@@ -198,43 +147,22 @@ def present_encounter(
     )
 
 
-def _map_value_and_knowledge(
+def _difficulty_value(
     session: EncounterSession,
     catalog: EncounterMapCatalog,
     locale_id: str,
-) -> tuple[str | None, str | None, tuple[MapKnowledgeEntry, ...]]:
-    capture = session.captured_map
+) -> str | None:
     difficulty_capture = session.captured_difficulty
     difficulty = (
         catalog.difficulty_by_id(difficulty_capture.difficulty_id)
         if difficulty_capture is not None
         else None
     )
-    difficulty_value = (
+    return (
         _localized(difficulty.names, locale_id)
         if difficulty is not None
         else (difficulty_capture.observed_label if difficulty_capture is not None else None)
     )
-    if capture is None:
-        return None, difficulty_value, ()
-    definition = catalog.by_id(capture.map_id)
-    if definition is None:
-        return capture.map_code, difficulty_value, ()
-    entries = tuple(
-        entry
-        for entry in definition.knowledge_entries
-        if not entry.difficulty_ids
-        or (
-            difficulty_capture is not None
-            and difficulty_capture.difficulty_id in entry.difficulty_ids
-        )
-    )
-    map_value = (
-        f"{capture.map_code} · {_localized(definition.names, locale_id)}"
-        if definition.names
-        else capture.map_code
-    )
-    return map_value, difficulty_value, entries
 
 
 def _localized(values: tuple[LocalizedText, ...], locale_id: str) -> str:

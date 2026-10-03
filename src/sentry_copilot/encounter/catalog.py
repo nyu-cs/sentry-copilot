@@ -1,4 +1,4 @@
-"""Small explicit map catalog; recognition facts never infer knowledge from pixels."""
+"""Explicit encounter definitions with reusable, independent map-library lookups."""
 
 from __future__ import annotations
 
@@ -15,7 +15,11 @@ from .models import (
 
 @dataclass(frozen=True)
 class EncounterMapCatalog:
-    """Exact normalized map-code lookup with no locale fallback for identity."""
+    """Encounter identity lookup plus independent reusable map metadata.
+
+    The historical name and map queries remain library APIs. Map definitions do not contribute
+    to encounter product state, presentation, or progress.
+    """
 
     definitions: tuple[EncounterMapDefinition, ...]
     difficulties: tuple[DifficultyDefinition, ...] = ()
