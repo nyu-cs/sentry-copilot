@@ -107,7 +107,8 @@ A display capture still needs the calibrated game-content layout; it is not auto
 viewport discovery. Because this fallback captures the physical display, keep the assistant
 window and other overlays outside calibrated game ROIs. MuMu IPC instead captures the game
 framebuffer directly, excluding desktop windows. Without the private reference packs, launching
-the panel does not reproduce meaningful real-game recognition. There is no public encounter demo.
+the live panel does not reproduce meaningful real-game recognition. The public synthetic demo
+below demonstrates the downstream product pipeline, not recognition.
 
 An independent, entirely synthetic route demonstration is available:
 
@@ -118,6 +119,26 @@ python -m sentry_copilot.cli demo-route-overlay --map-file data/maps/demo.synthe
 
 This demonstrates projection/rendering, not real-game encounter recognition or verified game routes.
 See [Contributing](CONTRIBUTING.md) for development boundaries.
+
+## Public synthetic demo
+
+After the editable install, try the main Encounter UI without a game installation or private
+reference pack:
+
+```bash
+sentry-copilot demo-encounter
+sentry-copilot demo-encounter --headless
+```
+
+The GUI reuses the production session updates, presentation models, and desktop window with
+project-authored synthetic facts and text-only Ban Detail cards. It automatically walks from
+`0 / 4` to `4 / 4`, including Major-only incomplete Bans and a simulated missing-Boss recovery,
+then stays open until closed. No portraits, Covenant artwork, MuMu, or recordings are required.
+
+This is **not live computer vision**: synthetic confirmed facts enter the session directly.
+The same deterministic timeline is printed by `--headless`, without importing or initializing Tk.
+GUI playback needs Python's Tk support and a desktop display. English is the default shell locale;
+use `--locale zh_CN`, `--step-seconds 1.25`, or `--no-topmost` as needed.
 
 ## Public vs Private Resources
 

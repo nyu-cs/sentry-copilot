@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from queue import Empty, Queue
-from typing import Any
+from typing import Any, Protocol
 
 import cv2
 import numpy as np
@@ -19,13 +19,31 @@ from sentry_copilot.catalogs.operator_portrait_sources import (
     default_operator_portrait_private_cache_root,
     load_default_operator_portrait_source_catalog,
 )
-from sentry_copilot.services.live_encounter_preview import LiveEncounterPreviewSnapshot
 
-from .models import MAJOR_COVENANT_IDS
+from .models import MAJOR_COVENANT_IDS, EncounterSession
 from .presentation import ConfirmedBannedOperatorCardView, EncounterPanelView
 
 _LOCALE_OPTIONS = {"zh_CN": "简体中文", "en": "English"}
 _LOCALE_IDS_BY_LABEL = {label: locale_id for locale_id, label in _LOCALE_OPTIONS.items()}
+
+
+class EncounterDesktopSnapshot(Protocol):
+    """Read-only UI input shared by live capture and externally supplied walkthroughs."""
+
+    @property
+    def session(self) -> EncounterSession | None: ...
+
+    @property
+    def presentation(self) -> EncounterPanelView: ...
+
+    @property
+    def locale_id(self) -> str: ...
+
+    @property
+    def status_message(self) -> str: ...
+
+    @property
+    def recovery_reminder_text(self) -> str | None: ...
 
 
 class PreviewPage(StrEnum):
@@ -346,27 +364,54 @@ def show_localized_encounter_panel(
     root.mainloop()
 
 
+def _resolve_preview_media(
+    *,
+    load_default_resources: bool,
+    portrait_sources: OperatorPortraitSourceCatalog | None,
+    portrait_cache_root: Path | None,
+    covenant_icon_sources: Mapping[str, Path] | None,
+) -> tuple[OperatorPortraitSourceCatalog | None, Path | None, dict[str, Path]]:
+    """Resolve optional media explicitly; disabling defaults never invokes local loaders."""
+
+    if not load_default_resources:
+        return portrait_sources, portrait_cache_root, dict(covenant_icon_sources or {})
+    return (
+        portrait_sources or _try_load_portrait_sources(),
+        portrait_cache_root or default_operator_portrait_private_cache_root(),
+        (
+            dict(covenant_icon_sources)
+            if covenant_icon_sources is not None
+            else _load_covenant_ui_icon_sources()
+        ),
+    )
+
+
 class LiveEncounterPreviewWindow:
-    """Queue-driven same-window preview with page-local navigation and no capture authority."""
+    """Queue-driven same-window preview with page-local navigation and no capture authority.
+
+    Set ``load_default_resources=False`` for media-free callers; production defaults retain
+    their existing local portrait/icon resolution. Snapshots need only the UI-facing protocol.
+    """
 
     def __init__(
         self,
-        initial: LiveEncounterPreviewSnapshot,
+        initial: EncounterDesktopSnapshot,
         *,
-        on_locale: Callable[[str], LiveEncounterPreviewSnapshot],
+        on_locale: Callable[[str], EncounterDesktopSnapshot],
         diagnostic_text: Callable[[], str],
         on_close: Callable[[], None],
         always_on_top: bool = True,
         portrait_sources: OperatorPortraitSourceCatalog | None = None,
         portrait_cache_root: Path | None = None,
         covenant_icon_sources: Mapping[str, Path] | None = None,
+        load_default_resources: bool = True,
     ) -> None:
         import tkinter as tk
         from tkinter import ttk
 
         self._tk = tk
         self._ttk = ttk
-        self._queue: Queue[LiveEncounterPreviewSnapshot] = Queue()
+        self._queue: Queue[EncounterDesktopSnapshot] = Queue()
         self._on_locale = on_locale
         self._diagnostic_text = diagnostic_text
         self._on_close = on_close
@@ -382,16 +427,15 @@ class LiveEncounterPreviewWindow:
         self._page_state = PreviewPageState()
         self._ban_detail_render_state = _BanDetailRenderState()
         self._ban_detail_scroll_state = _BanDetailScrollState()
-        self._portrait_sources = portrait_sources or _try_load_portrait_sources()
-        self._portrait_cache_root = (
-            portrait_cache_root or default_operator_portrait_private_cache_root()
+        self._portrait_sources, self._portrait_cache_root, self._covenant_icon_sources = (
+            _resolve_preview_media(
+                load_default_resources=load_default_resources,
+                portrait_sources=portrait_sources,
+                portrait_cache_root=portrait_cache_root,
+                covenant_icon_sources=covenant_icon_sources,
+            )
         )
         self._portrait_images = _PortraitImageCache()
-        self._covenant_icon_sources = (
-            dict(covenant_icon_sources)
-            if covenant_icon_sources is not None
-            else _load_covenant_ui_icon_sources()
-        )
         self._covenant_images = _PortraitImageCache()
         self._locale = tk.StringVar(value=_locale_label(initial.locale_id))
         self._title = tk.StringVar()
@@ -411,10 +455,17 @@ class LiveEncounterPreviewWindow:
         self._render(initial)
         self._apply_page()
 
-    def publish(self, snapshot: LiveEncounterPreviewSnapshot) -> None:
-        """Thread-safe producer entrypoint for the capture worker."""
+    def publish(self, snapshot: EncounterDesktopSnapshot) -> None:
+        """Thread-safe producer entrypoint for any source of immutable UI snapshots."""
 
         self._queue.put(snapshot)
+
+    def call_later(self, milliseconds: int, callback: Callable[[], None]) -> None:
+        """Schedule a caller-owned update on the GUI thread while the window remains open."""
+
+        if milliseconds <= 0:
+            raise ValueError("scheduled delay must be positive")
+        self._root.after(milliseconds, callback)
 
     def run(self) -> None:
         self._root.after(100, self._drain)
@@ -582,7 +633,7 @@ class LiveEncounterPreviewWindow:
             anchor="nw",
         ).place(x=0, y=0, relwidth=1, relheight=1)
 
-    def _render(self, snapshot: LiveEncounterPreviewSnapshot) -> None:
+    def _render(self, snapshot: EncounterDesktopSnapshot) -> None:
         view = snapshot.presentation
         encounter_id = snapshot.session.encounter_id if snapshot.session is not None else None
         if self._ban_detail_scroll_state.needs_reset(encounter_id):
@@ -627,7 +678,7 @@ class LiveEncounterPreviewWindow:
         self._page_state = self._page_state.preserve_for_live_update()
 
     def _drain(self) -> None:
-        latest: LiveEncounterPreviewSnapshot | None = None
+        latest: EncounterDesktopSnapshot | None = None
         while True:
             try:
                 latest = self._queue.get_nowait()
@@ -777,6 +828,8 @@ class LiveEncounterPreviewWindow:
             return None
 
     def _load_portrait_photoimage(self, portrait_key: str) -> Any | None:
+        if self._portrait_cache_root is None:
+            return None
         source = (
             self._portrait_sources.by_portrait_key(portrait_key)
             if self._portrait_sources

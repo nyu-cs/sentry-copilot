@@ -10,6 +10,7 @@ ruff check .
 python -m mypy
 python tools/validate_repository.py
 git diff --check
+sentry-copilot demo-encounter --headless
 python -m sentry_copilot.cli validate-data --maps data/maps
 python -m sentry_copilot.cli demo-route-overlay --map-file data/maps/demo.synthetic_training_map.yaml --output outputs/demo_route_overlay.png
 ```
@@ -23,6 +24,9 @@ revision freshness, commitment/occupancy conflicts, participation, runtime assoc
 encounter lifecycle and returned-INFO gates, sticky captures, bounded Major/Additional cases,
 operator projection, UI layout state, and route projection/rendering.
 
+The synthetic encounter timeline runs without private resources or Tk and exercises the same
+session updates/presentation used by the GUI demo, not visual observers or live recovery gates.
+Its source categories represent simulated INFO surfaces; no frames are recognized.
 The synthetic route image is a projection demonstration, not a verified game route.
 Synthetic strategy-catalog validation establishes fixture consistency only. Support-target
 declarations and bootstrap catalog metadata are not validated real-revision support.

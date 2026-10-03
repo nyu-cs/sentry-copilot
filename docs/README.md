@@ -11,6 +11,8 @@ mean every component is integrated into the live UI.
 
 ## Live encounter product
 
+- [Public synthetic demo](../README.md#public-synthetic-demo): the real UI with project-authored
+  facts, or a deterministic headless timeline; no live computer vision is exercised.
 - [Encounter Intelligence](encounter-intelligence.md): four facts, recognition gates, lifecycle,
   recovery, Ban presentation, local resources, and diagnostics.
 - [Architecture](architecture.md): separate encounter, strategy/player, and route paths.

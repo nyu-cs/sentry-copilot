@@ -17,8 +17,9 @@ git diff --check
 ```
 
 The CLI is available through `python -m sentry_copilot.cli --help` or
-`sentry-copilot --help`. Live capture/desktop commands require Windows; ordinary public
-tests and the synthetic route demonstration do not require a running game.
+`sentry-copilot --help`. Live capture/preview commands require Windows. The synthetic encounter
+GUI needs Tk and a desktop display; its headless form, ordinary public tests, and the synthetic
+route demonstration do not require a running game.
 See [README](README.md) for the live command and its private-resource requirements.
 
 ## Review expectations

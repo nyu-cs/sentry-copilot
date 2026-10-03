@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from math import isfinite
 from pathlib import Path
 
 import cv2
@@ -66,9 +67,29 @@ from sentry_copilot.vision.visual_references import (
 )
 
 
+def _positive_step_seconds(value: str) -> float:
+    """Reject invalid timer durations, including NaN/infinity, before any demo GUI work."""
+
+    try:
+        seconds = float(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("step seconds must be a number") from error
+    if not isfinite(seconds) or seconds <= 0:
+        raise argparse.ArgumentTypeError("step seconds must be positive and finite")
+    return seconds
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="sentry-copilot")
     commands = parser.add_subparsers(dest="command", required=True)
+
+    encounter_demo = commands.add_parser(
+        "demo-encounter", help="Walk through synthetic encounter facts; no live computer vision"
+    )
+    encounter_demo.add_argument("--headless", action="store_true", help="print the timeline; no Tk")
+    encounter_demo.add_argument("--locale", choices=("en", "zh_CN"), default="en")
+    encounter_demo.add_argument("--step-seconds", type=_positive_step_seconds, default=1.25)
+    encounter_demo.add_argument("--no-topmost", action="store_true")
 
     validate = commands.add_parser("validate-data", help="Validate map YAML files")
     validate.add_argument("--maps", type=Path, required=True)
@@ -265,7 +286,23 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
-    if args.command == "validate-data":
+    if args.command == "demo-encounter":
+        from sentry_copilot.demo.encounter import (
+            build_demo_timeline,
+            format_demo_timeline,
+            show_demo_encounter,
+        )
+
+        if args.headless:
+            print(format_demo_timeline(build_demo_timeline(args.locale)))
+        else:
+            print("SYNTHETIC ENCOUNTER DEMO: project-authored facts; no live computer vision.")
+            show_demo_encounter(
+                locale_id=args.locale,
+                step_seconds=args.step_seconds,
+                always_on_top=not args.no_topmost,
+            )
+    elif args.command == "validate-data":
         repository = MapRepository.from_directory(args.maps)
         print(f"validated {len(repository.list_ids())} map(s): {', '.join(repository.list_ids())}")
     elif args.command == "demo-route-overlay":

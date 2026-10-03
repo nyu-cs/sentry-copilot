@@ -40,5 +40,8 @@ See [Architecture](architecture.md).
 - Automatic route learning from unlabelled recordings.
 - General recognition across arbitrary languages, resolutions, and scaling.
 
-No private reference pack or recording is distributed, and no public synthetic encounter demo
-is claimed. See [Validation](validation.md) and [Resources](../THIRD_PARTY_NOTICES.md).
+No private reference pack or recording is distributed. The public `demo-encounter` command
+uses project-authored synthetic facts with the production session/presentation/desktop path;
+it does not exercise capture, observers, or recognition calibration. See
+[the demo commands](../README.md#public-synthetic-demo), [Validation](validation.md), and
+[Resources](../THIRD_PARTY_NOTICES.md).
