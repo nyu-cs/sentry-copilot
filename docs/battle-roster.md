@@ -81,10 +81,11 @@ cross-session/participant targets, stale targets, and inconsistent replacements 
 The reducer constructs and validates a complete candidate state, so failure leaves the input state
 unchanged.
 
-## Future slot and manual-panel boundary
+## Slot and manual-panel boundary
 
-M0.2c.1 creates no runtime slot authority. M0.2c.2 subsequently adds the first two association
-steps of the approved fallback chain, while strategy assignment remains deferred:
+The roster does not own runtime slots. The implemented [Runtime slots](runtime-slots.md) API
+provides direct association and query-derived strategy assignment. The user-guided panel contract
+requires the following chain; it is not an automated workflow in the live encounter panel:
 
 ```text
 runtime slot

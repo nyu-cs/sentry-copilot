@@ -1,67 +1,44 @@
 # Product scope v0.1
 
-## Included
+## Main application
 
-### Live encounter product
+Live Encounter Intelligence is a read-only desktop assistant with exactly four information items:
+Difficulty, Boss, Enemy Types, and Banned Covenants. Complete supported progress is `4 / 4`.
+Bans requires both Major/Core and Additional snapshots.
 
-- Exactly four information items: Difficulty, Boss, Enemy Types, and Banned Covenants.
-- Complete supported progress is `4 / 4`; Bans requires both Major and Additional snapshots.
-- Map is outside encounter product scope. Route projection/rendering is an independent module.
+The application captures a supported game surface, observes it visually, confirms facts over
+time, recovers missing information on returned INFO, and presents confirmed state.
+The desktop shell supports English and Chinese locale modes; some game entity names retain
+Chinese/localized catalog labels when no deliberate English display name exists. Its calibrated
+recognition profile is Japanese MuMu 1920x1080.
 
-### Player status
+Initial AC-4 Major recognition is implemented using bounded local crop refinement.
+Additional recognition is implemented but may remain unresolved at extreme low-row scroll
+positions. Standard / AC-1 Bans is explicitly unsupported. These are current boundaries,
+not promises of universal recognition.
 
-- Read four fixed player slots.
-- Treat the portrait as an opaque personalized avatar fingerprint.
-- OCR the health below each portrait.
-- Mark `hp <= 0` as eliminated.
-- Guide the user through inspecting another player's strategy.
-- Keep manual correction and confidence visible.
+See [Encounter Intelligence](encounter-intelligence.md) for the detailed contract.
 
-### Independent route module / panel prototype
+## Independent supporting engineering
 
-- Show recognized/manual map name and ruleset.
-- Show current round and selected enemy/Boss.
-- Toggle enemy routes, Boss routes, provisional routes, and labels.
-- Draw movement arrows, teleport segments, wait nodes, and phase-change nodes.
-- Display `unknown map`, `calibration required`, or `no matching route` rather than guessing.
+The strategy/player subsystem provides revision-aware evidence, commitment, participation,
+association, identification, occupancy, migration, and correction APIs, plus visual probes.
+Those components are not an end-to-end player tracker in the live encounter UI.
 
-### Offline development
+The route subsystem provides ruleset/map-scoped schemas, normalized coordinates, filtering,
+calibration, projection, and rendering. Its public demonstration uses synthetic data.
+It is independent of encounter progress and is not part of the live panel.
 
-- Read videos and image folders.
-- Use manual map selection and calibration first.
-- Store route knowledge in YAML.
-- Export observations for regression tests.
+Local videos, image sequences, generic OCR/template/local-feature probes, and synthetic tests
+keep supporting engineering reproducible while the game mode is unavailable.
+See [Architecture](architecture.md).
 
-## Excluded for now
+## Outside product scope
 
-- Shop recognition.
-- Automatic clicks.
-- Automatic placement.
-- Strategy recommendation.
-- Fully automatic route learning.
+- Automatic clicks, perspective changes, deployment, or game input.
+- Shop recognition or strategy recommendations.
+- Automatic route learning from unlabelled recordings.
+- General recognition across arbitrary languages, resolutions, and scaling.
 
-## Suggested desktop layout
-
-The following is the independent player/route prototype, not the four-item live encounter panel.
-
-```text
-┌──────────────── Sentry Copilot ────────────────┐
-│ Session: CN / demo.v1   Map: [recognized/manual]│
-├─────────────────────────────────────────────────┤
-│ Players                                         │
-│ 1  avatar  HP 16  SELF   Strategy: known        │
-│ 2  avatar  HP 31  ACTIVE Strategy: ? [inspect]  │
-│ 3  avatar  HP 24  ACTIVE Strategy: ? [inspect]  │
-│ 4  avatar  HP  0  OUT    Strategy: known        │
-├─────────────────────────────────────────────────┤
-│ Routes                                          │
-│ Round 7   Enemy/Boss: ...                       │
-│ [x] enemy routes  [x] Boss routes  [ ] labels   │
-│ Map confidence 0.94  Calibration 0.91           │
-│ Route source: video-verified / provisional      │
-├─────────────────────────────────────────────────┤
-│ Current prompt                                  │
-│ Click player 2, then open the top-left strategy │
-│ panel.                                          │
-└─────────────────────────────────────────────────┘
-```
+No private reference pack or recording is distributed, and no public synthetic encounter demo
+is claimed. See [Validation](validation.md) and [Resources](../THIRD_PARTY_NOTICES.md).

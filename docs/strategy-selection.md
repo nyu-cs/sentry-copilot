@@ -4,18 +4,18 @@
 
 The strategy-selection screen is the primary collection point for up to four in-session strategies.
 The reducer-owned current snapshot is an immutable prebattle materialized view and historical
-query source. Evidence may eventually come from the selection screen, a fallback strategy panel,
-or explicit user correction, but accepted M0.1a values merge into the same
-`StrategySelectionSnapshot`. It is not the future runtime-slot strategy-label authority.
+query source. Legacy values accepted from the selection screen or explicit correction merge into
+the same `StrategySelectionSnapshot`. It is not runtime-slot strategy-label authority.
 
-M0.1a is complete when the unique strategies of the actual one-to-four participants who entered
-battle can be stored and queried. It does not require complete player identity or runtime-slot
-association.
+The legacy view stores and queries strategy fields for the actual one-to-four participants who
+entered battle; repeated legacy values do not establish valid duplicate occupancy. It does not
+require complete player identity or runtime-slot association.
 
 M0.2b.1 adds an independent append-only `PrebattleEvidenceLedger`. Raw candidate evidence is not a
 normalized `strategy_id`; ready-check evidence establishes only that the player formally selected
 some strategy. The current commitment therefore remains
-`READY_CONFIRMED_STRATEGY_UNKNOWN` until a later increment adds explicit identification.
+`READY_CONFIRMED_STRATEGY_UNKNOWN`; concrete strategy identity is derived separately by the
+implemented [Identification](strategy-identification.md) subsystem.
 
 ## Participant identity
 
@@ -147,14 +147,14 @@ Transition records carry `observed_at`, `stage_type`, optional round and wave,
 previous/new participation status, reason, presentation, optional HP, confidence, and evidence.
 Runtime stage type distinguishes `normal` and `secret_core`; secret core uses
 `round_number=None`. `BattleRoster` and its active-participant projection are query-derived and do
-not mutate this snapshot. Per-wave checks, continuous player-bar observation, recognition, and
-wave-boundary roster checkpoints remain deferred live features.
+not mutate this snapshot. Per-wave checks and continuous player-bar observation are not part of
+this snapshot component or an integrated player-tracking workflow in the live encounter UI.
 
 ## Legacy runtime strategy fields
 
-`PlayerState.strategy_id` remains temporarily for compatibility with the seed scaffold. It is not
-updated from the new snapshot and is not read by `build_team_strategy_context`. Removal is deferred
-until runtime association is implemented and reviewed separately.
+`PlayerState.strategy_id` remains a legacy compatibility field. It is not updated from the
+snapshot and is not read by `build_team_strategy_context`. Runtime association and assignment use
+their own implemented authority chain rather than this field.
 
 `StrategySelectionParticipant.strategy_id` is also a legacy boundary for revision-aware work. It
 may already be a normalized catalog interpretation rather than revision-independent raw evidence.
@@ -167,14 +167,10 @@ interpretation; repeated migration cannot restore it.
 is a legacy historical/prebattle materialized query, not a current commitment, confirmed
 occupancy, runtime assignment, or active-team query.
 
-## Deferred beyond M0.2b.3
+## Related component boundaries
 
-- fallback panel observation models;
-- runtime-slot association;
-- matching by unique strategy or player tag;
-- user-confirmed binding;
-- selection-screen OCR;
-- avatar recognition;
-- desktop UI;
-- automatic clicking;
-- real strategy data and recommendation logic.
+Runtime association, user-confirmed direct binding, and slot-strategy assignment are implemented
+as separate APIs; see [Runtime slots](runtime-slots.md). Visual selection and avatar probes are
+supporting components rather than snapshot authority. The live encounter desktop panel is a
+separate product path and does not present this snapshot as a complete player tracker.
+Automatic clicking and strategy recommendations are outside product scope.

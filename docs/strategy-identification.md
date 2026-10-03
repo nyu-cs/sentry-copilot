@@ -4,9 +4,10 @@
 
 M0.2b.2 links a ready-confirmed commitment to a normalized strategy only when concrete evidence
 exists. It stores immutable identification claims and derives the current uncontested occupancy.
-M0.2b.2 itself does not create a battle roster, runtime slot, participant association, assignment,
-annotation, coverage state, OCR recognizer, capture loop, or UI. M0.2c.1 later derives a roster
-from the same entry facts without changing identification or occupancy.
+Identification does not own the battle roster, runtime slots, association, capture, or UI.
+The implemented [Battle roster](battle-roster.md) derives participation from the same entry facts,
+and [Runtime slots](runtime-slots.md) derives assignments without changing identification authority.
+These are supporting APIs, not an end-to-end tracker in the live encounter UI.
 
 ## Identification records
 
@@ -51,7 +52,7 @@ Battle-entry reconciliation is more limited:
 - prior ready commitment and known strategy remain historical facts if the participant later
   departs;
 - a manual false-positive entry correction preserves the original evidence and re-derives both
-  commitment and the later roster from remaining effective entry evidence;
+  commitment and roster from remaining effective entry evidence;
 - no follow-up task or strategy annotation is created here.
 
 The derived `BattleRoster` includes only effective confirmed entrants. It excludes participants

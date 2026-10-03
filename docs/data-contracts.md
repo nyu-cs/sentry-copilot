@@ -53,7 +53,7 @@ fills omitted mirrors from context and rejects explicitly conflicting mirrors. W
 legacy M0.1a construction remains valid. Snapshot `ruleset_id` must match the effective context but
 does not become a second authority.
 
-Future revision-dependent values use this stamp:
+Revision-dependent derived values use this stamp:
 
 ```json
 {
@@ -65,8 +65,9 @@ Future revision-dependent values use this stamp:
 }
 ```
 
-M0.2a.1 defines only the dependency identity. It does not create occupancy, assignment,
-annotation, coverage, or other future caches.
+The context defines dependency identity, not a second occupancy or assignment cache.
+Identification and weak legacy interpretations use this stamp for freshness; direct/manual
+claims are checked for current catalog compatibility.
 
 Explicit operations use `SelectSessionRulesetContext` or `CorrectSessionRulesetRevision`. The
 application service verifies the exact catalog, ruleset, revision, and locale before creating

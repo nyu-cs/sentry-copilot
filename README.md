@@ -1,190 +1,173 @@
-# Sentry Copilot / 卫戍协议助手
+# Sentry Copilot
 
-一个 **录像回放优先、只读、不自动操作游戏** 的卫戍协议辅助框架。
+A read-only computer-vision desktop assistant for Arknights Sentry Protocol.
 
-这份 v0.1 种子工程已把你刚刚纠正的玩家逻辑和新增的地图路径功能落实到代码结构中：
+## Overview
 
-- 左侧玩家头像是个性化头像，只能用于保持槽位连续性，**不能推断玩家策略**。
-- 玩家头像下方数字是血量；当前种子模型在血量 `<= 0` 时写入 legacy `ELIMINATED`。
-  后续 runtime 业务模型会归一为 `INACTIVE + HP_DEPLETED`，并独立记录是否离开或观战。
-- 策略选择界面是主要采集时机；reducer 维护的最多四人策略快照是 prebattle 物化视图
-  和历史查询来源，不是未来 runtime slot 标签的权威状态。
-- 当前目标玩法正式名称是“卫戍协议：盟约 下半”，其开放前期和更新后期是两个独立
-  revision；`SessionRulesetContext` 独立记录 ruleset、revision、locale 和 catalog version。
-- revision-aware catalog 按 `catalog version + revision + strategy + locale` 精确查询。
-  当前仓库只含明确标记的 synthetic catalog 与 synthetic SVG；它们不构成真实版本验收。
-- ruleset revision 只能通过显式手动选择、明确 replay metadata 或显式 correction 更新；
-  每次成功更新递增 generation 并保存历史，mismatch 不会触发静默切换。
-- 策略候选原始观察与正式 ready commitment 已分层：候选只保存画面、ROI、可见线索或
-  文字等证据，不伪装成规范化 `strategy_id`；玩家准备勾的首次有效证据建立
-  `READY_CONFIRMED_STRATEGY_UNKNOWN`。
-- 每项 prebattle evidence 使用稳定 ID。重复应用同一 ID 幂等，不同 ID 的相同画面
-  观察仍分别保存。视觉 false positive 可通过保留原观察的人工 correction 排除，
-  但这不表示玩家在游戏内取消准备或释放策略。
-- 单人或多人实际参战人数由 `expected_participant_count` 明确记录，不能按已识别行数猜测。
-- 策略快照保存历史选择；局内退出、断线或淘汰不会删除玩家或改变快照完整度。
-- `#XXXX` 以四位字符串保存并且只在本局唯一；策略选择行不等于局内左侧槽位。
-- 左上角策略面板仅作为缺失补充、局内消歧或人工验证的备用来源。
-- 地图路径按 `ruleset_id + map_id` 版本化，支持普通敌人路线、Boss 路线、阶段路线、停留点和传送段。
-- 路线保存在归一化地图坐标中，再通过四角校准/单应性矩阵投影到当前画面。
-- 地图或校准置信度不足时不显示猜测路线。
-- encounter preview 固定展示难度、Boss、敌人类型和禁用盟约四项情报，完整采集为 `4 / 4`。
-  禁用盟约仅在 Major 与 Additional 两部分均完整时计为一项；`情報確認 1/2` 是启动边界。
-  地图不是 encounter 产品情报项；路线投影、校准和渲染是保留的独立工程模块。
+Sentry Copilot captures the game client, recognizes encounter information visually, and
+maintains confirmed facts across frames. It recovers missing information when the player returns
+to an INFO page and presents the results in a compact desktop UI.
 
-## 快速运行
+The engineering problem is not just recognizing a screenshot: information can be incomplete,
+scroll out of view, or reappear during the same encounter. The application separates visual
+observations, encounter lifecycle, confirmed state, and presentation so that a weak frame does
+not erase a previously confirmed result. It never clicks, deploys units, or controls the game.
+
+## Current Live Encounter Intelligence
+
+The live product has exactly four information items:
+
+| Item | Current behavior |
+| --- | --- |
+| Difficulty | Visual classification with temporal confirmation and post-start recovery. |
+| Boss | Catalog-backed visual identification on initial and returned INFO pages. |
+| Enemy Types | Complete, confirmed enemy-category sets from supported INFO layouts. |
+| Banned Covenants | Combines independent Major/Core and Additional Covenant snapshots. |
+
+Complete supported progress is **4 / 4**. Major/Core recognition alone does not complete
+Banned Covenants; both components are required. Covenant recognition supports AC-2, AC-3, and
+AC-4. Standard / AC-1 explicitly shows Bans as unsupported rather than inventing a result.
+
+Initial AC-4 / Ultimate Major recognition is implemented with bounded local crop refinement.
+Additional Covenant recognition is scroll-aware but deliberately bounded; ambiguous or clipped
+layouts can remain unresolved. See [Encounter Intelligence](docs/encounter-intelligence.md).
+
+## Key Engineering Features
+
+- Read-only MuMu renderer/framebuffer IPC capture and a secondary Windows-display source.
+- Immutable NumPy-backed frames with source and timestamp provenance; local video and image
+  sources for offline engineering.
+- OpenCV visual observers using SIFT, geometric verification with RANSAC, and targeted
+  template, shape, and color cues.
+- Temporal confirmation, explicit encounter-start handling, returned-INFO recovery, sticky
+  confirmed facts, and conservative conflict reporting.
+- Catalog-driven banned-operator projection: all static recruitment routes must be known
+  disabled before an operator is reported as confirmed banned.
+- Immutable presentation models and tested UI-state helpers, including the seven-card
+  Ban Detail layout.
+- Typed Python, pytest, Ruff, strict mypy, and GitHub Actions checks.
+
+## Architecture
+
+```text
+Capture
+  -> Visual Observers
+  -> Encounter Controller / EncounterSession
+  -> Confirmed Facts
+  -> Presentation Models
+  -> Desktop UI
+```
+
+The encounter controller owns this live path. The separate strategy/player evidence subsystem
+uses its own reducer and session state. Route projection/rendering is another independent
+engineering subsystem; neither is presented as fully wired into the live encounter UI.
+
+See [Architecture](docs/architecture.md) and the [documentation index](docs/README.md).
+
+## Running / Development
+
+Requires **Python 3.12 or newer**. Run from the repository root in an editable development
+checkout; live capture and the desktop preview require Windows.
 
 ```bash
 python -m venv .venv
-# Windows PowerShell: .venv\Scripts\Activate.ps1
+# Windows PowerShell: .\.venv\Scripts\Activate.ps1
 # macOS/Linux: source .venv/bin/activate
-pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
 pytest
 ruff check .
 python -m mypy
 python tools/validate_repository.py
+python -m sentry_copilot.cli --help
+```
+
+The installed CLI is also available as `sentry-copilot`. For live recognition, locally supplied
+private reference packs are required. On the calibrated JP MuMu 1920x1080 profile:
+
+```powershell
+python -m sentry_copilot.cli live-encounter-preview `
+  --capture-backend mumu-ipc `
+  --mumu-install-root '<MuMu install root>' `
+  --mumu-ipc-dll '<path to external_renderer_ipc.dll>' `
+  --mumu-instance-id 0 `
+  --mumu-display-id 0 `
+  --locale en
+```
+
+Replace the placeholders with paths from the local MuMu installation. The IPC DLL is not bundled.
+The desktop shell supports English (`--locale en`) and Chinese (`--locale zh_CN`) modes.
+Some game entity names retain Chinese/localized catalog labels when no deliberate English
+display name exists. The secondary physical-display path is:
+
+```powershell
+python -m sentry_copilot.cli live-encounter-preview --capture-backend windows-display --monitor 1 --locale en
+```
+
+A display capture still needs the calibrated game-content layout; it is not automatic window or
+viewport discovery. Because this fallback captures the physical display, keep the assistant
+window and other overlays outside calibrated game ROIs. MuMu IPC instead captures the game
+framebuffer directly, excluding desktop windows. Without the private reference packs, launching
+the panel does not reproduce meaningful real-game recognition. There is no public encounter demo.
+
+An independent, entirely synthetic route demonstration is available:
+
+```bash
 python -m sentry_copilot.cli validate-data --maps data/maps
-python -m sentry_copilot.cli demo-route-overlay \
-  --map-file data/maps/demo.synthetic_training_map.yaml \
-  --output outputs/demo_route_overlay.png
-# Windows JP MuMu fullscreen 1920×1080 live Map/Difficulty preview:
-python -m sentry_copilot.cli live-encounter-preview --monitor 1 --locale zh_CN
+python -m sentry_copilot.cli demo-route-overlay --map-file data/maps/demo.synthetic_training_map.yaml --output outputs/demo_route_overlay.png
 ```
 
-演示图完全由合成背景和占位路线生成，不代表真实游戏地图或真实 Boss 路径。
+This demonstrates projection/rendering, not real-game encounter recognition or verified game routes.
+See [Contributing](CONTRIBUTING.md) for development boundaries.
 
-## 架构
+## Public vs Private Resources
 
-```text
-Video / Image Folder / Live Window (later)
-                     ↓
-                 FrameSource
-                     ↓
-       Scene / HUD / Player / Map recognizers
-                     ↓
-             typed observations/events
-                     ↓
-                SessionReducer
-                     ↓
-                 SessionState
-            (SessionRulesetContext)
-                  ↙       ↘
-       knowledge panels   RouteOverlayService
-                                 ↓
-                 map calibration + route overlay
-```
+The public checkout contains code, tests, schemas, synthetic graphics, and game-related catalog
+metadata, including localized names and provenance references. It does not distribute the
+recognition reference images, gameplay recordings, or private portrait/icon packs used during
+development and validation.
 
-## 策略选择阶段快照
+`data/private/`, `local_data/`, and generated `outputs/` are ignored by Git. Recognition loaders
+use explicitly declared local resources rather than treating arbitrary directory contents as
+validated references. Resource availability and source permissions are separate concerns; see
+[Third-party notices](THIRD_PARTY_NOTICES.md).
 
-```text
-策略选择界面观察最多四行玩家信息
-→ 为每行建立 session-local participant
-→ 按字段保存编号、名字、头像、策略、ready 与证据
-→ 将原始候选和准备勾写入独立、ID 幂等的 prebattle evidence ledger
-→ 首次有效准备勾建立 ready-confirmed、具体策略未知的 commitment
-→ 明确记录实际参战人数，不按识别出的行数推断
-→ reducer 合并为当前 StrategySelectionSnapshot
-→ 离开选择阶段时冻结 legacy 物化视图
-→ 显式迁移 adapter 按稳定 fingerprint 导入旧 ready 与策略解释证据
-→ 局内查询读取实际参战玩家的历史策略，不要求 runtime slot 映射
-```
+## Validation / Testing
 
-快照冻结、最终入场人数已知且每名 `ENTERED_BATTLE` 参与者的 legacy 策略字段均有值时，
-其物化视图达到策略字段完整；这只表示 prebattle 数据覆盖，不表示 concrete strategy
-occupancy 或产品标注完成。单人、三人或四人对局使用同一规则。选择阶段退出者仍保留在原始快照，
-但不进入默认最终队伍查询。部分玩家名、头像或编号仍可未知。运行时仍存活人数与
-快照记录人数彼此独立。左上角面板流程保留为未来 fallback，所有切换和打开面板
-操作都由用户完成。v0.1 不做自动点击。
+Public automated tests cover domain invariants, synthetic visual inputs, temporal confirmation,
+lifecycle/recovery, conflicts, capture adapters, catalog validation, presentation, and route
+projection. CI runs pytest, Ruff, and strict mypy on Python 3.12.
 
-`TeamStrategyContext` 是历史策略上下文，不是当前有效队伍查询。未来 active-team
-查询会排除所有 `INACTIVE` 玩家，但不会修改历史策略快照。
+Private live and retained-frame checks informed the calibrated recognition implementation, but
+their media is not distributed. Public tests do not reproduce every private validation scenario
+and do not establish universal real-game recognition accuracy. Synthetic strategy-catalog
+validation is not validation of a real game revision.
 
-当前 `StrategySelectionParticipant.strategy_id` 是 M0.1a 兼容字段，可能已经包含旧
-catalog 的规范化解释。M0.2b.3 通过显式、可审计、幂等的 adapter 保存原字段证据；
-可兼容当前 catalog 的值只形成带 dependency stamp 的弱 legacy interpretation，不能
-直接成为 current identification、occupancy 或 runtime assignment。legacy snapshot
-允许重复策略观察，真正的重复正式 claim 仍由 occupancy conflict query 表达。
+See [Validation boundaries](docs/validation.md) for what can be reproduced publicly.
 
-M0.2b.1 的 commitment 尚不包含 concrete strategy occupancy。重复准备勾只追加证据，
-不会创建第二个 commitment 或后移 `confirmed_at`。若人工确认某个准备勾属于识别
-false positive，原 observation 仍留在 ledger 中，仅从当前有效证据集合排除；其他仍
-有效的准备勾证据继续维持 commitment。
+## Known Limitations
 
-M0.2b.2 将具体策略识别保存为独立、不可变且可审计的 claim history。catalog-derived
-记录必须同时引用原始候选证据和当前 dependency stamp；direct/manual 记录不因
-generation 改变自动失效，但会在当前 revision catalog 下重新检查兼容性。occupancy
-只从未被 supersede、fresh、compatible、已有 commitment 且无冲突的 claim 查询派生，
-不会再持久化第二份镜像。同一策略的两名正式 claim 属于
-`DUPLICATE_CONFIRMED_STRATEGY_CLAIM`，不会产生两个有效 occupancy。
+- Real encounter recognition is calibrated for the Japanese client on MuMu at 1920x1080,
+  not arbitrary languages, resolutions, or UI scaling.
+- Meaningful real-game recognition requires private/local reference assets.
+- Additional Covenant recognition can remain unresolved at extreme low-row scroll positions;
+  partial geometry or ambiguous glyphs are not forced into a complete result.
+- Standard / AC-1 Bans recognition is unsupported.
+- Public tests cannot reproduce all private live-validation evidence.
 
-可靠观察到玩家以正常参与状态进入战斗，可以补建或强化“已正式选择、具体策略未知”
-的 commitment，但不能推断 `strategy_id`。玩家只是显示在局内栏不等于已经入场；若
-首个可靠稳定画面已经显示其退出，且之前没有 ready 或其他正式选择证据，则保持
-`BATTLE_ENTRY_NOT_CONFIRMED`，不建立 commitment、具体 occupancy 或补查任务。
+## Supporting Modules
 
-M0.2c.1 只把可靠观察到正常参与状态的玩家派生为 `BattleRoster` entrant。局内栏仍
-显示某行不等于入场。运行时参与状态分为 `ACTIVE` 与终态 `INACTIVE`；主动离开和断线
-统一为 `LEFT_OR_DISCONNECTED`，HP 归零为 `HP_DEPLETED`，画面呈现另分为
-`DEPARTED`、`SPECTATING` 或 `UNKNOWN`。原始 entry/inactivation 证据与人工纠正历史
-持久保存，roster 在查询时派生；误识别纠正可以改变助手当前解释，但不是玩家在游戏中
-重新入场或恢复 active。`normal` 与 `secret_core` 分开，secret core 不伪装成普通回合。
+**Strategy/player evidence:** revision-aware catalogs, immutable prebattle evidence, ready
+commitments, battle participation, participant association, conflict-aware strategy occupancy,
+and explicit corrections. These are supporting APIs and visual/probe components, not a claim
+that the live encounter panel tracks every player's strategy.
 
-未来人工策略面板补查必须先从目标视角底部 `name#XXXX` 建立
-`runtime slot -> participant` 关联，再把面板证据绑定到该 participant 并派生 assignment。
-读不到 tag 时保持 unresolved 或请求人工确认；不能建立 slot-only 策略权威，也不实现
-`DIRECT_SLOT_STRATEGY_PANEL`。所有视角切换和面板操作仍由用户手动完成。
+**Route projection/rendering:** ruleset- and map-scoped YAML, normalized battlefield coordinates,
+homography calibration, route filtering, and rendering with explicit unknown/no-overlay results
+when recognition or calibration is insufficient. The synthetic demonstration is independently
+testable. See [Strategy evidence](docs/strategy-commitment.md) and [Routes](docs/route-system.md).
 
-M0.2c.2 将局内玩家栏建模为带 layout epoch 的不可变 observation history。`visual_index`
-只是当前画面位置；小幅可靠移动可以沿用同一 slot ID，无法证明连续性的重排必须创建新
-layout 和新 slot，且不继承旧 association。当前 `BattleRuntimeSlot` 由有效 observation
-查询派生，不在 `SessionState` 中保存第二份 current-slot 镜像。
+## License / Attribution
 
-slot-participant association 只允许指向 `BattleRoster` confirmed entrants，basis 仅有
-`DIRECT_PLAYER_TAG`、`DIRECT_SELF_MARKER` 和 `MANUAL_CONFIRMATION`。同一 slot 声称多个
-participant，或同一 participant 被多个 current slots 声称，都会保留全部证据并形成
-显式 conflict，不按最新记录或最高置信度选胜者。association 不依赖 strategy catalog
-revision。M0.2c.3 在不持久化 assignment 的前提下，通过 current slot、无冲突
-association、confirmed entrant、effective identification 与 uncontested occupancy 查询派生
-slot-strategy assignment。链上任一步未知、过期或冲突都会返回带原因的 unresolved；不使用
-selection row、legacy strategy、display name、头像、HP、initial HP 或候选置信度补全。策略面板
-仍必须先绑定已关联 participant，且所有视角切换和面板操作仍由用户手动完成。
-
-`StrategySelectionSnapshot.frozen` 只关闭普通 legacy snapshot 合并，不关闭独立的
-prebattle evidence、ready correction、commitment、direct/manual identification 或迁移。
-revision correction 保留全部原始证据、commitment、claim 与迁移历史；catalog-derived
-及 weak legacy interpretation 依 dependency stamp 变 stale，direct/manual claim 则在
-当前 catalog 下重新检查 compatibility。`build_team_strategy_context` 保持 legacy
-物化查询语义，新代码应读取 commitment、effective identification、uncontested
-occupancy 和 conflict queries。
-
-## 路径功能
-
-```text
-识别或手动选择 map_id
-→ 找到战场四角/稳定锚点
-→ 计算归一化地图到屏幕的投影
-→ 根据阶段、回合、敌人、Boss 与 Boss 阶段筛选路线
-→ 显示来怪路径、Boss 路径、传送和停留节点
-```
-
-第一版先人工标注路线。之后才逐步加入录像中的目标跟踪、轨迹对齐和聚类，避免在真实数据不足时过早训练模型。
-
-## 目录
-
-```text
-src/sentry_copilot/
-  catalogs/    revision-aware catalog 加载、精确查询和共享校验
-  domain/      对局状态、ruleset context、prebattle evidence、ready commitment 与快照
-  player/      引导式 fallback 策略检查
-  routes/      地图路线模型、筛选、投影和渲染
-  vision/      地图识别与校准接口
-  services/    模块编排
-  capture/     回放帧来源
-  encounter/   独立于玩家人数的四项 encounter 情报与纯展示模型
-data/maps/    版本化地图路线 YAML
-data/strategy_catalogs/  仅 synthetic catalog、synthetic locale 与 synthetic SVG
-data/replays/  录像标注元数据，不含视频
-docs/          架构、路线系统和 Codex 任务
-```
-
-界面范围见 `docs/product-scope-v0.1.md`。从 `docs/CODEX_NEXT_TASK.md` 开始下一轮开发。
+Project code is covered by [LICENSE](LICENSE). Game-related metadata and external-resource
+provenance are described in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md); the code license
+does not establish rights to third-party content.

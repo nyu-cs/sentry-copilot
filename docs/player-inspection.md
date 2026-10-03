@@ -31,7 +31,7 @@ reason from death followed by departure, so it must not imply `HP_DEPLETED` with
 death evidence. A spectating icon is positive evidence of `HP_DEPLETED`. Once inactive, later HP,
 actions, and team contribution are no longer analyzed.
 
-## Future user-guided fallback
+## User-guided fallback contract
 
 ```text
 select target slot in assistant
@@ -52,13 +52,14 @@ assistant to bypass participant association or create an independent slot-only s
 `DIRECT_SLOT_STRATEGY_PANEL` is not an authority basis.
 
 The legacy reducer rejects a strategy event when `slot != selected_player_slot`. This prevents a
-valid recognition result from being assigned to the wrong teammate, but it is not the future
-assignment authority.
+valid recognition result from being assigned to the wrong teammate, but it is not the current
+query-derived assignment authority.
 
-M0.2c.2 implements the participant-association half using `DIRECT_PLAYER_TAG`, direct self marker,
-or explicit user confirmation. M0.2c.3 may later bind participant-scoped `DIRECT_OBSERVATION` panel
-evidence and derive assignment. It never creates a fifth participant, never establishes a
-slot-only strategy fact, and never automates any click, perspective change, or panel opening.
+The runtime-slot APIs implement participant association using `DIRECT_PLAYER_TAG`, direct self
+marker, or explicit user confirmation, and derive assignment from participant-scoped identification
+and uncontested occupancy. The live encounter UI does not implement this end-to-end inspection
+workflow. This contract never creates a fifth participant or a slot-only strategy fact, and never
+automates any click, perspective change, or panel opening.
 
 Do not infer inactivation from one missing frame. Insufficient evidence produces reason `UNKNOWN`
 with confidence and evidence retained.

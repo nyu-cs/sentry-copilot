@@ -32,8 +32,8 @@ Previous confirmed mappings are sticky. A later `active -> exited` or
 state changes. Contradictory later evidence surfaces a conflict and never silently remaps the
 slot.
 
-This is deliberately separate from the M0.2c.2 auditable direct association bases. Vision
-integration, evidence persistence, and any reducer/event integration remain future work.
+This is deliberately separate from the auditable direct association bases. The core does not
+persist evidence or dispatch reducer events and is not an integrated live player-tracking pipeline.
 
 M0.6b1b2 adds a frame-only preparation-checkpoint adapter.  It may project a runtime self marker
 only after exactly one marker is observed, and may project HP only from a historical,

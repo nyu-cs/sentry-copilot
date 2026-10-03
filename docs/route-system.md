@@ -1,8 +1,11 @@
-# Map and route system
+# Independent map and route system
 
-## Output
+This supporting subsystem is independently testable and is not wired into the live encounter
+panel or counted in its progress. The public demo uses synthetic data.
 
-The assistant can eventually show:
+## Supported route representation
+
+The route schemas, selection, projection, and rendering support:
 
 - current-wave enemy routes;
 - alternate or branching routes;
@@ -44,10 +47,16 @@ Routes may be filtered by:
 
 All routes also belong to one `map_id` and one or more `ruleset_id` values.
 
-## Data acquisition
+## Inputs and demonstration
 
-1. **Manual annotation first**: watch a replay, click waypoints, store reviewed YAML.
-2. **Assisted annotation**: track enemies and propose paths for human correction.
-3. **Statistical discovery**: align trajectories from many recordings, cluster them, and create provisional routes.
+Routes are explicitly supplied, reviewed YAML. Manual map selection and battlefield calibration
+providers are implemented; automatic route learning and a waypoint-annotation UI are not claimed.
+Unknown or low-confidence map/calibration results suppress the overlay rather than guessing.
 
-Unknown or low-confidence map/calibration results must suppress the overlay rather than guess.
+```bash
+python -m sentry_copilot.cli validate-data --maps data/maps
+python -m sentry_copilot.cli demo-route-overlay --map-file data/maps/demo.synthetic_training_map.yaml --output outputs/demo_route_overlay.png
+```
+
+The synthetic output demonstrates engineering behavior, not verified real-game routes. Keep
+recordings and unpublished annotations local; see [Validation](validation.md).

@@ -1,351 +1,157 @@
 # Architecture
 
-## Offline-first rule
+Sentry Copilot has three distinct engineering paths. The live encounter assistant is the product
+entry point; strategy/player evidence and route rendering are independent supporting subsystems.
+They share primitives where useful, not one universal session or execution pipeline.
 
-Every live component has an offline equivalent so development can continue when the mode is closed.
-
-```text
-recording / image folder / live capture later
-                    ↓
-                FrameSource
-                    ↓
- independent recognizers emit typed observations
-                    ↓
-              SessionReducer
-                    ↓
-               SessionState
-                    │
-          SessionRulesetContext
-              ↙    ↓     ↘
- strategy context  knowledge UI  route overlay service
-```
-
-## Frame input boundary
-
-M0.3a.1 provides source-neutral immutable `Frame` objects from local image sequences and local
-videos. The capture layer performs only media I/O and raw dumping; it does not identify viewport
-geometry, derive ROI, recognize game UI, or mutate domain state. Future Windows capture will
-implement the same `FrameSource` contract.
-
-## Content viewport boundary
-
-M0.3a.2 adds immutable, caller-calibrated `ContentViewport` and `NormalizedRoi` geometry in the
-vision layer. A viewport is bound to one source frame and can represent either an arbitrary game
-content rectangle or the explicit full frame; it never assumes desktop coordinates, a fixed
-resolution, or that black bars are absent. Normalized ROIs resolve only inside that viewport, and
-the crop/debug helpers create copies so the source frame remains unchanged. Automatic viewport
-detection and all game recognition remain out of scope.
-
-The offline validation runner accepts only a caller-supplied image directory or local video path.
-It applies optional frame-index sampling, explicit viewport geometry, and named normalized ROIs,
-then writes copied debug PNGs plus a JSONL manifest. It does not scan private data, mutate frames,
-or emit domain observations.
-
-M0.3a.4 adds a read-only Windows physical-display `FrameSource` for manual smoke testing. It uses
-an explicit MSS physical-monitor index, emits the same immutable frames as offline sources, and
-records the actual captured pixel dimensions. It has no window-title tracking, viewport detection,
-or recognition responsibility.
-
-M0.3b.1 adds a source-neutral template-matching primitive in `vision/`. It consumes an explicit
-frame, content viewport, ROI, and caller-owned template, then returns immutable geometric result
-data only. It does not encode Sentry Protocol screen semantics or mutate domain state.
-
-M0.3b.2 adds source-neutral OCR over one caller-supplied ROI. `recognize_text` copies only the
-resolved BGR crop, passes that immutable crop to an async backend, and returns immutable raw and
-NFKC/whitespace-normalized text, optional backend confidence, geometry, and frame/source
-provenance (including processing and optional source timestamps). Unknown and empty outputs remain
-distinct. The Windows adapter uses the OS OCR
-component through Python/WinRT rather than a separate executable or model download; it raises a
-typed unavailable error when the requested OCR language capability (such as `ja-JP`) is absent.
-It performs no game-specific parsing, page detection, or domain mutation.
-
-M0.3b.3 adds a bounded developer probe around the existing physical-display source and OCR
-primitive. The caller explicitly chooses a monitor, language, output directory, and normalized or
-pixel ROI. It captures only one frame, writes an unannotated copy and unannotated ROI crop, and
-records a compact JSON result. Missing system OCR language support is a typed `ocr_unavailable`
-outcome after the capture artifacts are written; the probe never installs Windows features.
-
-M0.3c adds a one-frame, caller-driven recognition probe harness. It reuses the existing frame,
-viewport, OCR, and template interfaces for one or more explicit normalized or pixel ROIs. The
-harness writes only caller-owned source/crop/optional diagnostic/report artifacts; it has no
-automatic ROI discovery, game semantics, domain-state mutation, or UI interaction.
-
-M0.7a1c1 adds independent, immutable fixed-layout observations for JP MuMu 1920×1080 outside-run
-pages: main lobby, party room, party-room matching overlay, solo matchmaking, success result,
-post-clear rematch, and the match-success transition.  Each observation is `present`, `absent`, or
-`unresolved` and retains only non-identity pixel-cue metrics plus frame provenance.  The module
-does not infer why a previous run ended. `SelectionLifecycleWatcher` reduces the independent
-observations to a single semantic outside-run boolean and debounces it separately from OPERATION;
-the watcher stores no page kind or termination cause.
-`PARTY_ROOM` denotes its visible base/context, so it can intentionally co-occur with the distinct
-`PARTY_ROOM_MATCHING_OVERLAY` observation.
-
-M0.7a2d adds an independent fixed-layout JP MuMu 1920×1080 strategy-selection render-context
-observation. It first reuses the selection-screen boundary, then reads a verified right-side
-layout brightness cue to report `SELECTION_GRID` or `STRATEGY_DETAIL`; wrong layouts and true
-outside-selection information pages remain `UNRESOLVED`. It does not inspect confirmation-marker
-ROIs, infer strategy identity, mutate state, or yet alter the selection collector API.
-
-M0.7a2 confirmation hardening keeps the existing two-frame debounce and sticky semantics, but
-requires a compact, non-edge-touching cyan check-frame component after the existing cyan-count
-gate. This rejects the large active-row animation without inferring turn, strategy, or participant
-state. A future selection participant-state layer must separately make `EXITED_UNCONFIRMED`
-terminal for confirmation promotion; that semantic gate is not part of the visual detector.
-
-## State ownership
-
-Recognizers do not edit `SessionState`. The reducer enforces:
-
-- avatar observations never change strategy;
-- strategy-selection observations merge field by field into one reducer-owned snapshot;
-- raw prebattle candidate and ready observations append to an evidence-ID-addressed ledger;
-- applying an identical evidence ID is idempotent, while an ID collision with different evidence
-  is rejected;
-- only effective ready, normal-entry, or concrete-selection confirmation evidence materializes a
-  ready-confirmed commitment;
-- reliable normal battle participation can strengthen the same commitment, but merely being
-  displayed inactive in the battle UI cannot establish entry;
-- false-positive correction preserves the original ready observation and changes only the
-  assistant's effective interpretation;
-- concrete strategy claims remain append-only while explicit manual records supersede assistant
-  interpretations without representing an in-game strategy switch;
-- uncontested occupancy is derived from commitment, freshness, compatibility, supersession, and
-  conflict state; it is never persisted as a second authority;
-- `selection_row` never implies a runtime player slot;
-- expected participant count is explicit and never inferred from recognized rows;
-- M0.1a snapshot completeness measures only whether expected entered-player legacy strategy
-  fields have values; repeated interpretations remain valid snapshot history and are not occupancy;
-- frozen strategies change only through explicit manual correction;
-- runtime exit and elimination never mutate historical strategy selection;
-- non-positive health marks elimination;
-- unknown evidence remains unknown;
-- map and ruleset identity are explicit.
-
-`SessionRulesetContext` is the sole authority for new ruleset-, revision-, locale-, and
-catalog-aware code. Legacy session ruleset/locale values are compatibility mirrors. If a context
-is supplied without those legacy values, model construction fills the mirrors; explicitly
-conflicting values are rejected.
-
-The context owns a monotonic generation. Future revision-dependent derived values must carry a
-dependency stamp containing ruleset, revision, locale, catalog version, and generation. M0.2a.1
-defines the stamp but does not create future occupancy, assignment, annotation, or coverage state.
-
-## Prebattle evidence and ready commitment
-
-M0.2b.1 separates three concepts:
+## Live encounter pipeline
 
 ```text
-raw candidate / formal-selection observation
-        ↓ append-only, stable evidence ID
-PrebattleEvidenceLedger
-        ↓ exclude corrected ready false positives
-StrategyCommitmentState
-        ↓ read-only projection
-formal-selection commitment, concrete strategy still separate
+MuMu renderer IPC / Windows display
+                  |
+             immutable Frame
+                  |
+          visual observations
+                  |
+     LiveEncounterPreviewController
+                  |
+          EncounterSession facts
+                  |
+       immutable presentation views
+                  |
+             Tk desktop UI
 ```
 
-Raw candidate records contain frame references, normalized ROI, observed visual cues, observed
-text, confidence, time, and provenance. They deliberately contain no normalized strategy ID.
-M0.2b.2 interprets them only in a separate concrete-identification record.
+### Capture and observations
 
-The first effective ready observation determines `confirmed_at`; later ready observations add
-evidence without moving it or creating another commitment. There is no game-domain unready or
-release transition. A manual false-positive correction is an assistant-record operation: it
-preserves the original observation, records the correction under its own stable ID, and excludes
-the targeted ready evidence when deriving current commitments. If no effective ready evidence
-remains, the assistant materialization no longer contains that commitment.
+`capture/` produces frames only. Every `Frame` owns a copied, read-only BGR array and records
+frame identity, source type, dimensions, processing time, and optional source time. Image-sequence
+and local-video sources implement the same boundary for offline work.
 
-Every prebattle event carries normalized session and participant IDs. The reducer rejects
-cross-session events and participants absent from the session's strategy-selection snapshot.
-Ledger and commitment aggregates are frozen; the reducer constructs and validates a complete new
-`SessionState`, so a failed correction cannot partially change the input.
+The MuMu source wraps screenshot-only native renderer IPC. It converts the target ABI's
+upside-down RGBA framebuffer into the shared BGR representation and releases its connection on
+exit. The installed DLL and emulator paths are supplied explicitly. Windows physical-display
+capture is a secondary source; neither adapter performs game recognition or input automation.
 
-## Legacy snapshot migration
+`vision/` returns typed observations, never mutations of domain state. Generic viewport, ROI,
+template, OCR, and local-feature primitives coexist with fixed-layout JP MuMu encounter
+observers. Generic ROI geometry is source-neutral; that does not make the encounter profile
+resolution-independent. The current live encounter path is visual and does not depend on OCR.
 
-M0.2b.3 keeps `StrategySelectionSnapshot` as the legacy prebattle materialized view and imports it
-only through an explicit service:
+### Controller and confirmed state
+
+`services/live_encounter_preview.py` coordinates page observations, temporal confirmation,
+encounter identity, recovery eligibility, and capture status. Its `EncounterSession` is separate
+from the strategy/player subsystem's `SessionState`.
+
+Initial INFO is the authoritative start boundary. Once an encounter exists, departure and
+strict next-initial-page confirmation distinguish a new encounter from returned INFO.
+Returning to INFO or observing INFO 2/2 does not create another session.
+
+`encounter/session.py` applies validated capture candidates. The four product facts are
+Difficulty, Boss, Enemy Types, and Banned Covenants. Bans is complete only with both Major/Core
+and Additional snapshots. Weak observations do not erase confirmed facts; contradictions are
+explicit conflicts rather than silent replacements. Returned-INFO recovery fills missing facts
+within a controller-owned scan context. See [Encounter Intelligence](encounter-intelligence.md)
+for recognition gates and lifecycle details.
+
+### Presentation and desktop boundary
+
+`encounter/presentation.py` derives localized, immutable views from confirmed session facts and
+catalog metadata. The UI consumes these views and is not a fact authority. MuMu IPC captures the
+game framebuffer without the desktop assistant window; physical-display capture can include
+assistant windows or other overlays if they overlap calibrated game-content/ROI areas.
+Ban Detail groups Major and Additional results, projects conservatively confirmed banned
+operators, and wraps cards at seven per row. Pure layout/navigation helpers are testable without
+a running game.
+
+Missing private media is handled separately from confirmed state. Diagnostics remain local,
+with no gameplay recording or upload performed by the preview.
+
+## Strategy/player evidence pipeline
 
 ```text
-ImportLegacyStrategySnapshotEvidence
-        ↓ validate session + canonical snapshot fingerprint
-LegacyPrebattleSnapshotMigrationService
-        ↓ deterministic field IDs + one atomic accepted event
-typed legacy evidence + ready commitment + weak interpretation history
+explicit observations / manual commands / legacy import
+                         |
+        catalog-validating application services
+                         |
+                 domain reducer facts
+                         |
+          SessionState + immutable histories
+                         |
+     commitment / roster / association / occupancy queries
 ```
 
-The migration history is keyed independently by a caller-supplied operation ID and by the
-canonical SHA-256 snapshot fingerprint. Repeating one operation with equal command content or
-using a different operation for an already imported fingerprint is a no-op. Reusing an operation
-ID for different command content is rejected. Legacy `ready=true` becomes typed positive evidence;
-`false` or unknown never withdraws another commitment. A legacy strategy value and its original
-field evidence are preserved as catalog-dependent interpretation history, never as a raw visual
-candidate or effective occupancy.
+This subsystem models auditable identity and evidence; it is not wired into the live encounter
+panel as an end-to-end player tracker.
 
-`snapshot.frozen` means only that ordinary legacy snapshot capture has closed. It does not close
-the independent evidence ledger, corrections, commitments, direct/manual identification, battle
-entry evidence, or migration history. Revision correction performs no destructive rewrite:
-revision-independent evidence and commitment remain, stamp-dependent records become stale, and
-direct/manual claims are rechecked against the current catalog by the existing read model.
+- `SessionRulesetContext` is the ruleset/revision/locale/catalog authority. Explicit command
+  services validate selections and corrections; the generic reducer never loads YAML, accesses
+  the filesystem, or infers a revision.
+- A reducer-owned strategy-selection snapshot stores legacy prebattle history for at most four
+  participants. Completeness is field coverage relative to an explicit entrant count, not
+  confirmed strategy occupancy.
+- Raw candidates, ready observations, and corrections use stable evidence IDs. Commitments do
+  not themselves identify a strategy. A false-positive correction preserves the original
+  observation rather than claiming an in-game cancellation.
+- Reliable normal active participation establishes battle entry. Runtime participation is
+  `ACTIVE` or terminal `INACTIVE`; historical selection remains unchanged by departure.
+- Layout-epoch slot identities are distinct from screen order, selection rows, avatars, and HP.
+  Durable direct association claims target confirmed entrants and preserve one-to-one conflicts.
+- Concrete strategy claims are checked against commitment and the current catalog. Occupancy
+  and slot-strategy assignments are query-derived; contested claims produce no occupancy.
+- Legacy snapshot migration is explicit, audited, and idempotent. Imported weak interpretations
+  are not current identification or assignment authority.
 
-## Concrete identification and effective occupancy
+Visual selection/runtime probes and a deterministic normalized association core are also
+implemented. The core's accepted avatar/pre-loss-HP constraints do not bypass the auditable
+direct-association authority or create durable claims. User-guided fallback contracts require
+participant association before interpreting a strategy panel; all game navigation is manual.
 
-Concrete claims use one of three bases. `CATALOG_DERIVED` requires raw candidate evidence and an
-exact `RulesetDependencyStamp`; any ruleset, revision, locale, catalog-version, or generation
-change makes it stale. `DIRECT_OBSERVATION` and `MANUAL_CONFIRMATION` carry strong evidence rather
-than a dependency stamp. They survive generation changes but are checked against the current
-revision catalog on every query.
+See [Domain invariants](domain-invariants.md), [Data contracts](data-contracts.md),
+[Runtime slots](runtime-slots.md), and [Runtime association core](runtime-association-core.md).
 
-Identification history is append-only. Manual correction adds a record with explicit
-`supersedes_record_ids`; the replaced record remains available for audit. Current identification
-is derived only from fresh, compatible, unsuperseded claims for a participant with a current
-commitment. Occupancy is then derived from those identifications and is not stored in
-`SessionState`.
-
-The game invariant is one formal occupant per strategy. Candidate duplicates remain legal because
-candidates are not occupancy. Two participants making the same concrete confirmed claim produce
-`DUPLICATE_CONFIRMED_STRATEGY_CLAIM`, no winner and no occupancy for that strategy. Distinct strong
-claims for one participant produce `PARTICIPANT_STRATEGY_IDENTIFICATION_CONFLICT`; a direct/manual
-claim outside the current catalog produces `STRATEGY_CATALOG_COMPATIBILITY_CONFLICT`.
-
-M0.2b battle reconciliation records only whether normal active participation was reliably
-observed. `BATTLE_ENTRY_CONFIRMED` can establish or strengthen a strategy-unknown commitment, but
-contains no strategy ID. `BATTLE_ENTRY_NOT_CONFIRMED` is used when the first stable frame is already
-inactive or normal participation was never observed. A participant remaining visible as a departed
-row is not thereby a battle entrant. M0.2c.1 now consumes those facts to derive `BattleRoster`, but
-still creates no runtime slot, follow-up queue, or annotation.
-
-## Strategy catalog subsystem
-
-Catalog data is immutable and revision-aware. `StrategyIdentity` owns only a normalized
-`strategy_id`. `RulesetStrategyProfile` owns the revision-specific availability, initial HP,
-`icon_visual_key`, and `icon_asset_reference`; it is the only current icon-mapping authority.
-`LocaleStrategyResource` owns revision- and locale-specific names, descriptions, OCR aliases, and
-visible text variants.
-
-Runtime loading and repository validation both call the same PyYAML parser and cross-record
-validator. Lookup is exact: locale resources require catalog version, revision, strategy, and
-locale, with no implicit fallback across revisions or languages. Asset references must be safe
-relative paths below the catalog directory.
-
-Support targets and validation evidence are catalog-registry metadata, not session state. A target
-declaration does not imply validated support, and passing the synthetic fixture validates only
-that fixture. M0.2a.2 does not create assignment, occupancy, recognition, or derived HP matching.
-
-## Ruleset context operations
-
-Ruleset selection and correction use an application boundary:
+## Independent route pipeline
 
 ```text
-explicit command
-→ RulesetContextService validates session and exact catalog target
-→ accepted typed event
-→ generic reducer builds a complete candidate SessionState
-→ whole-state validation
-→ new state returned
+ruleset/map-scoped route YAML + explicit scene context
+                         |
+        map selection + battlefield calibration
+                         |
+            route selection / projection
+                         |
+                    rendering
 ```
 
-The reducer does not receive a catalog repository and never reads YAML or the file system. Initial
-selection is manual or imported from explicit replay metadata; automatic detection is not part of
-M0.2a.3. A concrete context requires explicit correction, while an unknown generation-zero
-context uses initial selection and is preserved as generation-zero history.
+`routes/` owns schemas, filtering, normalized coordinates, projection, and drawing.
+`RouteOverlayService` orchestrates map-recognition and calibration providers; the repository
+includes manual providers and a synthetic CLI demonstration, not a claim of general automatic
+game-map recognition.
 
-Each successful replacement appends the old selection, increments `context_generation`, and
-atomically synchronizes legacy mirrors. Exact duplicate correction is a typed rejection. Mismatch
-checks never mutate or silently switch the session. Raw observations, field evidence, and the
-prebattle snapshot remain revision-independent historical data.
+Every route is scoped by ruleset and map identity. Four battlefield corners define a homography
+from normalized points into the captured frame. Insufficient map or calibration confidence
+returns an explicit unknown result and suppresses the overlay. Route steps include movement,
+teleport, wait, and phase-change nodes.
 
-## Strategy-selection subsystem
+Route rendering is not part of encounter progress and is not an encounter-panel roadmap.
+The reusable catalog name `EncounterMapCatalog` remains a compatibility API for metadata,
+including difficulties, Bosses, and enemies; it does not add a live product information item.
+See [Route system](route-system.md).
 
-The strategy-selection screen is the primary acquisition source. Each participant has an opaque
-session-local ID and independent evidence for tag, display name, avatar, strategy, ready state,
-selection outcome, and self state. A frozen snapshot is strategy-complete when its explicit
-expected count matches the number of `entered_battle` participants and each legacy strategy field
-has a value. Repeated values are allowed because this is field coverage, not confirmed occupancy.
-Selection-stage exits remain in the raw snapshot but are excluded from the default final-team
-query. The expected count may be one to four and is never inferred from recognition results.
-Identity completion, runtime survival, and runtime-slot association are separate concerns.
+## Module boundaries and testing
 
-The current `StrategySelectionSnapshot` in `SessionState` remains an immutable prebattle
-materialized view and historical query source. It is not the future runtime-slot annotation
-authority. M0.1a does not implement recognition, confirmed occupancy, or runtime association.
+| Module | Responsibility |
+| --- | --- |
+| `capture/` | Frame acquisition and media I/O. |
+| `vision/` | Immutable visual observations and geometry. |
+| `encounter/` | Encounter models, capture updates, catalogs, presentation, and desktop UI. |
+| `domain/` | Strategy/player state, immutable evidence, reducer invariants, and derived views. |
+| `catalogs/` | Exact revision-aware loading, lookup, and shared validation. |
+| `services/` | Explicit validation and orchestration across boundaries. |
+| `player/` | User-guided fallback inspection helpers. |
+| `routes/` | Route models, selection, projection, and rendering. |
 
-Its legacy participant `strategy_id` may contain catalog-dependent normalized interpretation.
-M0.2b.3 preserves that value and field evidence through explicit migration. A compatible value may
-produce a stamped weak legacy record for audit, but the current read model excludes that basis from
-effective identification and occupancy until a later direct/manual confirmation explicitly
-supersedes it. Raw visual observations and normalized strategy interpretation remain separate.
-
-Runtime participation is a separate observation stream. It distinguishes `normal` from
-`secret_core`, requires `round_number=None` for secret core, carries an optional wave number, and
-records status transitions without writing back into selection outcome or strategy history.
-
-The runtime business model separates participation (`ACTIVE` or terminal `INACTIVE`),
-inactivation reason (`LEFT_OR_DISCONNECTED`, `HP_DEPLETED`, or `UNKNOWN`), and inactive
-presentation (`DEPARTED`, `SPECTATING`, or `UNKNOWN`). `DISCONNECTED` is not a separate business
-reason. `BattleParticipationState` retains append-only observations/corrections, while
-`build_battle_roster` derives entrants and current participation. `get_active_battle_participants`
-is separate from the historical team strategy context.
-
-Assistant-record correction does not add a game-domain re-entry or reactivation. Entry correction
-excludes mistaken `BattleEntryConfirmed` evidence; inactivation correction can invalidate or
-replace the current assistant interpretation while preserving every original fact for audit.
-
-Future runtime slots remain a separate authority chain. The manual panel fallback must first use
-the bottom `name#XXXX` display to establish a strong `DIRECT_PLAYER_TAG` participant association.
-Only then may participant-bound direct panel evidence strengthen strategy identification and
-derive assignment through uncontested occupancy. There is no slot-only panel authority or
-`DIRECT_SLOT_STRATEGY_PANEL` bypass.
-
-M0.2c.2 now persists immutable runtime-slot observation and association-claim history. Current
-`BattleRuntimeSlot` and association/conflict views remain query-derived. Slot identity is scoped to
-one explicit layout epoch; visual index is never identity, and an uncertain reorder starts a new
-layout without inheriting old claims. Only current confirmed battle entrants may be associated.
-Tag, self marker, and manual confirmation are the only accepted bases; legacy slot position,
-selection row, avatar, HP, and strategy fields are isolated from this layer.
-
-For the fixed 1920×1080 JP MuMu selection baseline, M0.7a2a observes only each row's persistent
-cyan confirmation marker. The caller must explicitly choose `selection_grid` or `strategy_detail`;
-the two contexts have different horizontal marker ROIs and are never combined. A caller-owned
-immutable tracker locks a row only after consecutive positive observations and never interprets a
-later negative or unresolved frame as an in-game unconfirm. This visual evidence stores no
-strategy identity; strategy collection remains deferred.
-
-M0.7a2b composes that sticky row state with an already resolved selection-matcher result. Only
-evidence from the confirmed period is retained, including the frame that completes debounce;
-pre-confirmation previews are intentionally discarded. The caller finalizes each row at selection
-end as unconfirmed, identified, confirmed-but-unresolved, or conflicted. Conflicts retain every
-resolved identity without score ranking or majority selection. This is still vision-local history:
-it does not create a domain commitment, battle-entry fact, participant outcome, or slot assignment.
-
-M0.7a2c1 provides a caller-owned per-frame composition state. It applies confirmation observation
-and debounce first, then passes the updated locked rows with same-frame existing matcher results
-to confirmed-period accumulation. Thus the debounce-completing frame can contribute evidence.
-Render context remains explicit, lifecycle remains responsible for deciding when to finalize, and
-no composition result is promoted into domain or runtime state.
-
-The fixed JP MuMu 1920×1080 layout now has separate participant-status and completion-presentation
-observations. The bounded status-overlay gate requires `gray < 80` for at least 0.30 of the ROI and
-an HSV low-saturation (`<= 70`) grayscale-white (`>= 100`) fraction from 0.15 through 0.35. Only
-then does the context-aware bottom-right white occupancy classify `NETWORK_WARNING` at `<=
-0.282949`, `EXIT` at `>= 0.329032`, and the gap as unresolved. The caller-owned tracker requires
-two EXIT frames and never clears a lock. The fixed-layout visual observer recognizes an explicit,
-strictly validated ellipsis or a retained strategy portrait with the established row-local textured,
-color-rich image cue; non-ellipsis evidence without that portrait cue remains unresolved. Once EXIT is
-locked, ellipsis with no prior confirmation becomes sticky `EXITED_UNCONFIRMED` and cannot later
-collect strategy evidence; a prior confirmation or retained portrait becomes
-`CONFIRMED_THEN_EXITED` and keeps its earlier evidence. These are visual-local history facts, not
-domain exit events or battle death/spectating/runtime-participation facts.
-
-## Route subsystem boundaries
-
-This supporting subsystem is independent from the live encounter product. Encounter state and
-progress contain only Difficulty, Boss, Enemy Types, and Banned Covenants; route map IDs do not
-add a product information item.
-
-1. **Map recognition**: identify `map_id`.
-2. **Calibration**: locate the battlefield in the current frame.
-3. **Route selection**: select map-specific routes for the current encounter.
-4. **Projection**: map normalized coordinates to frame pixels.
-5. **Rendering**: draw paths, arrows, teleports and nodes.
-
-The first version uses manual map choice and manual four-corner calibration. Real recognition can replace those providers without changing route data or rendering.
+Synthetic inputs and injected adapters make these boundaries testable when the game mode is
+unavailable. Public tests cover logic and bounded visual cases; private calibrated references
+are not part of the checkout. See [Validation](validation.md) and
+[Contributing](../CONTRIBUTING.md).

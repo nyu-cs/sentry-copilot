@@ -17,7 +17,7 @@ Every prebattle event carries all three identities. The reducer accepts an event
 - its participant already belongs to that snapshot.
 
 This prevents a participant reference from crossing session boundaries. Selection row remains
-independent from future runtime slot identity.
+independent from runtime slot identity.
 
 ## Raw evidence
 
@@ -40,12 +40,12 @@ fact.
 
 Every entry has a caller-supplied stable evidence ID. Exact replay of the same ID and content is a
 no-op. Reuse of an ID for different content is rejected. Separate IDs with identical content are
-preserved because they may represent independent frames. This makes replay and future legacy
+preserved because they may represent independent frames. This makes replay and legacy
 migration idempotent without content-based deduplication.
 
-The later legacy adapter must derive stable evidence IDs from the source snapshot identity and
-field identity. Reprocessing that same snapshot will therefore hit the exact-ID no-op path rather
-than append duplicate evidence or create another commitment.
+The explicit legacy adapter derives stable evidence IDs from the source snapshot identity and
+field identity. Reprocessing that snapshot hits the exact-ID no-op path rather than appending
+duplicate evidence or creating another commitment. See [Legacy migration](prebattle-migration.md).
 
 ## Ready commitment
 
@@ -124,8 +124,10 @@ correction mechanism; repeating migration does not reactivate an excluded eviden
 Snapshot `frozen` does not close the commitment or evidence histories. A migration after freeze can
 establish or strengthen a commitment, but an existing earlier `confirmed_at` remains unchanged.
 
-## Deferred
+## Component boundaries
 
-OCR, vision, capture, UI, slot association, assignment, and automatic clicking are outside this
-milestone. M0.2c.1 subsequently derives `BattleRoster` from effective entry evidence without
-changing commitment authority.
+Commitment does not own OCR, capture, UI, slot association, or assignment. The implemented
+[Battle roster](battle-roster.md) derives participation from effective entry evidence without
+changing commitment authority; [Runtime slots](runtime-slots.md) describes association and
+query-derived assignment. These supporting APIs are separate from the live encounter UI.
+Automatic clicking is outside the read-only product scope.

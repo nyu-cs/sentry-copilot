@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sentry-copilot"
 version = "0.1.0"
-description = "Replay-first, read-only assistant framework for Arknights Sentry Protocol."
+description = "Read-only computer-vision desktop assistant for Arknights Sentry Protocol."
 readme = "README.md"
 requires-python = ">=3.12"
 license = {file = "LICENSE"}

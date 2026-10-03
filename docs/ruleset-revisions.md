@@ -14,7 +14,7 @@ catalog revisions that the first version targets:
 - pre-update / early revision;
 - post-update / late revision.
 
-The normalized ID candidates used by the M0.2a design are:
+The normalized target IDs are:
 
 ```text
 ruleset_id:
@@ -65,15 +65,16 @@ context_generation = 0
 ```
 
 An unknown revision cannot support revision-dependent catalog lookup, initial-HP interpretation,
-availability exclusion, or derived confirmation. Those behaviors are deferred beyond M0.2a.1.
+availability exclusion, or catalog-derived confirmation. Consumers must retain an unresolved
+result rather than selecting a revision implicitly.
 
 ## Context generation
 
-A new session starts at generation zero. Every future successful context selection or explicit
+A new session starts at generation zero. Every successful context selection or explicit
 correction increments the generation, including unknown-to-concrete selection. Failed operations
 do not increment it. The domain does not impose a fixed correction-count limit.
 
-Future revision-dependent derived data must carry:
+Revision-dependent derived data must carry:
 
 ```text
 ruleset_id
@@ -87,8 +88,8 @@ Including locale prevents localized names, descriptions, or OCR resources from s
 incompatible locale change. Including generation prevents a stale result from becoming current
 again after a sequence such as early → late → early.
 
-M0.2a.1 defines this dependency identity but does not create assignment, annotation, occupancy, or
-other future caches.
+This context defines dependency identity; identification, occupancy, and assignment are derived
+by their own components rather than stored as extra context fields.
 
 ## Explicit selection and correction
 
@@ -110,8 +111,8 @@ typed rejections and do not change state.
 
 The command service validates the target against `StrategyCatalogRepository`; the generic reducer
 receives only accepted facts. Failure never partially updates mirrors, history, prebattle snapshot,
-or evidence. The current dependency stamp is the complete invalidation contract until future
-revision-dependent objects exist.
+or evidence. Identification and weak legacy interpretations use the complete dependency stamp
+for freshness; direct/manual claims are rechecked for current catalog compatibility.
 
 ## Catalog lookup
 
@@ -129,8 +130,9 @@ catalog_version + ruleset_revision_id + strategy_id + locale_id
 
 There is no implicit fallback between pre-update and post-update revisions or between `zh_CN` and
 `ja_JP`. Revision profiles, not stable strategy identities or locale resources, own icon keys and
-asset references. Current public fixtures are synthetic and do not establish validated support for
-the four real target combinations.
+asset references. Public synthetic fixtures and JP bootstrap metadata do not establish validated
+support for the four real target combinations. See
+[JP catalog bootstrap](jp-strategy-catalog-bootstrap.md).
 
 ## Legacy strategy interpretation
 
@@ -144,4 +146,4 @@ M0.2a therefore:
 - does not delete historical observations;
 - does not use the field to create new occupancy, runtime assignment, or catalog-dependent
   confirmation;
-- defers separation of raw visual observations from normalized strategy interpretation to M0.2b.
+- uses separate raw-evidence and identification histories, with explicit audited legacy migration.
