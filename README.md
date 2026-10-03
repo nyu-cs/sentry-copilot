@@ -158,7 +158,8 @@ validated references. Resource availability and source permissions are separate 
 
 Public automated tests cover domain invariants, synthetic visual inputs, temporal confirmation,
 lifecycle/recovery, conflicts, capture adapters, catalog validation, presentation, and route
-projection. CI runs pytest, Ruff, and strict mypy on Python 3.12.
+projection. CI runs pytest, Ruff, strict mypy, repository validation, and synthetic-demo checks
+from both the source checkout and an isolated wheel installation on Python 3.12.
 
 Private live and retained-frame checks informed the calibrated recognition implementation, but
 their media is not distributed. Public tests do not reproduce every private validation scenario

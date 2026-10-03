@@ -20,3 +20,40 @@ jobs:
         run: ruff check .
       - name: Mypy
         run: python -m mypy
+      - name: Validate public repository data
+        run: python tools/validate_repository.py
+      - name: Verify source-checkout synthetic demo
+        run: |
+          python -m sentry_copilot.cli --help
+          python -m sentry_copilot.cli demo-encounter --help
+          python -m sentry_copilot.cli demo-encounter --headless | tee source-demo.txt
+          grep -F "SYNTHETIC ENCOUNTER DEMO" source-demo.txt
+          grep -F "6: 4 / 4" source-demo.txt
+      - name: Build wheel
+        run: python -m pip wheel --no-deps --wheel-dir dist .
+      - name: Verify installed wheel
+        env:
+          WHEEL_VENV: ${{ runner.temp }}/sentry-copilot-wheel-venv
+        run: |
+          python -m venv "$WHEEL_VENV"
+          "$WHEEL_VENV/bin/python" -m pip install dist/*.whl
+          "$WHEEL_VENV/bin/python" - <<'PY'
+          import os
+          import sys
+          from pathlib import Path
+
+          import sentry_copilot
+
+          installed = Path(sentry_copilot.__file__).resolve()
+          checkout_src = (Path(os.environ["GITHUB_WORKSPACE"]) / "src").resolve()
+          environment = Path(sys.prefix).resolve()
+          assert installed.is_relative_to(environment), (installed, environment)
+          assert not installed.is_relative_to(checkout_src), (installed, checkout_src)
+          print(f"installed package: {installed}")
+          PY
+          cd "${{ runner.temp }}"
+          "$WHEEL_VENV/bin/sentry-copilot" --help
+          "$WHEEL_VENV/bin/sentry-copilot" demo-encounter --help
+          "$WHEEL_VENV/bin/sentry-copilot" demo-encounter --headless | tee wheel-demo.txt
+          grep -F "SYNTHETIC ENCOUNTER DEMO" wheel-demo.txt
+          grep -F "6: 4 / 4" wheel-demo.txt
