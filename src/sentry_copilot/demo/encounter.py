@@ -268,9 +268,11 @@ def show_demo_encounter(
     if not isfinite(step_seconds) or step_seconds <= 0:
         raise ValueError("step duration must be positive and finite")
     timeline = build_demo_timeline(locale_id)
-    # GUI-only import: the timeline and headless CLI never import or initialize Tk.
+    # GUI-only imports: headless playback never initializes Tk or generates visual media.
+    from sentry_copilot.demo.media import build_demo_media
     from sentry_copilot.encounter.desktop import LiveEncounterPreviewWindow
 
+    media = build_demo_media(timeline[-1].presentation)
     index = 0
 
     def change_locale(selected: str) -> DemoEncounterStep:
@@ -288,6 +290,8 @@ def show_demo_encounter(
         always_on_top=always_on_top,
         load_default_resources=False,
         covenant_icon_sources={},
+        operator_portrait_images=media.operator_portraits,
+        covenant_icon_images=media.covenant_icons,
     )
     milliseconds = max(1, round(step_seconds * 1000))
 

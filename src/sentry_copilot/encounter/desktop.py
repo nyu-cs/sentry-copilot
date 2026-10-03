@@ -13,6 +13,7 @@ from typing import Any, Protocol
 
 import cv2
 import numpy as np
+import numpy.typing as npt
 
 from sentry_copilot.catalogs.operator_portrait_sources import (
     OperatorPortraitSourceCatalog,
@@ -291,6 +292,30 @@ def _resize_portrait_image(image: np.ndarray, display_size: int) -> np.ndarray:
     return cv2.resize(image, (display_size, display_size), interpolation=cv2.INTER_AREA)
 
 
+def _copy_preview_images(
+    images: Mapping[str, npt.NDArray[np.uint8]] | None,
+) -> dict[str, npt.NDArray[np.uint8]]:
+    """Own immutable BGR/BGRA overrides without reading a file or changing resource defaults."""
+
+    copied: dict[str, npt.NDArray[np.uint8]] = {}
+    for identity, image in (images or {}).items():
+        if (
+            not identity.strip()
+            or image.dtype != np.uint8
+            or image.ndim != 3
+            or image.shape[2] not in (3, 4)
+            or image.shape[0] == 0
+            or image.shape[1] == 0
+        ):
+            raise ValueError(
+                "preview images require an identity and nonempty uint8 BGR/BGRA pixels"
+            )
+        payload = np.array(image, copy=True)
+        payload.setflags(write=False)
+        copied[identity] = payload
+    return copied
+
+
 def show_encounter_panel(view: EncounterPanelView, *, always_on_top: bool = True) -> None:
     """Open a compact caller-owned panel; capture code never reads this window as input."""
 
@@ -390,7 +415,9 @@ class LiveEncounterPreviewWindow:
     """Queue-driven same-window preview with page-local navigation and no capture authority.
 
     Set ``load_default_resources=False`` for media-free callers; production defaults retain
-    their existing local portrait/icon resolution. Snapshots need only the UI-facing protocol.
+    their existing local portrait/icon resolution. Optional in-memory images override resolution
+    by operator ID or Covenant ID and use the same image caches/card layout. Snapshots need only
+    the UI-facing protocol.
     """
 
     def __init__(
@@ -405,6 +432,8 @@ class LiveEncounterPreviewWindow:
         portrait_cache_root: Path | None = None,
         covenant_icon_sources: Mapping[str, Path] | None = None,
         load_default_resources: bool = True,
+        operator_portrait_images: Mapping[str, npt.NDArray[np.uint8]] | None = None,
+        covenant_icon_images: Mapping[str, npt.NDArray[np.uint8]] | None = None,
     ) -> None:
         import tkinter as tk
         from tkinter import ttk
@@ -437,6 +466,8 @@ class LiveEncounterPreviewWindow:
         )
         self._portrait_images = _PortraitImageCache()
         self._covenant_images = _PortraitImageCache()
+        self._operator_portrait_images = _copy_preview_images(operator_portrait_images)
+        self._covenant_icon_images = _copy_preview_images(covenant_icon_images)
         self._locale = tk.StringVar(value=_locale_label(initial.locale_id))
         self._title = tk.StringVar()
         self._status = tk.StringVar()
@@ -793,6 +824,13 @@ class LiveEncounterPreviewWindow:
         self._ttk.Label(frame, text=tier, anchor="center").grid(row=2, column=0)
 
     def _portrait_for(self, card: ConfirmedBannedOperatorCardView) -> Any | None:
+        image = self._operator_portrait_images.get(card.operator_id)
+        if image is not None:
+            return self._portrait_images.get_or_load(
+                f"memory:operator:{card.operator_id}",
+                60,
+                lambda: self._load_memory_photoimage(image, 60),
+            )
         portrait_key = card.portrait_key
         if portrait_key is None or self._portrait_sources is None:
             return None
@@ -803,6 +841,13 @@ class LiveEncounterPreviewWindow:
         )
 
     def _covenant_icon_for(self, covenant_id: str) -> Any | None:
+        image = self._covenant_icon_images.get(covenant_id)
+        if image is not None:
+            return self._covenant_images.get_or_load(
+                f"memory:covenant:{covenant_id}",
+                40,
+                lambda: self._load_memory_photoimage(image, 40),
+            )
         source = _covenant_icon_source(self._covenant_icon_sources, covenant_id)
         if source is None:
             return None
@@ -811,6 +856,20 @@ class LiveEncounterPreviewWindow:
             40,
             lambda: self._load_covenant_icon_photoimage(source),
         )
+
+    def _load_memory_photoimage(
+        self, image: npt.NDArray[np.uint8], display_size: int
+    ) -> Any | None:
+        """Convert caller pixels using the same resizing/PNG/Tk path as file-backed media."""
+
+        try:
+            resized = _resize_portrait_image(image, display_size)
+            success, encoded = cv2.imencode(".png", resized)
+            if not success:
+                return None
+            return self._tk.PhotoImage(data=base64.b64encode(encoded.tobytes()))
+        except (ValueError, cv2.error, self._tk.TclError):
+            return None
 
     def _load_covenant_icon_photoimage(self, source: Path) -> Any | None:
         try:

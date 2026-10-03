@@ -131,9 +131,11 @@ sentry-copilot demo-encounter --headless
 ```
 
 The GUI reuses the production session updates, presentation models, and desktop window with
-project-authored synthetic facts and text-only Ban Detail cards. It automatically walks from
+project-authored synthetic facts and procedural icons/portraits in the production Ban Detail
+media/card layout. It automatically walks from
 `0 / 4` to `4 / 4`, including Major-only incomplete Bans and a simulated missing-Boss recovery,
-then stays open until closed. No portraits, Covenant artwork, MuMu, or recordings are required.
+then stays open until closed. No game artwork, private portrait/icon cache, MuMu, or recordings
+are required; demo graphics are generated in memory, without redistributed game/wiki images.
 
 This is **not live computer vision**: synthetic confirmed facts enter the session directly.
 The same deterministic timeline is printed by `--headless`, without importing or initializing Tk.

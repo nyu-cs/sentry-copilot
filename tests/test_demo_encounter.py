@@ -151,6 +151,7 @@ with patch.object(Path, 'read_text', side_effect=AssertionError('unexpected reso
     main()
 assert 'tkinter' not in sys.modules
 assert 'sentry_copilot.encounter.desktop' not in sys.modules
+assert 'sentry_copilot.demo.media' not in sys.modules
 """
     result = subprocess.run(
         [sys.executable, "-c", script, "demo-encounter", "--headless"],
@@ -235,6 +236,8 @@ def test_gui_playback_reuses_real_window_contract_without_tk_or_sleep(
     window = windows[0]
     assert window.options["load_default_resources"] is False
     assert window.options["covenant_icon_sources"] == {}
+    assert len(window.options["covenant_icon_images"]) == 7
+    assert len(window.options["operator_portrait_images"]) == 4
     assert window.options["always_on_top"] is False
     assert window.delays == [1250] * 6
     assert window.steps[-1].presentation.progress_label == "4 / 4"
