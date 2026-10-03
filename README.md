@@ -23,6 +23,11 @@ This public demo uses project-authored synthetic facts rather than live computer
 requires no private reference pack. The repository does not redistribute game artwork,
 recognition crops, recordings, or private portrait/icon caches.
 
+![Public synthetic Encounter demo at the completed 4 / 4 state](docs/assets/synthetic-encounter-demo-4of4.png)
+
+Public synthetic Encounter demo at the completed **4 / 4** state; the displayed facts are
+project-authored, not live computer-vision results.
+
 ## Current Live Encounter Intelligence
 
 The live product has exactly four information items:
@@ -180,6 +185,14 @@ This is **not live computer vision**: synthetic confirmed facts enter the sessio
 The same deterministic timeline is printed by `--headless`, without importing or initializing Tk.
 GUI playback needs Python's Tk support and a desktop display. English is the default shell locale;
 use `--locale zh_CN`, `--step-seconds 1.25`, or `--no-topmost` as needed.
+
+Synthetic Ban Detail examples for Major and Additional Covenants, using procedural Covenant
+icons and fictional operator avatars, not game artwork:
+
+<p>
+  <img src="docs/assets/synthetic-ban-details-major.png" alt="Public synthetic Ban Details: Major Covenants, fictional operator avatars, and tiers" width="49%">
+  <img src="docs/assets/synthetic-ban-details-additional.png" alt="Public synthetic Ban Details: Additional Covenants, fictional operator avatars, and tiers" width="49%">
+</p>
 
 ## Public vs Private Resources
 
